@@ -163,20 +163,17 @@ if __name__ == "__main__":
 
     if args.use_tpus:
         tpus = 8
-        trainer = Trainer(tpu_cores=tpus, default_root_dir=default_root_dir,
-                          max_epochs=5, progress_bar_refresh_rate=20,precision=16,
-                          resume_from_checkpoint = ckpt_path,
-                          auto_lr_find=args.auto_lr_find, 
-                          auto_scale_batch_size=auto_scale_batch_size)
+        gpus = None
     else:
+        tpus = None
         gpus = args.gpus
-        trainer = Trainer( gpus= gpus, default_root_dir=default_root_dir,
+
+  
+    trainer = Trainer(tpu_cores=tpus, gpus= gpus, default_root_dir=default_root_dir,
                           max_epochs=5, progress_bar_refresh_rate=20,precision=16,
                           resume_from_checkpoint = ckpt_path,
                           auto_lr_find=args.auto_lr_find, 
                           auto_scale_batch_size=auto_scale_batch_size)
-  
-
 
 
     if args.auto_lr_find or args.auto_scale_batch_size:
