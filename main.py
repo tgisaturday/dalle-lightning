@@ -9,7 +9,7 @@ import torch
 from torchvision import transforms as T
 from torch.utils.data import DataLoader
 from torchvision.datasets import ImageFolder
-from .taming.models.vqgan import VQModel
+from taming.models.vqgan import VQModel
 
 import pytorch_lightning as pl
 from pytorch_lightning import seed_everything
