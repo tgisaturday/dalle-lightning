@@ -50,18 +50,17 @@ if __name__ == "__main__":
 
     now = datetime.datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
 
-    cwd = sys.path.append(os.getcwd())
 
     parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
 
     #path configuration
-    parser.add_argument('--train_dir', type=str, default=f'{cwd}/data/',
+    parser.add_argument('--train_dir', type=str, default='/home/taehoon.kim/vqgan/data/',
                     help='path to train dataset')
-    parser.add_argument('--val_dir', type=str, default=f'{cwd}/data/',
+    parser.add_argument('--val_dir', type=str, default='/home/taehoon.kim/vqgan/data/',
                     help='path to val dataset')                    
-    parser.add_argument('--log_dir', type=str, default=f'{cwd}/results/',
+    parser.add_argument('--log_dir', type=str, default='/home/taehoon.kim/vqgan/results/',
                     help='path to save logs')
-    parser.add_argument('--ckpt_path', type=str,default=f'{cwd}/results/checkpoints/last.ckpt',
+    parser.add_argument('--ckpt_path', type=str,default='/home/taehoon.kim/vqgan/results/checkpoints/last.ckpt',
                     help='path to previous checkpoint')
 
     #training configuration
