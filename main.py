@@ -55,13 +55,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
 
     #path configuration
-    parser.add_argument('train_dir', metavar='DIR', default=f'{cwd}/data/',
+    parser.add_argument('train_dir', type=str, default=f'{cwd}/data/',
                     help='path to train dataset')
-    parser.add_argument('val_dir', metavar='DIR', default=f'{cwd}/data/',
+    parser.add_argument('val_dir', type=str, default=f'{cwd}/data/',
                     help='path to val dataset')                    
-    parser.add_argument('log_dir', metavar='DIR',default=f'{cwd}/results/',
+    parser.add_argument('log_dir', type=str,default=f'{cwd}/results/',
                     help='path to save logs')
-    parser.add_argument('ckpt_path', metavar='DIR',default=f'{cwd}/results/checkpoints/last.ckpt',
+    parser.add_argument('ckpt_path', type=str,default=f'{cwd}/results/checkpoints/last.ckpt',
                     help='path to previous checkpoint')
 
     #training configuration
