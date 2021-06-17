@@ -69,7 +69,7 @@ gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
 
 gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
 --zone ${ZONE} --project ${PROJECT_ID} --worker=all \
-  --command "gcsfuse lgaivision-sbu-eu vqgan/data"
+  --command "gcsfuse lgaivision-coco-eu vqgan/data"
 
 gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
 --zone ${ZONE} --project ${PROJECT_ID} --worker=all \
