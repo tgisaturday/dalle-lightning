@@ -67,11 +67,7 @@ if __name__ == "__main__":
     parser.add_argument('--use_tpus', action='store_true', default=False,
                     help='using tpu') 
     parser.add_argument('--is_pod', action='store_true', default=False,
-                    help='using tpu as pod')    
-    parser.add_argument('--auto_lr_find', action='store_true', default=False,
-                    help='using auto lr find')   
-    parser.add_argument('--auto_scale_batch_size', action='store_true', default=False,
-                    help='using auto scale batch size')                                                              
+                    help='using tpu as pod')                                                                
     parser.add_argument('--resume', action='store_true', default=False,
                     help='whether to resume from checkpoint')                   
     parser.add_argument('--seed', type=int, default=42,
@@ -151,11 +147,6 @@ if __name__ == "__main__":
     else:
         default_root_dir = args.log_dir
 
-    if args.auto_scale_batch_size:
-        auto_scale_batch_size = 'binsearch'
-    else:
-        auto_scale_batch_size = None
-
     if args.resume:
         ckpt_path = args.ckpt_path
     else:
@@ -170,15 +161,9 @@ if __name__ == "__main__":
 
   
     trainer = Trainer(tpu_cores=tpus, gpus= gpus, default_root_dir=default_root_dir,
-                          max_epochs=5, progress_bar_refresh_rate=20,precision=16,
+                          max_epochs=args.epochs, progress_bar_refresh_rate=20,precision=16,
                           num_sanity_val_steps=args.num_sanity_val_steps,
-                          resume_from_checkpoint = ckpt_path,
-                          auto_lr_find=args.auto_lr_find, 
-                          auto_scale_batch_size=auto_scale_batch_size)
-
-
-    if args.auto_lr_find or args.auto_scale_batch_size:
-        trainer.tune(model)
+                          resume_from_checkpoint = ckpt_path)
 
     
     print("Setting batch size: {} learning rate: {:.2e}".format(model.batch_size, model.learning_rate))
