@@ -19,6 +19,9 @@ class VQModel(pl.LightningModule):
                  ):
         super().__init__()
         self.image_key = image_key
+        self.learning_rate = args.learning_rate
+        self.batch_size = args.batch_size       
+        
         self.encoder = Encoder(ch=args.ch, out_ch=args.out_ch, ch_mult= args.ch_mult,
                                 num_res_blocks=args.num_res_blocks, 
                                 attn_resolutions=args.attn_resolutions,
@@ -34,7 +37,7 @@ class VQModel(pl.LightningModule):
         
         self.loss = VQLPIPSWithDiscriminator(disc_start=args.disc_start, codebook_weight=args.codebook_weight,
                                             disc_in_channels=args.disc_in_channels,disc_weight=args.disc_weight)
-        self.learning_rate = args.learning_rate
+
         self.quantize = VectorQuantizer(args.n_embed, args.embed_dim, beta=0.25)
         self.quant_conv = torch.nn.Conv2d(args.z_channels, args.embed_dim, 1)
         self.post_quant_conv = torch.nn.Conv2d(args.embed_dim, args.z_channels, 1)

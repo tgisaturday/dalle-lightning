@@ -180,8 +180,8 @@ if __name__ == "__main__":
     if args.auto_lr_find or args.auto_scale_batch_size:
         trainer.tune(model)
 
-    else:
-        print("Setting batch size: {} learning rate: {:.2e}".format(args.batch_size, args.learning_rate))
+    
+    print("Setting batch size: {} learning rate: {:.2e}".format(model.batch_size, model.learning_rate))
 
     if not args.test:    
         trainer.fit(model, data)
