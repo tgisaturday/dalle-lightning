@@ -59,7 +59,7 @@ if __name__ == "__main__":
                     help='path to train dataset')
     parser.add_argument('--val_dir', type=str, default=f'{cwd}/data/',
                     help='path to val dataset')                    
-    parser.add_argument('--log_dir', type=str,default=f'{cwd}/results/',
+    parser.add_argument('--log_dir', type=str, default=f'{cwd}/results/',
                     help='path to save logs')
     parser.add_argument('--ckpt_path', type=str,default=f'{cwd}/results/checkpoints/last.ckpt',
                     help='path to previous checkpoint')
@@ -139,7 +139,7 @@ if __name__ == "__main__":
     #random seed fix
     seed_everything(args.seed)   
 
-    data = ImageDataModule()
+    data = ImageDataModule(args.train_dir, args.val_dir, args.batch_size, args.num_workers)
     #data.setup()
 
     # model
