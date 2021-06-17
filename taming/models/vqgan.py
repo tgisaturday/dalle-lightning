@@ -38,6 +38,7 @@ class VQModel(pl.LightningModule):
         self.quant_conv = torch.nn.Conv2d(args.z_channels, args.embed_dim, 1)
         self.post_quant_conv = torch.nn.Conv2d(args.embed_dim, args.z_channels, 1)
 
+
         if monitor is not None:
             self.monitor = monitor
 
