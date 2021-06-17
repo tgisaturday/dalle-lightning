@@ -78,7 +78,8 @@ if __name__ == "__main__":
                     help='random seed')  
     parser.add_argument('--gpus', type=int, default=16,
                     help='number of gpus')                   
-                    
+    parser.add_argument('--num_sanity_val_steps', type=int, default=0,
+                    help='num_sanity_val_steps')                     
     parser.add_argument('--learning_rate', default=4.5e-6, type=float,
                     help='base learning rate')
     parser.add_argument('--batch_size', type=int, default=6,
@@ -170,6 +171,7 @@ if __name__ == "__main__":
   
     trainer = Trainer(tpu_cores=tpus, gpus= gpus, default_root_dir=default_root_dir,
                           max_epochs=5, progress_bar_refresh_rate=20,precision=16,
+                          num_sanity_val_steps=args.num_sanity_val_steps,
                           resume_from_checkpoint = ckpt_path,
                           auto_lr_find=args.auto_lr_find, 
                           auto_scale_batch_size=auto_scale_batch_size)
