@@ -9,7 +9,7 @@ import torch
 from torchvision import transforms as T
 from torch.utils.data import DataLoader
 from torchvision.datasets import ImageFolder
-from taming.models.vqgan import VQModel
+from .taming.models.vqgan import VQModel
 
 import pytorch_lightning as pl
 from pytorch_lightning import seed_everything
@@ -135,7 +135,7 @@ if __name__ == "__main__":
     #misc configuration
  
     args = parser.parse_args()
-    
+
     #random seed fix
     seed_everything(args.seed)   
 

@@ -41,20 +41,20 @@ gcloud alpha compute tpus tpu-vm create ${TPU_NAME} \
 --zone ${ZONE} --project ${PROJECT_ID} --accelerator-type v3-32 \
 --version ${RUNTIME_VERSION}  --reserved --metadata startup-script='#! /bin/bash
 cd /home/taehoon.kim/
+gcloud source repos clone vqgan --project=lgai-vision-tpu
+
+cd vqgan
 
 mkdir data
 mkdir results
 
-gcloud source repos clone lgai-vision-tpu/vqgan-tpu/main// --project=lgai-vision-tpu
-
-cd vqgan-tpu
-
 pip3 install -r requirements.txt
-cd ..
-mkdir temp/
+
+mkdir temp
+
 chown taehoon.kim data
 chown taehoon.kim results
-chown -R taehoon.kim vqgan-tpu
+chown -R taehoon.kim vqgan
 chown taehoon.kim temp
 EOF'
 
@@ -70,11 +70,11 @@ gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
 
 gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
 --zone ${ZONE} --project ${PROJECT_ID} --worker=all \
-  --command "gcsfuse lgaivision-sbu-eu data"
+  --command "gcsfuse lgaivision-sbu-eu vqgan/data"
 
 gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
 --zone ${ZONE} --project ${PROJECT_ID} --worker=all \
-  --command "gcsfuse lgaivision-tpu-results results"
+  --command "gcsfuse lgaivision-tpu-results vqgan/results"
 
 gcloud compute --project=lgai-vision-tpu instances create pod-ctrl-32\
   --zone=europe-west4-a  \
