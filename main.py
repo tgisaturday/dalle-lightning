@@ -161,8 +161,8 @@ if __name__ == "__main__":
 
   
     trainer = Trainer(tpu_cores=tpus, gpus= gpus, default_root_dir=default_root_dir,
-                          max_epochs=args.epochs, progress_bar_refresh_rate=20,precision=16,
-                          num_sanity_val_steps=args.num_sanity_val_steps,
+                          max_epochs=args.epochs, progress_bar_refresh_rate=1,precision=16,
+                          num_sanity_val_steps=args.num_sanity_val_steps, checkpoint_callback=False,
                           resume_from_checkpoint = ckpt_path)
 
     
