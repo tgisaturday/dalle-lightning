@@ -62,7 +62,8 @@ if __name__ == "__main__":
                     help='path to save logs')
     parser.add_argument('--ckpt_path', type=str,default='/home/taehoon.kim/vqgan/results/checkpoints/last.ckpt',
                     help='path to previous checkpoint')
-
+    parser.add_argument('--refresh_rate', type=int, default=20,
+                    help='progress bar refresh rate')  
     #training configuration
     parser.add_argument('--use_tpus', action='store_true', default=False,
                     help='using tpu') 
@@ -161,7 +162,7 @@ if __name__ == "__main__":
 
   
     trainer = Trainer(tpu_cores=tpus, gpus= gpus, default_root_dir=default_root_dir,
-                          max_epochs=args.epochs, progress_bar_refresh_rate=20,precision=16,
+                          max_epochs=args.epochs, progress_bar_refresh_rate=args.refresh_rate,precision=16,
                           num_sanity_val_steps=args.num_sanity_val_steps,
                           resume_from_checkpoint = ckpt_path)
 

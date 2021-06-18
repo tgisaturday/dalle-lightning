@@ -20,9 +20,10 @@ gcloud alpha compute tpus tpu-vm ssh tpu-vm --zone europe-west4-a --project lgai
 
 export XRT_TPU_CONFIG="localservice;0;localhost:51011"
 
+python3 -m torch_xla.core.xrt_run_server --port 51011 --restart
 
 python3 main.py --use_tpus
-python3 -m torch_xla.core.xrt_run_server --port 51011 --restart
+
 
 
 -------------------------------
@@ -76,6 +77,8 @@ gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
 gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
 --zone ${ZONE} --project ${PROJECT_ID} --worker=all \
   --command "gcsfuse lgai-vision-tpu-results vqgan/results"
+
+python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-32 --restart-tpuvm-pod-server -- python3 /home/taehoon.kim/vqgan/main.py --use_tpus
 
 gcloud compute --project=lgai-vision-tpu instances create pod-ctrl-32\
   --zone=europe-west4-a  \
