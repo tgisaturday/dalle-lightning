@@ -4,6 +4,8 @@ import random
 from PIL import Image
 import torch
 
+import torch_xla.utils.utils as xu
+import torch_xla.core.xla_model as xm
 # vision imports
 
 from torchvision import transforms as T
@@ -16,14 +18,16 @@ from pytorch_lightning import seed_everything
 from pytorch_lightning import LightningDataModule, LightningModule, Trainer
 from pytorch_lightning.utilities.distributed import rank_zero_only
 
+
 class ImageDataModule(LightningDataModule):
 
-    def __init__(self, train_dir, val_dir, batch_size, num_workers):
+    def __init__(self, train_dir, val_dir, batch_size, num_workers, fake_data=False):
         super().__init__()
         self.train_dir = train_dir
         self.val_dir = val_dir
         self.batch_size = batch_size
         self.num_workers = num_workers
+        self.fake_data = fake_data
 
         self.transform = T.Compose([
                                     T.Lambda(lambda img: img.convert('RGB') if img.mode != 'RGB' else img),
@@ -38,13 +42,34 @@ class ImageDataModule(LightningDataModule):
   
 
     def train_dataloader(self):
-        return DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=self.num_workers,shuffle=True)
+        if self.fake_data:
+            train_loader = xu.SampleGenerator(
+                            data=(torch.zeros(self.batch_size, 3, 256, 256),
+                            torch.zeros(self.batch_size, dtype=torch.int64)),
+                            sample_count=1200000 // self.batch_size // xm.xrt_world_size())
+            return train_loader
+        else:
+            return DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=self.num_workers,shuffle=True)
 
     def val_dataloader(self):
-        return DataLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers)
+        if self.fake_data:
+            val_loader = xu.SampleGenerator(
+                            data=(torch.zeros(self.batch_size, 3, 256, 256),
+                            torch.zeros(self.batch_size, dtype=torch.int64)),
+                            sample_count=50000 // self.batch_size // xm.xrt_world_size())            
+            return val_loader
+        else:
+            return DataLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers)
 
     def test_dataloader(self):
-        return DataLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers)
+        if self.fake_data:
+            val_loader = xu.SampleGenerator(
+                            data=(torch.zeros(self.batch_size, 3, 256, 256),
+                            torch.zeros(self.batch_size, dtype=torch.int64)),
+                            sample_count=50000 // self.batch_size // xm.xrt_world_size())            
+            return val_loader            
+        else:
+            return DataLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers)
 
 if __name__ == "__main__":
 
@@ -64,7 +89,10 @@ if __name__ == "__main__":
                     help='path to previous checkpoint')
     parser.add_argument('--refresh_rate', type=int, default=1,
                     help='progress bar refresh rate')  
+
     #training configuration
+    parser.add_argument('--fake_data', action='store_true', default=False,
+                    help='using fake_data for debugging') 
     parser.add_argument('--use_tpus', action='store_true', default=False,
                     help='using tpu') 
     parser.add_argument('--is_pod', action='store_true', default=False,
@@ -136,7 +164,7 @@ if __name__ == "__main__":
     #random seed fix
     seed_everything(args.seed)   
 
-    data = ImageDataModule(args.train_dir, args.val_dir, args.batch_size, args.num_workers)
+    data = ImageDataModule(args.train_dir, args.val_dir, args.batch_size, args.num_workers, args.fake_data)
     #data.setup()
 
     # model
