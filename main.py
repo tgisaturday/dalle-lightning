@@ -54,9 +54,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
 
     #path configuration
-    parser.add_argument('--train_dir', type=str, default='/home/taehoon.kim/vqgan/data/',
+    parser.add_argument('--train_dir', type=str, default='/home/taehoon.kim/vqgan/data/train/',
                     help='path to train dataset')
-    parser.add_argument('--val_dir', type=str, default='/home/taehoon.kim/vqgan/data/',
+    parser.add_argument('--val_dir', type=str, default='/home/taehoon.kim/vqgan/data/val/',
                     help='path to val dataset')                    
     parser.add_argument('--log_dir', type=str, default='/home/taehoon.kim/vqgan/results/',
                     help='path to save logs')
