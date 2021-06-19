@@ -91,15 +91,11 @@ class VQModel(pl.LightningModule):
 
         discloss, log_dict_disc = self.loss(qloss, x, xrec, 1, self.global_step,
                                             last_layer=self.get_last_layer(), split="val")
-        #rec_loss = log_dict_ae["val/rec_loss"]                                        
-        #self.log("val/rec_loss", rec_loss,
-        #           prog_bar=True, logger=True, on_step=True, on_epoch=True, sync_dist=True)
         self.log("val/aeloss", aeloss,
-                   prog_bar=True, logger=True, on_step=True, on_epoch=True, sync_dist=True)               
-        #self.log_dict(log_dict_ae)
-        #self.log_dict(log_dict_disc)
+                   prog_bar=True, logger=True, on_step=True, on_epoch=True, sync_dist=True)
+        self.log_dict(log_dict_ae)
 
-        return aeloss
+        return self.log_dict
 
 
     def configure_optimizers(self):

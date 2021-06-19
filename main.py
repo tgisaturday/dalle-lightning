@@ -166,8 +166,29 @@ if __name__ == "__main__":
     #random seed fix
     seed_everything(args.seed)   
 
-    data = ImageDataModule(args.train_dir, args.val_dir, args.batch_size, args.num_workers, args.img_size, args.fake_data)
-    #data.setup()
+    #data = ImageDataModule(args.train_dir, args.val_dir, args.batch_size, args.num_workers, args.img_size, args.fake_data)
+
+    transform = T.Compose([
+                                    T.Lambda(lambda img: img.convert('RGB') if img.mode != 'RGB' else img),
+                                    T.Resize(args.img_size),
+                                    T.CenterCrop(args.img_size),
+                                    T.ToTensor()
+                                    ])
+    if not args.fake_data:
+        train_dataset = ImageFolder(args.train_dir, transform)
+        val_dataset = ImageFolder(args.val_dir, transform)   
+    if args.fake_data:
+        train_loader = xu.SampleGenerator(
+                        data=(torch.zeros(args.batch_size, 3, args.img_size , args.img_size ),
+                        torch.zeros(args.batch_size, dtype=torch.int64)),
+                        sample_count=1200000 // args.batch_size // xm.xrt_world_size())
+        val_loader = xu.SampleGenerator(
+                        data=(torch.zeros(args.batch_size, 3, args.img_size , args.img_size ),
+                        torch.zeros(args.batch_size, dtype=torch.int64)),
+                        sample_count=50000 // args.batch_size // xm.xrt_world_size())                           
+    else:
+        train_loader = DataLoader(args.train_dataset, batch_size=args.batch_size, num_workers=args.num_workers,shuffle=True)      
+        val_loader = DataLoader(args.val_dataset, batch_size=args.batch_size, num_workers=args.num_workers)  
 
     # model
     model = VQModel(args)
@@ -200,8 +221,8 @@ if __name__ == "__main__":
     print("Setting batch size: {} learning rate: {:.2e}".format(model.batch_size, model.learning_rate))
 
     if not args.test:    
-        trainer.fit(model, data)
+        trainer.fit(model, train_dataloaders=train_loader, val_dataloaders=val_loader)
     else:
-        trainer.test(model, data)
+        trainer.test(model, dataloaders=val_loader)
 
 
