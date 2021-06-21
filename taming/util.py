@@ -14,6 +14,35 @@ MD5_MAP = {
     "vgg_lpips": "d507d7349b931f0638a25a48a722f98a"
 }
 
+class SampleGenerator(object):
+  """Iterator which returns multiple samples of a given input data.
+
+  Can be used in place of a PyTorch `DataLoader` to generate synthetic data.
+
+  Args:
+    data: The data which should be returned at each iterator step.
+    sample_count: The maximum number of `data` samples to be returned.
+  """
+
+  def __init__(self, data, sample_count):
+    self._data = data
+    self._sample_count = sample_count
+    self._count = 0
+
+  def __iter__(self):
+    return SampleGenerator(self._data, self._sample_count)
+
+  def __len__(self):
+    return self._sample_count
+
+  def __next__(self):
+    return self.next()
+
+  def next(self):
+    if self._count >= self._sample_count:
+      raise StopIteration
+    self._count += 1
+    return self._data
 
 def download(url, local_path, chunk_size=1024):
     os.makedirs(os.path.split(local_path)[0], exist_ok=True)
