@@ -4,7 +4,7 @@ import random
 from PIL import Image
 import torch
 
-import torch_xla.utils.utils as xu
+
 import torch_xla.core.xla_model as xm
 # vision imports
 
@@ -78,7 +78,7 @@ if __name__ == "__main__":
     now = datetime.datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
 
 
-    parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
+    parser = argparse.ArgumentParser(description='VQGAN(Taming Transformers) for Pytorch TPU')
 
     #path configuration
     parser.add_argument('--train_dir', type=str, default='/home/taehoon.kim/vqgan/data/train/',
@@ -187,8 +187,8 @@ if __name__ == "__main__":
                         torch.zeros(args.batch_size, dtype=torch.int64)),
                         sample_count=50000 // args.batch_size // xm.xrt_world_size())                           
     else:
-        train_loader = DataLoader(args.train_dataset, batch_size=args.batch_size, num_workers=args.num_workers,shuffle=True)      
-        val_loader = DataLoader(args.val_dataset, batch_size=args.batch_size, num_workers=args.num_workers)  
+        train_loader = DataLoader(train_dataset, batch_size=args.batch_size, num_workers=args.num_workers,shuffle=True)      
+        val_loader = DataLoader(val_dataset, batch_size=args.batch_size, num_workers=args.num_workers)  
 
     # model
     model = VQModel(args)
