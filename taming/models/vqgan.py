@@ -93,7 +93,10 @@ class VQModel(pl.LightningModule):
                                             last_layer=self.get_last_layer(), split="val")
         self.log("val/aeloss", aeloss,
                    prog_bar=True, logger=True, on_step=True, on_epoch=True, sync_dist=True)
+        self.log("val/discloss", discloss,
+                   prog_bar=True, logger=True, on_step=True, on_epoch=True, sync_dist=True)                   
         self.log_dict(log_dict_ae)
+        self.log_dict(log_dict_disc)
 
         return self.log_dict
 
@@ -108,7 +111,7 @@ class VQModel(pl.LightningModule):
                                   lr=lr, betas=(0.5, 0.9))
         opt_disc = torch.optim.Adam(self.loss.discriminator.parameters(),
                                     lr=lr, betas=(0.5, 0.9))
-        return opt_ae, opt_disc
+        return [opt_ae, opt_disc],[]
 
     def get_last_layer(self):
         return self.decoder.conv_out.weight
