@@ -27,14 +27,15 @@ pip install -r requirements.txt
 Place any image dataset with ImageNet-style directory structure (at least 1 subfolder) to fit the dataset into pytorch ImageFolder.
 
 ## Training models
-You can easily test main.py with random sampled fake data.
+You can easily test main.py with randomly generated fake data.
 ```
 python main.py --use_tpus --fake_data
 ```
 
-For actual training provide specific directory for train_dir, val_dir, result_dir
+For actual training provide specific directory for train_dir, val_dir, log_dir:
+
 ```
-python main.py --use_tpus --train_dir [training_set] --val_dir [val_set] --result_dir [where to save results]
+python main.py --use_tpus --train_dir [training_set] --val_dir [val_set] --log_dir [where to save results]
 ```
 
 ## BibTeX
