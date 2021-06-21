@@ -1,6 +1,6 @@
 # Taming Transformers for High-Resolution Image Synthesis, CVPR 2021 (Oral)
 
-Refactoring Taming Transformers(ttps://github.com/CompVis/taming-transformers) for TPU VM. 
+Refactoring Taming Transformers(https://github.com/CompVis/taming-transformers) for TPU VM. 
 
 ![teaser](assets/mountain.jpeg)
 
