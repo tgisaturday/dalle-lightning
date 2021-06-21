@@ -113,11 +113,11 @@ if __name__ == "__main__":
                     help='num_sanity_val_steps')                     
     parser.add_argument('--learning_rate', default=4.5e-6, type=float,
                     help='base learning rate')
-    parser.add_argument('--batch_size', type=int, default=6,
+    parser.add_argument('--batch_size', type=int, default=8,
                     help='dataconfig')  
     parser.add_argument('--epochs', type=int, default=30,
                     help='dataconfig')                                    
-    parser.add_argument('--num_workers', type=int, default=8,
+    parser.add_argument('--num_workers', type=int, default=16,
                     help='dataconfig')   
     parser.add_argument('--img_size', type=int, default=256,
                     help='dataconfig')
