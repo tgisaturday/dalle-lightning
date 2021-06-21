@@ -94,8 +94,6 @@ class VQModel(pl.LightningModule):
                    prog_bar=True, logger=False, on_step=True, on_epoch=True, sync_dist=True)
         self.log("val/discloss", discloss,
                    prog_bar=True, logger=False, on_step=True, on_epoch=True, sync_dist=True)                   
-        #self.log_dict(log_dict_ae)
-        #self.log_dict(log_dict_disc)
         metric = log_dict_ae
         metric.update(log_dict_disc)
         self.log_dict(metric,prog_bar=False, logger=True, on_step=True, on_epoch=Tru)
