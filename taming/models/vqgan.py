@@ -10,7 +10,7 @@ from taming.modules.losses.vqperceptual import VQLPIPSWithDiscriminator
 
 class VQModel(pl.LightningModule):
     def __init__(self,
-                 args,
+                 args,batch_size, learning_rate,
                  ignore_keys=[],
                  monitor=None
                  ):

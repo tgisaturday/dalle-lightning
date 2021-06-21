@@ -197,7 +197,7 @@ if __name__ == "__main__":
         val_loader = DataLoader(val_dataset, batch_size=args.batch_size, num_workers=args.num_workers)  
 
     # model
-    model = VQModel(args)
+    model = VQModel(args, args.batch_size, args.learning_rate)
  
     if args.is_pod:
         global_rank = os.environ["CLOUD_TPU_TASK_ID"]
