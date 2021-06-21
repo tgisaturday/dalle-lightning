@@ -15,8 +15,8 @@ class VQModel(pl.LightningModule):
                  monitor=None
                  ):
         super().__init__()
-        self.learning_rate = args.learning_rate
-        self.batch_size = args.batch_size       
+        self.save_hyperparameters()
+             
 
         self.encoder = Encoder(ch=args.ch, out_ch=args.out_ch, ch_mult= args.ch_mult,
                                 num_res_blocks=args.num_res_blocks, 
@@ -102,7 +102,7 @@ class VQModel(pl.LightningModule):
 
 
     def configure_optimizers(self):
-        lr = self.learning_rate
+        lr = self.hparams.learning_rate
         opt_ae = torch.optim.Adam(list(self.encoder.parameters())+
                                   list(self.decoder.parameters())+
                                   list(self.quantize.parameters())+

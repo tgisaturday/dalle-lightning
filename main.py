@@ -128,7 +128,7 @@ if __name__ == "__main__":
     #model configuration
     parser.add_argument('--embed_dim', type=int, default=256,
                     help='number of embedding dimension')       
-    parser.add_argument('--n_embed', type=int, default=8192,
+    parser.add_argument('--n_embed', type=int, default=1024,
                     help='codebook size')        
     parser.add_argument('--double_z', type=bool, default=False,
                     help='ddconfig')
