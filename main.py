@@ -230,7 +230,7 @@ if __name__ == "__main__":
                           resume_from_checkpoint = ckpt_path)
 
     
-    print("Setting batch size: {} learning rate: {:.2e}".format(model.batch_size, model.learning_rate))
+    print("Setting batch size: {} learning rate: {:.2e}".format(model.hparams.batch_size, model.hparams.learning_rate))
 
     if not args.test:    
         trainer.fit(model, train_dataloaders=train_loader, val_dataloaders=val_loader)
