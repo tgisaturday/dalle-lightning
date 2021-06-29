@@ -275,7 +275,7 @@ train_dataset_iter = iter(train_dataset)
 params, state = forward.init(rng, next(train_dataset_iter), is_training=True)
 
 num_devices = jax.local_device_count()
-params = jax.tree_util.tree_map(lambda x: np.stack([x] * num_devices), params)
+(params, state) = jax.tree_util.tree_map(lambda x: np.stack([x] * num_devices), (params,state))
 
 def make_superbatch():
   """Constructs a superbatch, i.e. one batch of data per device."""
