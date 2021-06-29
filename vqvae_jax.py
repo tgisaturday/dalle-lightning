@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow.compat.v2 as tf
 import tensorflow_datasets as tfds
-
+import functools
 tf.enable_v2_behavior()
 
 print("JAX version {}".format(jax.__version__))
@@ -248,8 +248,8 @@ def forward(data, is_training):
 forward = hk.transform_with_state(forward)
 optimizer = optax.adam(learning_rate)
 
-@jax.jit
-def train_step(params, state, opt_state, data, axis_name='i'):
+@functools.partial(jax.pmap, axis_name='i', donate_argnums=(0,))
+def train_step(params, state, opt_state):
   def adapt_forward(params, state, data):
     # Pack model output and state together.
     model_output, state = forward.apply(params, state, None, data, is_training=True)
