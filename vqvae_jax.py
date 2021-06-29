@@ -279,7 +279,7 @@ opt_state = optimizer.init(params)
 num_devices = jax.local_device_count()
 params = jax.tree_util.tree_map(lambda x: np.stack([x] * num_devices), params)
 state = jax.tree_util.tree_map(lambda x: np.stack([x] * num_devices), state)
-opt_state = jax.tree_util.tree_map(lambda x: np.stack([x] * num_devices), opt_state)
+#opt_state = jax.tree_util.tree_map(lambda x: np.stack([x] * num_devices), opt_state)
 def make_superbatch():
   """Constructs a superbatch, i.e. one batch of data per device."""
   # Get N batches, then split into list-of-images and list-of-labels.
