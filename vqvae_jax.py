@@ -286,7 +286,7 @@ def make_superbatch():
   superbatch = [next(train_dataset_iter) for _ in range(num_devices)]
   # Stack the superbatches to be one array with a leading dimension, rather than
   # a python list. This is what `jax.pmap` expects as input.
-  superbatch = np.stack(superbatch)
+  superbatch = np.stack(tuple(superbatch))
 
   return superbatch
 
