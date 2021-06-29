@@ -274,8 +274,10 @@ rng = jax.random.PRNGKey(42)
 train_dataset_iter = iter(train_dataset)
 params, state = forward.init(rng, next(train_dataset_iter), is_training=True)
 
+opt_state = optimizer.init(params)
+
 num_devices = jax.local_device_count()
-(params, state) = jax.tree_util.tree_map(lambda x: np.stack([x] * num_devices), (params,state))
+(params, state, opt_state) = jax.tree_util.tree_map(lambda x: np.stack([x] * num_devices), (params,state,opt_state))
 
 def make_superbatch():
   """Constructs a superbatch, i.e. one batch of data per device."""
@@ -287,7 +289,6 @@ def make_superbatch():
 
   return superbatch
 
-opt_state = optimizer.init(params)
 
 for step in range(1, num_training_updates + 1):
   data = make_superbatch()
