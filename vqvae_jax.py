@@ -243,7 +243,7 @@ def forward(data, is_training):
   model = VQVAEModel(encoder, decoder, vq_vae, pre_vq_conv1,
                      data_variance=train_data_variance)
 
-  return model(data['image'], is_training)
+  return model(data[('image')], is_training)
 
 forward = hk.transform_with_state(forward)
 optimizer = optax.adam(learning_rate)
