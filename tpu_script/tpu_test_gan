@@ -143,3 +143,30 @@ gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
 --zone ${ZONE} --project ${PROJECT_ID}
 
 python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-32-1 --restart-tpuvm-pod --env LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libtcmalloc.so.4  -- python3 /gan_test_pod.py 
+
+gcloud alpha compute tpus tpu-vm ssh jax-pod \
+  --zone europe-west4-a \
+  --worker=all \
+  --command="pip3 install dm-haiku"
+
+
+gcloud alpha compute tpus tpu-vm ssh jax-pod \
+  --zone europe-west4-a \
+  --worker=all \
+  --command="pip3 install matplotlib"
+
+gcloud alpha compute tpus tpu-vm ssh jax-pod \
+  --zone europe-west4-a \
+  --worker=all \
+  --command="pip3 install optax"
+
+gcloud alpha compute tpus tpu-vm ssh jax-pod \
+  --zone europe-west4-a \
+  --worker=all \
+  --command="pip3 install tensorflow_datasets"
+
+
+gcloud alpha compute tpus tpu-vm ssh jax-pod \
+  --zone europe-west4-a \
+  --worker=all \
+  --command="gcloud source repos clone vqgan --project=lgai-vision-tpu"

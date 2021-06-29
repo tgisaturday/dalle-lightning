@@ -162,7 +162,7 @@ class VQVAEModel(hk.Module):
 
 
 # Set hyper-parameters.
-batch_size = 32
+batch_size = 16384
 image_size = 32
 
 # 100k steps should take < 30 minutes on a modern (>= 2017) GPU.
@@ -291,5 +291,5 @@ for step in range(1, num_training_updates + 1):
           ('recon_error: %.3f ' % np.mean(train_recon_errors[-100:])) +
           ('perplexity: %.3f ' % np.mean(train_perplexities[-100:])) +
           ('vqvae loss: %.3f' % np.mean(train_vqvae_loss[-100:])))
-            
+
 
