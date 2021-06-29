@@ -162,7 +162,7 @@ class VQVAEModel(hk.Module):
 
 
 # Set hyper-parameters.
-batch_size = 16384
+batch_size = 32
 image_size = 32
 
 # 100k steps should take < 30 minutes on a modern (>= 2017) GPU.
@@ -249,7 +249,7 @@ forward = hk.transform_with_state(forward)
 optimizer = optax.adam(learning_rate)
 
 @jax.jit
-def train_step(params, state, opt_state, data):
+def train_step(params, state, opt_state, data, axis_name='i'):
   def adapt_forward(params, state, data):
     # Pack model output and state together.
     model_output, state = forward.apply(params, state, None, data, is_training=True)
@@ -259,6 +259,7 @@ def train_step(params, state, opt_state, data):
   grads, (model_output, state) = (
       jax.grad(adapt_forward, has_aux=True)(params, state, data))
 
+  grads = jax.lax.pmean(grads, axis_name)  
   updates, opt_state = optimizer.update(grads, opt_state)
   params = optax.apply_updates(params, updates)
 
@@ -272,12 +273,27 @@ train_vqvae_loss = []
 rng = jax.random.PRNGKey(42)
 train_dataset_iter = iter(train_dataset)
 params, state = forward.init(rng, next(train_dataset_iter), is_training=True)
+
+num_devices = jax.local_device_count()
+params = jax.tree_util.tree_map(lambda x: np.stack([x] * num_devices), params)
+
+def make_superbatch():
+  """Constructs a superbatch, i.e. one batch of data per device."""
+  # Get N batches, then split into list-of-images and list-of-labels.
+  superbatch = [next(train_dataset_iter) for _ in range(num_devices)]
+  # Stack the superbatches to be one array with a leading dimension, rather than
+  # a python list. This is what `jax.pmap` expects as input.
+  superbatch = np.stack(superbatch)
+
+  return superbatch
+
 opt_state = optimizer.init(params)
 
 for step in range(1, num_training_updates + 1):
-  data = next(train_dataset_iter)
-  params, state, opt_state, train_results = (
-      train_step(params, state, opt_state, data))
+  data = make_superbatch()
+
+  params, state, opt_state, train_results = jax.pmap(
+      train_step, axis_name='i')(params, state, opt_state, data)
 
   train_results = jax.device_get(train_results)
   train_losses.append(train_results['loss'])
@@ -290,6 +306,5 @@ for step in range(1, num_training_updates + 1):
           ('train loss: %f ' % np.mean(train_losses[-100:])) +
           ('recon_error: %.3f ' % np.mean(train_recon_errors[-100:])) +
           ('perplexity: %.3f ' % np.mean(train_perplexities[-100:])) +
-          ('vqvae loss: %.3f' % np.mean(train_vqvae_loss[-100:])))
-
+          ('vqvae loss: %.3f' % np.mean(train_vqvae_loss[-100:])))  
 
