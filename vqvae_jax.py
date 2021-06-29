@@ -243,7 +243,7 @@ def forward(data, is_training):
   model = VQVAEModel(encoder, decoder, vq_vae, pre_vq_conv1,
                      data_variance=train_data_variance)
 
-  return model(data['image'], is_training)
+  return model(data, is_training)
 
 forward = hk.transform_with_state(forward)
 optimizer = optax.adam(learning_rate)
@@ -283,7 +283,7 @@ opt_state = jax.tree_util.tree_map(lambda x: np.stack([x] * num_devices), opt_st
 def make_superbatch():
   """Constructs a superbatch, i.e. one batch of data per device."""
   # Get N batches, then split into list-of-images and list-of-labels.
-  superbatch = [next(train_dataset_iter) for _ in range(num_devices)]
+  superbatch = [next(train_dataset_iter)['image'] for _ in range(num_devices)]
   # Stack the superbatches to be one array with a leading dimension, rather than
   # a python list. This is what `jax.pmap` expects as input.
   superbatch = np.stack(superbatch)
