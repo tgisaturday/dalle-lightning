@@ -271,7 +271,7 @@ train_perplexities = []
 train_vqvae_loss = []
 num_devices = jax.local_device_count()
 rng = jax.random.PRNGKey(42)
-rng = jnp.broadcast_to(rng, (num_device_count,) + rng.shape)
+rng = jnp.broadcast_to(rng, (num_devices,) + rng.shape)
 train_dataset_iter = iter(train_dataset)
 params, state = forward.init(rng, next(train_dataset_iter), is_training=True)
 
