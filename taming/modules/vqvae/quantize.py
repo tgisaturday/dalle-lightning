@@ -23,7 +23,7 @@ class VectorQuantizer(nn.Module):
         self.embedding = nn.Embedding(self.n_e, self.e_dim)
         self.embedding.weight.data.uniform_(-1.0 / self.n_e, 1.0 / self.n_e)
 
-    def forward(self, z):
+    def forward(self, z, device):
         """
         Inputs the output of the encoder network z and maps it to a discrete
         one-hot vector that is the index of the closest embedding vector e_j
@@ -48,7 +48,7 @@ class VectorQuantizer(nn.Module):
         min_encoding_indices = torch.argmin(d, dim=1).unsqueeze(1)
 
         min_encodings = torch.zeros(
-            min_encoding_indices.shape[0], self.n_e).to(z)
+            min_encoding_indices.shape[0], self.n_e, device=device)
         min_encodings.scatter_(1, min_encoding_indices, 1)
 
         # dtype min encodings: torch.float32

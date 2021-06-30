@@ -45,7 +45,7 @@ class VQModel(pl.LightningModule):
     def encode(self, x):
         h = self.encoder(x)
         h = self.quant_conv(h)
-        quant, emb_loss, info = self.quantize(h)
+        quant, emb_loss, info = self.quantize(h, self.device)
         return quant, emb_loss, info
 
     def decode(self, quant):
@@ -92,8 +92,8 @@ class VQModel(pl.LightningModule):
                                             last_layer=self.get_last_layer(), split="val")
         self.log("val/aeloss", aeloss,
                    prog_bar=True, logger=False, on_step=True, on_epoch=True, sync_dist=True)
-        self.log("val/discloss", discloss,
-                   prog_bar=True, logger=False, on_step=True, on_epoch=True, sync_dist=True)                   
+        #self.log("val/discloss", discloss,
+        #           prog_bar=True, logger=False, on_step=True, on_epoch=True, sync_dist=True)                   
         metric = log_dict_ae
         metric.update(log_dict_disc)
         self.log_dict(metric,prog_bar=False, logger=True, on_step=True, on_epoch=Tru)
