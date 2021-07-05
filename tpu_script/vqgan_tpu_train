@@ -55,6 +55,10 @@ gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
 --zone ${ZONE} --project ${PROJECT_ID} --worker=all \
   --command "gcloud source repos clone vqgan --project=lgai-vision-tpu"
 
+gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
+--zone ${ZONE} --project ${PROJECT_ID} --worker=all \
+  --command "cd vqgan && git pull"
+
 
 gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
 --zone ${ZONE} --project ${PROJECT_ID} --worker=all \

@@ -93,7 +93,7 @@ if __name__ == "__main__":
     #                help='path to save logs')
     parser.add_argument('--ckpt_path', type=str,default='/home/taehoon.kim/vqgan/results/checkpoints/last.ckpt',
                     help='path to previous checkpoint')
-    parser.add_argument('--refresh_rate', type=int, default=50,
+    parser.add_argument('--refresh_rate', type=int, default=1,
                     help='progress bar refresh rate')  
 
     #training configuration
@@ -117,7 +117,7 @@ if __name__ == "__main__":
                     help='dataconfig')  
     parser.add_argument('--epochs', type=int, default=30,
                     help='dataconfig')                                    
-    parser.add_argument('--num_workers', type=int, default=16,
+    parser.add_argument('--num_workers', type=int, default=4,
                     help='dataconfig')   
     parser.add_argument('--img_size', type=int, default=256,
                     help='dataconfig')
