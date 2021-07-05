@@ -100,7 +100,7 @@ class VQModel(pl.LightningModule):
         #           prog_bar=True, logger=False, on_step=True, on_epoch=True, sync_dist=True)                   
         metric = log_dict_ae
         metric.update(log_dict_disc)
-        self.log_dict(metric,prog_bar=False, logger=True, on_step=True, on_epoch=Tru)
+        self.log_dict(metric,prog_bar=False, logger=True, on_step=True, on_epoch=True)
         return self.log_dict
 
 
