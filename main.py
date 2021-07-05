@@ -89,7 +89,7 @@ if __name__ == "__main__":
                     help='path to train dataset')
     parser.add_argument('--val_dir', type=str, default='/home/taehoon.kim/vqgan/data/val/',
                     help='path to val dataset')                    
-    parser.add_argument('--log_dir', type=str, default='/home/taehoon.kim/vqgan/results/',
+    parser.add_argument('--log_dir', type=str, default='/home/taehoon.kim/results/',
                     help='path to save logs')
     parser.add_argument('--ckpt_path', type=str,default='/home/taehoon.kim/vqgan/results/checkpoints/last.ckpt',
                     help='path to previous checkpoint')
