@@ -91,8 +91,8 @@ if __name__ == "__main__":
                     help='path to val dataset')                    
     #parser.add_argument('--log_dir', type=str, default='/home/taehoon.kim/vqgan/results/',
     #                help='path to save logs')
-    parser.add_argument('--ckpt_path', type=str,default='/home/taehoon.kim/vqgan/results/checkpoints/last.ckpt',
-                    help='path to previous checkpoint')
+    #parser.add_argument('--ckpt_path', type=str,default='/home/taehoon.kim/vqgan/results/checkpoints/last.ckpt',
+    #                help='path to previous checkpoint')
     parser.add_argument('--refresh_rate', type=int, default=1,
                     help='progress bar refresh rate')  
 
@@ -117,7 +117,7 @@ if __name__ == "__main__":
                     help='dataconfig')  
     parser.add_argument('--epochs', type=int, default=30,
                     help='dataconfig')                                    
-    parser.add_argument('--num_workers', type=int, default=1,
+    parser.add_argument('--num_workers', type=int, default=8,
                     help='dataconfig')   
     parser.add_argument('--img_size', type=int, default=256,
                     help='dataconfig')
@@ -217,14 +217,12 @@ if __name__ == "__main__":
     if args.use_tpus:
         trainer = Trainer(tpu_cores=tpus, gpus= gpus,
                           max_epochs=args.epochs, progress_bar_refresh_rate=args.refresh_rate,precision=16,
-                          num_sanity_val_steps=args.num_sanity_val_steps,
-                          resume_from_checkpoint = ckpt_path)
+                          num_sanity_val_steps=args.num_sanity_val_steps)
     else:
         trainer = Trainer(tpu_cores=tpus, gpus= gpus,
                           max_epochs=args.epochs, progress_bar_refresh_rate=args.refresh_rate,precision=16,
                           accelerator='ddp',
-                          num_sanity_val_steps=args.num_sanity_val_steps,
-                          resume_from_checkpoint = ckpt_path)
+                          num_sanity_val_steps=args.num_sanity_val_steps)
 
     
     print("Setting batch size: {} learning rate: {:.2e}".format(model.hparams.batch_size, model.hparams.learning_rate))
