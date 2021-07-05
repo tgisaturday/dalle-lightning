@@ -55,13 +55,6 @@ gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
 --zone ${ZONE} --project ${PROJECT_ID} --worker=all \
   --command "gcloud source repos clone vqgan --project=lgai-vision-tpu"
 
-gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
---zone ${ZONE} --project ${PROJECT_ID} --worker=all \
-  --command "mkdir vqgan/data/"
-
-gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
---zone ${ZONE} --project ${PROJECT_ID} --worker=all \
-  --command "mkdir vqgan/results/"  
 
 gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
 --zone ${ZONE} --project ${PROJECT_ID} --worker=all \
@@ -73,13 +66,15 @@ gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
   
 gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
 --zone ${ZONE} --project ${PROJECT_ID} --worker=all \
-  --command "gcsfuse lgaivision-coco-eu vqgan/data"
+  --command "sudo apt-get -y update && sudo apt-get -y install nfs-common"
+
 
 gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
 --zone ${ZONE} --project ${PROJECT_ID} --worker=all \
-  --command "gcsfuse lgai-vision-tpu-results vqgan/results"
+  --command "sudo mkdir -p /datasets && sudo mount 10.46.147.34:/hyperdata /datasets"
 
-python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-32 --restart-tpuvm-pod-server -- python3 /home/taehoon.kim/vqgan/main.py --use_tpus --fake_data --disc_start 1
+
+python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-32 --restart-tpuvm-pod-server -- python3 /home/taehoon.kim/vqgan/main.py --use_tpus --refresh_rate 40 --train_dir /datasets/coco_train/ --val_dir /datasets/coco_val/ --disc_start 1
 
 gcloud compute --project=lgai-vision-tpu instances create pod-ctrl-32\
   --zone=europe-west4-a  \
