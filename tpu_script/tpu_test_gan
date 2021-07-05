@@ -1,9 +1,9 @@
 gcloud services enable tpu.googleapis.com
 
-gcloud alpha compute tpus tpu-vm create tpu-vm-single --zone=europe-west4-a --accelerator-type=v3-8 --version=v2-alpha 
+gcloud alpha compute tpus tpu-vm create tpu-vm-single --zone=europe-west4-a --accelerator-type=v3-8 --version=v2-nightly-cos
 
 
-gcloud alpha compute tpus tpu-vm ssh tpu-vm-single --zone europe-west4-a --project lgai-vision-tpu
+gcloud alpha compute tpus tpu-vm ssh torch-vm-test --zone europe-west4-a --project lgai-vision-tpu
 
 export XRT_TPU_CONFIG="localservice;0;localhost:51011"
 
@@ -27,9 +27,9 @@ python3 -m torch_xla.core.xrt_run_server --port 51011 --restart
 sudo /opt/google-cloud-sdk/bin/gcloud components update
 
 export PROJECT_ID=lgai-vision-tpu
-export TPU_NAME=tpu-vm-pod-coco
+export TPU_NAME=tpu-vm-test
 export ZONE=europe-west4-a
-export RUNTIME_VERSION=v2-alpha
+export RUNTIME_VERSION=v2-nightly-cos
 
 gcloud alpha compute tpus tpu-vm create ${TPU_NAME} \
 --zone ${ZONE} --project ${PROJECT_ID} --accelerator-type v3-32 \
@@ -144,29 +144,47 @@ gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
 
 python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-32-1 --restart-tpuvm-pod --env LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libtcmalloc.so.4  -- python3 /gan_test_pod.py 
 
-gcloud alpha compute tpus tpu-vm ssh jax-pod \
+-----------------------------------------------------------
+
+gcloud alpha compute tpus tpu-vm create jax \
+  --zone europe-west4-a \
+  --accelerator-type v3-8 \
+  --version v2-alpha
+
+gcloud alpha compute tpus tpu-vm create jax-pod-512 \
+  --zone europe-west4-a \
+  --accelerator-type v3-512 \
+  --version v2-alpha \
+  --reserved
+
+gcloud alpha compute tpus tpu-vm ssh jax-pod-512 \
   --zone europe-west4-a \
   --worker=all \
   --command="pip3 install dm-haiku"
 
 
-gcloud alpha compute tpus tpu-vm ssh jax-pod \
+gcloud alpha compute tpus tpu-vm ssh jax-pod-512 \
   --zone europe-west4-a \
   --worker=all \
   --command="pip3 install matplotlib"
 
-gcloud alpha compute tpus tpu-vm ssh jax-pod \
+gcloud alpha compute tpus tpu-vm ssh jax-pod-512 \
   --zone europe-west4-a \
   --worker=all \
   --command="pip3 install optax"
 
-gcloud alpha compute tpus tpu-vm ssh jax-pod \
+gcloud alpha compute tpus tpu-vm ssh jax-pod-512 \
   --zone europe-west4-a \
   --worker=all \
   --command="pip3 install tensorflow_datasets"
 
 
-gcloud alpha compute tpus tpu-vm ssh jax-pod \
+gcloud alpha compute tpus tpu-vm ssh jax-pod-512 \
   --zone europe-west4-a \
   --worker=all \
   --command="gcloud source repos clone vqgan --project=lgai-vision-tpu"
+
+gcloud alpha compute tpus tpu-vm ssh jax-pod-512 \
+  --zone europe-west4-a \
+  --worker=all \
+  --command="python3 ./vqgan/vqvae_jax.py"  

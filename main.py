@@ -199,11 +199,8 @@ if __name__ == "__main__":
     # model
     model = VQModel(args, args.batch_size, args.learning_rate)
  
-    if args.is_pod:
-        global_rank = os.environ["CLOUD_TPU_TASK_ID"]
-        default_root_dir = os.path.join(args.log_dir,global_rank)
-    else:
-        default_root_dir = args.log_dir
+
+    default_root_dir = args.log_dir
 
     if args.resume:
         ckpt_path = args.ckpt_path

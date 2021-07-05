@@ -13,10 +13,10 @@ python3 -m torch_xla.distributed.xla_dist --tpu=${TPU_NAME} -- python3 home/taeh
 
 gcloud services enable tpu.googleapis.com
 
-gcloud alpha compute tpus tpu-vm create tpu-vm --zone=europe-west4-a --accelerator-type=v3-8 --version=v2-alpha 
+gcloud alpha compute tpus tpu-vm create tpu-vm-torch --zone=europe-west4-a --accelerator-type=v3-8 --version=v2-alpha 
 
 
-gcloud alpha compute tpus tpu-vm ssh tpu-vm --zone europe-west4-a --project lgai-vision-tpu
+gcloud alpha compute tpus tpu-vm ssh tpu-vm-torch --zone europe-west4-a --project lgai-vision-tpu
 
 export XRT_TPU_CONFIG="localservice;0;localhost:51011"
 
@@ -24,7 +24,7 @@ python3 -m torch_xla.core.xrt_run_server --port 51011 --restart
 
 python3 main.py --use_tpus
 
-
+export TF_CPP_VMODULE=tensor=5,computation_client=5,xrt_computation_client=5,aten_xla_type=1 && export TF_CPP_MIN_LOG_LEVEL=0
 
 -------------------------------
 
@@ -69,7 +69,12 @@ gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
 
 gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
 --zone ${ZONE} --project ${PROJECT_ID} --worker=all \
-  --command "pip3 install git+https://github.com/PyTorchLightning/pytorch-lightning.git"
+  --command "git clone https://github.com/kaushikb11/pytorch-lightning.git"
+
+gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
+--zone ${ZONE} --project ${PROJECT_ID} --worker=all \
+  --command "git checkout pod/progress_bar"
+
 gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
 --zone ${ZONE} --project ${PROJECT_ID} --worker=all \
   --command "gcsfuse lgaivision-coco-eu vqgan/data"
@@ -78,7 +83,7 @@ gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
 --zone ${ZONE} --project ${PROJECT_ID} --worker=all \
   --command "gcsfuse lgai-vision-tpu-results vqgan/results"
 
-python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-32 --restart-tpuvm-pod-server -- python3 /home/taehoon.kim/vqgan/main.py --use_tpus
+python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-32 --restart-tpuvm-pod-server -- python3 /home/taehoon.kim/vqgan/main.py --use_tpus --fake_data --disc_start 1
 
 gcloud compute --project=lgai-vision-tpu instances create pod-ctrl-32\
   --zone=europe-west4-a  \
