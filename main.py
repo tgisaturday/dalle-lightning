@@ -215,12 +215,13 @@ if __name__ == "__main__":
         gpus = args.gpus
 
     if args.use_tpus:
-        trainer = Trainer(tpu_cores=tpus, gpus= gpus,
-                          max_epochs=args.epochs, progress_bar_refresh_rate=args.refresh_rate,precision=16,
+        trainer = Trainer(tpu_cores=tpus, max_epochs=args.epochs, 
+                          progress_bar_refresh_rate=args.refresh_rate,
+                          precision=16,
                           num_sanity_val_steps=args.num_sanity_val_steps)
     else:
-        trainer = Trainer(tpu_cores=tpus, gpus= gpus,
-                          max_epochs=args.epochs, progress_bar_refresh_rate=args.refresh_rate,precision=16,
+        trainer = Trainer(gpus= gpus, max_epochs=args.epochs, 
+                          progress_bar_refresh_rate=args.refresh_rate,precision=16,
                           accelerator='ddp',
                           num_sanity_val_steps=args.num_sanity_val_steps)
 
