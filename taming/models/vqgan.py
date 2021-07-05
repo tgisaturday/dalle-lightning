@@ -65,8 +65,9 @@ class VQModel(pl.LightningModule):
 
     def training_step(self, batch, batch_idx, optimizer_idx):
         #temporary fix for tpu pod training progress bar
-        if self.global_step % self.args.refresh_rate == 0:
-            print('Step: %s', end='',flush=True)
+        #if self.global_step % self.args.refresh_rate = 0:
+        #    print('Step:', end='',flush=True)
+        #print('Step: %s' %self.global_step)        
         x, _ = batch
         xrec, qloss = self(x)
         if optimizer_idx == 0:
