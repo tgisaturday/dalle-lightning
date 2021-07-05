@@ -69,12 +69,8 @@ gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
 
 gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
 --zone ${ZONE} --project ${PROJECT_ID} --worker=all \
-  --command "git clone https://github.com/kaushikb11/pytorch-lightning.git"
-
-gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
---zone ${ZONE} --project ${PROJECT_ID} --worker=all \
-  --command "git checkout pod/progress_bar"
-
+  --command "pip3 install git+https://github.com/kaushikb11/pytorch-lightning.git@f1d0b655314c5fa7702e2a9068ba05a3093dbaad"
+  
 gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
 --zone ${ZONE} --project ${PROJECT_ID} --worker=all \
   --command "gcsfuse lgaivision-coco-eu vqgan/data"
