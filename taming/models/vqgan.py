@@ -16,7 +16,7 @@ class VQModel(pl.LightningModule):
                  ):
         super().__init__()
         self.save_hyperparameters()
-             
+        self.args = args     
 
         self.encoder = Encoder(ch=args.ch, out_ch=args.out_ch, ch_mult= args.ch_mult,
                                 num_res_blocks=args.num_res_blocks, 
@@ -64,6 +64,9 @@ class VQModel(pl.LightningModule):
         return dec, diff
 
     def training_step(self, batch, batch_idx, optimizer_idx):
+        #temporary fix for tpu pod training progress bar
+        if self.global_step % self.args.refresh_rate:
+            print(' ', end='',flush=True)
         x, _ = batch
         xrec, qloss = self(x)
         if optimizer_idx == 0:
