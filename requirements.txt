@@ -5,5 +5,5 @@ opencv-python
 pudb
 imageio
 imageio-ffmpeg
-git+https://github.com/PyTorchLightning/pytorch-lightning.git
+git+https://github.com/kaushikb11/pytorch-lightning.git@f1d0b655314c5fa7702e2a9068ba05a3093dbaad
 pytorch-lightning-bolts
