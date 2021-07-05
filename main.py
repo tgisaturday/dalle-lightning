@@ -93,7 +93,7 @@ if __name__ == "__main__":
                     help='path to save logs')
     parser.add_argument('--ckpt_path', type=str,default='/home/taehoon.kim/vqgan/results/checkpoints/last.ckpt',
                     help='path to previous checkpoint')
-    parser.add_argument('--refresh_rate', type=int, default=1,
+    parser.add_argument('--refresh_rate', type=int, default=50,
                     help='progress bar refresh rate')  
 
     #training configuration
