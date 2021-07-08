@@ -20,7 +20,7 @@ class VQModel(pl.LightningModule):
         super().__init__()
         self.save_hyperparameters()
         self.args = args     
-
+        
         self.encoder = Encoder(ch=args.ch, out_ch=args.out_ch, ch_mult= args.ch_mult,
                                 num_res_blocks=args.num_res_blocks, 
                                 attn_resolutions=args.attn_resolutions,
@@ -63,9 +63,7 @@ class VQModel(pl.LightningModule):
         return dec
 
     def forward(self, input):
-        print('first')
         quant, diff, _ = self.encode(input)
-        print('second')
         dec = self.decode(quant)
         return dec, diff
 
