@@ -111,7 +111,7 @@ python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-32 --restart-tpuvm-po
 
 
 export PROJECT_ID=lgai-vision-tpu
-export TPU_NAME=tpu-vm-pod-256
+export TPU_NAME=tpu-vm-pod-128
 export ZONE=europe-west4-a
 export RUNTIME_VERSION=v2-alpha
 

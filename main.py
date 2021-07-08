@@ -9,7 +9,7 @@ import torch
 from torchvision import transforms as T
 from torch.utils.data import DataLoader
 from torchvision.datasets import ImageFolder
-from taming.models.vqgan import VQModel
+from taming.models.vqgan import VQModel, GumbelVQ
 
 import pytorch_lightning as pl
 from pytorch_lightning import seed_everything
@@ -126,6 +126,7 @@ if __name__ == "__main__":
                     help='test run')                     
 
     #model configuration
+    parser.add_argument('--model', type=str, default='vqgan')
     parser.add_argument('--embed_dim', type=int, default=256,
                     help='number of embedding dimension')       
     parser.add_argument('--n_embed', type=int, default=1024,
@@ -197,8 +198,10 @@ if __name__ == "__main__":
         val_loader = DataLoader(val_dataset, batch_size=args.batch_size, num_workers=args.num_workers)  
 
     # model
-    model = VQModel(args, args.batch_size, args.learning_rate)
- 
+    if args.model == 'vqgan':
+        model = VQModel(args, args.batch_size, args.learning_rate)
+    elif args.model == 'gvqgan':
+        model = GumbelVQ(args, args.batch_size, args.learning_rate)        
 
     default_root_dir = args.log_dir
 

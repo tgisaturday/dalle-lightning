@@ -6,13 +6,16 @@ import pytorch_lightning as pl
 
 from taming.modules.diffusionmodules.model import Encoder, Decoder, VUNet
 from taming.modules.vqvae.quantize import VectorQuantizer
+from taming.modules.vqvae.quantize import GumbelQuantize
 from taming.modules.losses.vqperceptual import VQLPIPSWithDiscriminator
 
 class VQModel(pl.LightningModule):
     def __init__(self,
                  args,batch_size, learning_rate,
                  ignore_keys=[],
-                 monitor=None
+                 monitor=None,
+                 remap=None,
+                 sane_index_shape=False,  # tell vector quantizer to return indices as bhw
                  ):
         super().__init__()
         self.save_hyperparameters()
@@ -34,7 +37,8 @@ class VQModel(pl.LightningModule):
         self.loss = VQLPIPSWithDiscriminator(disc_start=args.disc_start, codebook_weight=args.codebook_weight,
                                             disc_in_channels=args.disc_in_channels,disc_weight=args.disc_weight)
 
-        self.quantize = VectorQuantizer(args.n_embed, args.embed_dim, beta=0.25)
+        self.quantize = VectorQuantizer(args.n_embed, args.embed_dim, beta=0.25,
+                                        remap=remap, sane_index_shape=sane_index_shape)
         self.quant_conv = torch.nn.Conv2d(args.z_channels, args.embed_dim, 1)
         self.post_quant_conv = torch.nn.Conv2d(args.embed_dim, args.z_channels, 1)
 
@@ -45,7 +49,7 @@ class VQModel(pl.LightningModule):
     def encode(self, x):
         h = self.encoder(x)
         h = self.quant_conv(h)
-        quant, emb_loss, info = self.quantize(h, self.device)
+        quant, emb_loss, info = self.quantize(h)
         return quant, emb_loss, info
 
     def decode(self, quant):
@@ -94,13 +98,13 @@ class VQModel(pl.LightningModule):
 
         discloss, log_dict_disc = self.loss(qloss, x, xrec, 1, self.global_step,
                                             last_layer=self.get_last_layer(), split="val")
+        rec_loss = log_dict_ae["val/rec_loss"]
+        self.log("val/rec_loss", rec_loss,
+                   prog_bar=True, logger=True, on_step=True, on_epoch=True, sync_dist=True)
         self.log("val/aeloss", aeloss,
-                   prog_bar=True, logger=False, on_step=True, on_epoch=True, sync_dist=True)
-        #self.log("val/discloss", discloss,
-        #           prog_bar=True, logger=False, on_step=True, on_epoch=True, sync_dist=True)                   
-        metric = log_dict_ae
-        metric.update(log_dict_disc)
-        self.log_dict(metric,prog_bar=False, logger=True, on_step=True, on_epoch=True)
+                   prog_bar=True, logger=True, on_step=True, on_epoch=True, sync_dist=True)
+        self.log_dict(log_dict_ae)
+        self.log_dict(log_dict_disc)
         return self.log_dict
 
 
@@ -118,5 +122,100 @@ class VQModel(pl.LightningModule):
 
     def get_last_layer(self):
         return self.decoder.conv_out.weight
+        
+    def log_images(self, batch, **kwargs):
+        log = dict()
+        x, _ = batch
+        x = x.to(self.device)
+        xrec, _ = self(x)
+        if x.shape[1] > 3:
+            # colorize with random projection
+            assert xrec.shape[1] > 3
+            x = self.to_rgb(x)
+            xrec = self.to_rgb(xrec)
+        log["inputs"] = x
+        log["reconstructions"] = xrec
+        return log
 
 
+class GumbelVQ(VQModel):
+    def __init__(self,
+                 args, batch_size, learning_rate,
+                 ignore_keys=[],
+                 monitor=None,
+                 temperature = 0.9,
+                 kl_weight=1e-8,
+                 remap=None,
+                 ):
+        self.save_hyperparameters()
+        self.args = args    
+        super().__init__( args, batch_size, learning_rate,
+                         ignore_keys=ignore_keys,
+                         monitor=monitor,
+                         )
+
+        self.loss.n_classes = args.n_embed
+        self.vocab_size = args.n_embed
+        self.temperature = temperature
+        self.quantize = GumbelQuantize(args.z_channels, args.embed_dim,
+                                       n_embed=args.n_embed,
+                                       kl_weight=kl_weight, temp_init=temperature,
+                                       remap=remap)
+
+    def encode_to_prequant(self, x):
+        h = self.encoder(x)
+        h = self.quant_conv(h)
+        return h
+
+    def decode_code(self, code_b):
+        raise NotImplementedError
+
+    def training_step(self, batch, batch_idx, optimizer_idx):
+        x, _ = batch
+        xrec, qloss = self(x)
+
+        if optimizer_idx == 0:
+            # autoencode
+            aeloss, log_dict_ae = self.loss(qloss, x, xrec, optimizer_idx, self.global_step,
+                                            last_layer=self.get_last_layer(), split="train")
+
+            self.log_dict(log_dict_ae, prog_bar=False, logger=True, on_step=True, on_epoch=True)
+            return aeloss
+
+        if optimizer_idx == 1:
+            # discriminator
+            discloss, log_dict_disc = self.loss(qloss, x, xrec, optimizer_idx, self.global_step,
+                                            last_layer=self.get_last_layer(), split="train")
+            self.log_dict(log_dict_disc, prog_bar=False, logger=True, on_step=True, on_epoch=True)
+            return discloss
+
+    def validation_step(self, batch, batch_idx):
+        x, _ = batch
+        xrec, qloss = self(x, return_pred_indices=True)
+        aeloss, log_dict_ae = self.loss(qloss, x, xrec, 0, self.global_step,
+                                        last_layer=self.get_last_layer(), split="val")
+
+        discloss, log_dict_disc = self.loss(qloss, x, xrec, 1, self.global_step,
+                                            last_layer=self.get_last_layer(), split="val")
+        rec_loss = log_dict_ae["val/rec_loss"]
+        self.log("val/rec_loss", rec_loss,
+                 prog_bar=True, logger=True, on_step=False, on_epoch=True, sync_dist=True)
+        self.log("val/aeloss", aeloss,
+                 prog_bar=True, logger=True, on_step=False, on_epoch=True, sync_dist=True)
+        self.log_dict(log_dict_ae)
+        self.log_dict(log_dict_disc)
+        return self.log_dict
+
+    def log_images(self, batch, **kwargs):
+        log = dict()
+        x, _ = batch
+        x = x.to(self.device)
+        # encode
+        h = self.encoder(x)
+        h = self.quant_conv(h)
+        quant, _, _ = self.quantize(h)
+        # decode
+        x_rec = self.decode(quant)
+        log["inputs"] = x
+        log["reconstructions"] = x_rec
+        return log        
