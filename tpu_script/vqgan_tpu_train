@@ -55,14 +55,22 @@ gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
 --zone ${ZONE} --project ${PROJECT_ID} --worker=all \
   --command "git clone https://github.com/tgisaturday/taming-transformers-tpu.git"
 
+
 gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
 --zone ${ZONE} --project ${PROJECT_ID} --worker=all \
   --command "cd taming-transformers-tpu && git pull"
 
+gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
+--zone ${ZONE} --project ${PROJECT_ID} --worker=all \
+  --command "pip3 uninstall pytorch-lightning"
 
 gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
 --zone ${ZONE} --project ${PROJECT_ID} --worker=all \
   --command "pip3 install -r taming-transformers-tpu/requirements.txt"
+
+gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
+--zone ${ZONE} --project ${PROJECT_ID} --worker=all \
+  --command "pip3 install git+https://github.com/tgisaturday/pytorch-lightning.git"
 
 gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
 --zone ${ZONE} --project ${PROJECT_ID} --worker=all \
@@ -77,15 +85,17 @@ gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
 --zone ${ZONE} --project ${PROJECT_ID} --worker=all \
   --command "sudo mkdir -p /datasets && sudo mount 10.46.147.34:/hyperdata /datasets"
 
+python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-128 --restart-tpuvm-pod-server -- python3 /home/taehoon.kim/taming-transformers-tpu/main.py --use_tpus --refresh_rate 1 --fake_data --disc_start 1
+
 
 python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod --restart-tpuvm-pod-server -- python3 /home/taehoon.kim/taming-transformers-tpu/main.py --use_tpus --refresh_rate 1 --train_dir /datasets/coco_train/ --val_dir /datasets/coco_val/ --disc_start 1
 
-python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-64 --restart-tpuvm-pod-server -- python3 /home/taehoon.kim/vqgan/main.py --use_tpus --refresh_rate 1 --train_dir /datasets/coco_train/ --val_dir /datasets/coco_val/ --disc_start 1
+python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-64 --restart-tpuvm-pod-server -- python3 /home/taehoon.kim/taming-transformers-tpu/main.py --use_tpus --refresh_rate 1 --train_dir /datasets/coco_train/ --val_dir /datasets/coco_val/ --disc_start 1
 
-python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-128 --restart-tpuvm-pod-server -- python3 /home/taehoon.kim/vqgan/main.py --use_tpus --refresh_rate 1 --train_dir /datasets/coco_train/ --val_dir /datasets/coco_val/ --disc_start 1
+python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-128 --restart-tpuvm-pod-server -- python3 /home/taehoon.kim/taming-transformers-tpu/main.py --use_tpus --refresh_rate 1 --train_dir /datasets/coco_train/ --val_dir /datasets/coco_val/ --disc_start 1
 
 
-python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-256 --restart-tpuvm-pod-server -- python3 /home/taehoon.kim/vqgan/main.py --use_tpus --refresh_rate 1 --train_dir /datasets/coco_train/ --val_dir /datasets/coco_val/ --disc_start 1
+python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-256 --restart-tpuvm-pod-server -- python3 /home/taehoon.kim/taming-transformers-tpu/main.py --use_tpus --refresh_rate 1 --train_dir /datasets/coco_train/ --val_dir /datasets/coco_val/ --disc_start 1
 
 gcloud compute --project=lgai-vision-tpu instances create pod-ctrl-32\
   --zone=europe-west4-a  \

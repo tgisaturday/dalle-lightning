@@ -30,16 +30,16 @@ class BoringModel(LightningModule):
 
     def training_step(self, batch, batch_idx):
         loss = self(batch).sum()
-        #self.log("train_loss", loss)
+        self.log("train_loss", loss)
         return {"loss": loss}
 
     def validation_step(self, batch, batch_idx):
         loss = self(batch).sum()
-        #self.log("valid_loss", loss)
+        self.log("valid_loss", loss)
 
     def test_step(self, batch, batch_idx):
         loss = self(batch).sum()
-       # self.log("test_loss", loss)
+        self.log("test_loss", loss)
 
     def configure_optimizers(self):
         return torch.optim.SGD(self.layer.parameters(), lr=0.1)
@@ -49,8 +49,7 @@ def run():
     train_data = DataLoader(RandomDataset(32, 64), batch_size=2)
     val_data = DataLoader(RandomDataset(32, 64), batch_size=2)
     test_data = DataLoader(RandomDataset(32, 64), batch_size=2)
-    global_rank = int(os.environ["CLOUD_TPU_TASK_ID"])
-    default_root_dir = '/home/taehoon.kim/temp/'
+
     model = BoringModel()
     trainer = Trainer(
         default_root_dir = os.getcwd(),
@@ -62,8 +61,7 @@ def run():
         weights_summary=None,
     )
     trainer.fit(model, train_dataloader=train_data, val_dataloaders=val_data)
-#    if global_rank == 0:
- #       trainer.save_checkpoint(default_root_dir+'example.ckpt')
+
     trainer.test(model, test_dataloaders=test_data)
 
 
