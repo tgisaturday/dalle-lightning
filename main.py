@@ -117,7 +117,7 @@ if __name__ == "__main__":
                     help='dataconfig')  
     parser.add_argument('--epochs', type=int, default=30,
                     help='dataconfig')                                    
-    parser.add_argument('--num_workers', type=int, default=8,
+    parser.add_argument('--num_workers', type=int, default=0,
                     help='dataconfig')   
     parser.add_argument('--img_size', type=int, default=256,
                     help='dataconfig')
