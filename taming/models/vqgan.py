@@ -72,6 +72,7 @@ class VQModel(pl.LightningModule):
         #if self.global_step % self.args.refresh_rate = 0:
         #    print('Step:', end='',flush=True)
         #print('Step: %s' %self.global_step)        
+        print('fuck')
         x, _ = batch
         xrec, qloss = self(x)
         if optimizer_idx == 0:
