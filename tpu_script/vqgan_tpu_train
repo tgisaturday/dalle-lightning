@@ -33,12 +33,12 @@ python3 -m torch_xla.core.xrt_run_server --port 51011 --restart
 sudo /opt/google-cloud-sdk/bin/gcloud components update
 
 export PROJECT_ID=lgai-vision-tpu
-export TPU_NAME=tpu-vm-pod-128
+export TPU_NAME=tpu-vm-pod
 export ZONE=europe-west4-a
 export RUNTIME_VERSION=v2-alpha
 
 gcloud alpha compute tpus tpu-vm create ${TPU_NAME} \
---zone ${ZONE} --project ${PROJECT_ID} --accelerator-type v3-128 \
+--zone ${ZONE} --project ${PROJECT_ID} --accelerator-type v3-32 \
 --version ${RUNTIME_VERSION}  --reserved 
 
 gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
@@ -53,16 +53,16 @@ gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
 
 gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
 --zone ${ZONE} --project ${PROJECT_ID} --worker=all \
-  --command "gcloud source repos clone vqgan --project=lgai-vision-tpu"
+  --command "git clone https://github.com/tgisaturday/taming-transformers-tpu.git"
 
 gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
 --zone ${ZONE} --project ${PROJECT_ID} --worker=all \
-  --command "cd vqgan && git pull"
+  --command "cd taming-transformers-tpu && git pull"
 
 
 gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
 --zone ${ZONE} --project ${PROJECT_ID} --worker=all \
-  --command "pip3 install -r vqgan/requirements.txt"
+  --command "pip3 install -r taming-transformers-tpu/requirements.txt"
 
 gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
 --zone ${ZONE} --project ${PROJECT_ID} --worker=all \

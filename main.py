@@ -85,13 +85,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='VQGAN(Taming Transformers) for Pytorch TPU')
 
     #path configuration
-    parser.add_argument('--train_dir', type=str, default='/home/taehoon.kim/vqgan/data/train/',
+    parser.add_argument('--train_dir', type=str, default='/home/taehoon.kim/taming-transformers-tpu/data/train/',
                     help='path to train dataset')
-    parser.add_argument('--val_dir', type=str, default='/home/taehoon.kim/vqgan/data/val/',
+    parser.add_argument('--val_dir', type=str, default='/home/taehoon.kim/taming-transformers-tpu/data/val/',
                     help='path to val dataset')                    
     parser.add_argument('--log_dir', type=str, default='/home/taehoon.kim/results/',
                     help='path to save logs')
-    parser.add_argument('--ckpt_path', type=str,default='/home/taehoon.kim/vqgan/results/checkpoints/last.ckpt',
+    parser.add_argument('--ckpt_path', type=str,default='/home/taehoon.kim/results/checkpoints/last.ckpt',
                     help='path to previous checkpoint')
     parser.add_argument('--refresh_rate', type=int, default=1,
                     help='progress bar refresh rate')  
