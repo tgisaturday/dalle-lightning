@@ -11,72 +11,13 @@ from torch.utils.data import DataLoader
 from torchvision.datasets import ImageFolder
 from pl_dalle.models.vqgan import VQGAN, GumbelVQGAN
 from pl_dalle.models.vqvae import VQVAE, GumbelVQVAE
-
+from pl_dalle.models.vqvae2 import VQVAE2
 import pytorch_lightning as pl
 from pytorch_lightning import seed_everything
 from pytorch_lightning import LightningDataModule, LightningModule, Trainer
 from pytorch_lightning.utilities.distributed import rank_zero_only
 
 
-class ImageDataModule(LightningDataModule):
-
-    def __init__(self, train_dir, val_dir, batch_size, num_workers, img_size, fake_data=False):
-        super().__init__()
-        self.train_dir = train_dir
-        self.val_dir = val_dir
-        self.batch_size = batch_size
-        self.num_workers = num_workers
-        self.fake_data = fake_data
-        self.img_size = img_size
-
-        self.transform = T.Compose([
-                                    T.Lambda(lambda img: img.convert('RGB') if img.mode != 'RGB' else img),
-                                    T.Resize(self.img_size),
-                                    T.CenterCrop(self.img_size),
-                                    T.ToTensor()
-                                    ])
-                                    
-    def setup(self, stage=None):
-        if not self.fake_data:
-            self.train_dataset = ImageFolder(self.train_dir, self.transform)
-            self.val_dataset = ImageFolder(self.val_dir, self.transform)
-  
-
-    def train_dataloader(self):
-        if self.fake_data:
-            import torch_xla.utils.utils as xu
-            import torch_xla.core.xla_model as xm
-            train_loader = xu.SampleGenerator(
-                            data=(torch.zeros(self.batch_size, 3, self.img_size , self.img_size ),
-                            torch.zeros(self.batch_size, dtype=torch.int64)),
-                            sample_count=1200000 // self.batch_size // xm.xrt_world_size())
-            return train_loader
-        else:
-            return DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=self.num_workers,shuffle=True)
-
-    def val_dataloader(self):
-        if self.fake_data:
-            import torch_xla.utils.utils as xu
-            import torch_xla.core.xla_model as xm            
-            val_loader = xu.SampleGenerator(
-                            data=(torch.zeros(self.batch_size, 3, self.img_size , self.img_size ),
-                            torch.zeros(self.batch_size, dtype=torch.int64)),
-                            sample_count=50000 // self.batch_size // xm.xrt_world_size())            
-            return val_loader
-        else:
-            return DataLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers)
-
-    def test_dataloader(self):
-        if self.fake_data:
-            import torch_xla.utils.utils as xu
-            import torch_xla.core.xla_model as xm
-            val_loader = xu.SampleGenerator(
-                            data=(torch.zeros(self.batch_size, 3, self.img_size , self.img_size ),
-                            torch.zeros(self.batch_size, dtype=torch.int64)),
-                            sample_count=50000 // self.batch_size // xm.xrt_world_size())            
-            return val_loader            
-        else:
-            return DataLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers)
 
 if __name__ == "__main__":
 
@@ -86,13 +27,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='VQGAN(Taming Transformers) for Pytorch TPU')
 
     #path configuration
-    parser.add_argument('--train_dir', type=str, default='/home/taehoon.kim/taming-transformers-tpu/data/train/',
+    parser.add_argument('--train_dir', type=str, default='dalle-lightning-tpu/data/train/',
                     help='path to train dataset')
-    parser.add_argument('--val_dir', type=str, default='/home/taehoon.kim/taming-transformers-tpu/data/val/',
+    parser.add_argument('--val_dir', type=str, default='dalle-lightning-tpu/data/val/',
                     help='path to val dataset')                    
-    parser.add_argument('--log_dir', type=str, default='/home/taehoon.kim/results/',
+    parser.add_argument('--log_dir', type=str, default='dalle-lightning-tpu/results/',
                     help='path to save logs')
-    parser.add_argument('--ckpt_path', type=str,default='/home/taehoon.kim/results/checkpoints/last.ckpt',
+    parser.add_argument('--ckpt_path', type=str,default='dalle-lightning-tpu/results/checkpoints/last.ckpt',
                     help='path to previous checkpoint')
     parser.add_argument('--refresh_rate', type=int, default=1,
                     help='progress bar refresh rate')  
@@ -159,6 +100,13 @@ if __name__ == "__main__":
     parser.add_argument('--dropout', type=float, default=0.0,
                     help='model settings')  
 
+    #vqvae2. to-be merged
+    parser.add_argument('--num_res_ch', type=int, default=32,
+                    help='model settings')  
+    parser.add_argument('--decay', type=float, default=0.99,
+                    help='model settings')                                      
+    parser.add_argument('--latent_weight', type=float, default=0.25,
+                    help='model settings')
     #loss configuration
     parser.add_argument('--smooth_l1_loss', dest = 'smooth_l1_loss', action = 'store_true')
     parser.add_argument('--kl_loss_weight', type = float, default=1e-8,
@@ -210,14 +158,16 @@ if __name__ == "__main__":
     # model
     if args.model == 'vqgan':
         model = VQGAN(args, args.batch_size, args.learning_rate)
-    elif args.model == 'gvqgan':
+    elif args.model == 'dvqgan':
         model = GumbelVQGAN(args, args.batch_size, args.learning_rate)        
     elif args.model == 'vqvae':
         model = VQVAE(args, args.batch_size, args.learning_rate)
-    elif args.model == 'gvqvae':
+    elif args.model == 'dvqvae':
         model = GumbelVQVAE(args, args.batch_size, args.learning_rate) 
-    default_root_dir = args.log_dir
+    elif args.model == 'vqvae2':
+        model = VQVAE2(args, args.batch_size, args.learning_rate) 
 
+    default_root_dir = args.log_dir
     if args.resume:
         ckpt_path = args.ckpt_path
     else:
