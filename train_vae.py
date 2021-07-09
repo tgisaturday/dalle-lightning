@@ -12,6 +12,7 @@ from torchvision.datasets import ImageFolder
 from pl_dalle.models.vqgan import VQGAN, GumbelVQGAN
 from pl_dalle.models.vqvae import VQVAE, GumbelVQVAE
 from pl_dalle.models.vqvae2 import VQVAE2
+
 import pytorch_lightning as pl
 from pytorch_lightning import seed_everything
 from pytorch_lightning import LightningDataModule, LightningModule, Trainer
@@ -158,11 +159,11 @@ if __name__ == "__main__":
     # model
     if args.model == 'vqgan':
         model = VQGAN(args, args.batch_size, args.learning_rate)
-    elif args.model == 'dvqgan':
+    elif args.model == 'gvqgan':
         model = GumbelVQGAN(args, args.batch_size, args.learning_rate)        
     elif args.model == 'vqvae':
         model = VQVAE(args, args.batch_size, args.learning_rate)
-    elif args.model == 'dvqvae':
+    elif args.model == 'gvqvae':
         model = GumbelVQVAE(args, args.batch_size, args.learning_rate) 
     elif args.model == 'vqvae2':
         model = VQVAE2(args, args.batch_size, args.learning_rate) 
