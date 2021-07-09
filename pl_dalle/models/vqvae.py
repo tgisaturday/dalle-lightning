@@ -16,8 +16,7 @@ class VQVAE(pl.LightningModule):
                  ignore_keys=[],
                  monitor=None,
                  remap=None,
-                 same_index_shape=False,  # tell vector quantizer to return indices as bhw
-                 normalization = ((0.5,) * 3, (0.5,) * 3)
+                 same_index_shape=False  # tell vector quantizer to return indices as bhw
                  ):
         super().__init__()
         self.save_hyperparameters()
@@ -36,7 +35,7 @@ class VQVAE(pl.LightningModule):
                                 dropout=args.dropout, in_channels=args.in_channels, 
                                 resolution=args.resolution, z_channels=args.z_channels)
         
-        self.normalization = normalization
+
         self.smooth_l1_loss = args.smooth_l1_loss
         self.quantize = VectorQuantizer(args.n_embed, args.embed_dim, beta=0.25,
                                         remap=remap, same_index_shape=same_index_shape)
@@ -46,16 +45,6 @@ class VQVAE(pl.LightningModule):
 
         if monitor is not None:
             self.monitor = monitor
-
-    def norm(self, images):
-        if not exists(self.normalization):
-            return images
-
-        means, stds = map(lambda t: torch.as_tensor(t).to(images), self.normalization)
-        means, stds = map(lambda t: rearrange(t, 'c -> () c () ()'), (means, stds))
-        images = images.clone()
-        images.sub_(means).div_(stds)
-        return images
 
     def encode(self, x):
         h = self.encoder(x)
@@ -92,9 +81,23 @@ class VQVAE(pl.LightningModule):
             aeloss = F.smooth_l1_loss(x, xrec, self.global_step)
         else:
             aeloss = F.mse_loss(x, xrec, self.global_step)            
-        self.log("train/rec_loss", aeloss, prog_bar=True, logger=True, on_step=True, on_epoch=True)
-        self.log("train/embed_loss", qloss, prog_bar=True, logger=True, on_step=True, on_epoch=True)
-        return aeloss + qloss
+        self.log("train/rec_loss", aeloss, prog_bar=True, logger=False, on_step=True, on_epoch=True)
+        self.log("train/embed_loss", qloss, prog_bar=True, logger=False, on_step=True, on_epoch=True)
+        loss = aeloss + qloss
+        log_dict = dict()      
+        if x.shape[1] > 3:
+            # colorize with random projection
+            assert xrec.shape[1] > 3
+            x = self.to_rgb(x)
+            xrec = self.to_rgb(xrec)
+        log_dict["train/rec_loss"] = aeloss
+        log_dict["train/embed_loss"] = qloss
+        log_dict["train/total_loss"] = loss                      
+        log_dict["train/inputs"] = x
+        log_dict["train/reconstructions"] = xrec 
+
+        self.log_dict(log_dict, prog_bar=False, logger=True, on_step=True, on_epoch=True)
+        return loss
 
     def validation_step(self, batch, batch_idx):
         x, _ = batch
@@ -103,9 +106,23 @@ class VQVAE(pl.LightningModule):
             aeloss = F.smooth_l1_loss(x, xrec, self.global_step)
         else:
             aeloss = F.mse_loss(x, xrec, self.global_step)            
-        self.log("val/rec_loss", aeloss, prog_bar=True, logger=True, on_step=True, on_epoch=True)
-        self.log("val/embed_loss", qloss, prog_bar=True, logger=True, on_step=True, on_epoch=True)
-        return aeloss + qloss
+        self.log("val/rec_loss", aeloss, prog_bar=True, logger=False, on_step=True, on_epoch=True)
+        self.log("val/embed_loss", qloss, prog_bar=True, logger=False, on_step=True, on_epoch=True)
+        loss = aeloss + qloss
+        log_dict = dict()      
+        if x.shape[1] > 3:
+            # colorize with random projection
+            assert xrec.shape[1] > 3
+            x = self.to_rgb(x)
+            xrec = self.to_rgb(xrec)
+        log_dict["val/rec_loss"] = aeloss
+        log_dict["val/embed_loss"] = qloss
+        log_dict["val/total_loss"] = loss                      
+        log_dict["val/inputs"] = x
+        log_dict["val/reconstructions"] = xrec 
+
+        self.log_dict(log_dict, prog_bar=False, logger=True, on_step=True, on_epoch=True)
+        return log_dict
 
 
     def configure_optimizers(self):
@@ -180,9 +197,23 @@ class GumbelVQVAE(VQVAE):
             aeloss = F.smooth_l1_loss(x, xrec, self.global_step)
         else:
             aeloss = F.mse_loss(x, xrec, self.global_step)            
-        self.log("train/rec_loss", aeloss, prog_bar=True, logger=True, on_step=True, on_epoch=True)
-        self.log("train/embed_loss", qloss, prog_bar=True, logger=True, on_step=True, on_epoch=True)
-        return aeloss + qloss
+        self.log("train/rec_loss", aeloss, prog_bar=True, logger=False, on_step=True, on_epoch=True)
+        self.log("train/embed_loss", qloss, prog_bar=True, logger=False, on_step=True, on_epoch=True)
+        loss = aeloss + qloss
+        log_dict = dict()      
+        if x.shape[1] > 3:
+            # colorize with random projection
+            assert xrec.shape[1] > 3
+            x = self.to_rgb(x)
+            xrec = self.to_rgb(xrec)
+        log_dict["train/rec_loss"] = aeloss
+        log_dict["train/embed_loss"] = qloss
+        log_dict["train/total_loss"] = loss                      
+        log_dict["train/inputs"] = x
+        log_dict["train/reconstructions"] = xrec 
+
+        self.log_dict(log_dict, prog_bar=False, logger=True, on_step=True, on_epoch=True)
+        return loss
 
     def validation_step(self, batch, batch_idx):
         x, _ = batch
@@ -192,9 +223,23 @@ class GumbelVQVAE(VQVAE):
             aeloss = F.smooth_l1_loss(x, xrec, self.global_step)
         else:
             aeloss = F.mse_loss(x, xrec, self.global_step)            
-        self.log("val/rec_loss", aeloss, prog_bar=True, logger=True, on_step=True, on_epoch=True)
-        self.log("val/embed_loss", qloss, prog_bar=True, logger=True, on_step=True, on_epoch=True)
-        return aeloss + qloss
+        self.log("val/rec_loss", aeloss, prog_bar=True, logger=False, on_step=True, on_epoch=True)
+        self.log("val/embed_loss", qloss, prog_bar=True, logger=False, on_step=True, on_epoch=True)
+        loss = aeloss + qloss
+        log_dict = dict()      
+        if x.shape[1] > 3:
+            # colorize with random projection
+            assert xrec.shape[1] > 3
+            x = self.to_rgb(x)
+            xrec = self.to_rgb(xrec)
+        log_dict["val/rec_loss"] = aeloss
+        log_dict["val/embed_loss"] = qloss
+        log_dict["val/total_loss"] = loss                      
+        log_dict["val/inputs"] = x
+        log_dict["val/reconstructions"] = xrec 
+
+        self.log_dict(log_dict, prog_bar=False, logger=True, on_step=True, on_epoch=True)
+        return log_dict
 
     def log_images(self, batch, **kwargs):
         log = dict()

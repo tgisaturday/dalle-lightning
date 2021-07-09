@@ -3,7 +3,7 @@ from torch import nn
 from torch.nn import functional as F
 import pytorch_lightning as pl
 
-from torch import distributed as dist
+#from torch import distributed as dist
 # import vqvae.distributed as dist_fn
 
 # Copyright 2018 The Sonnet Authors. All Rights Reserved.
@@ -24,7 +24,7 @@ from torch import distributed as dist
 
 # Borrowed from https://github.com/deepmind/sonnet and ported it to PyTorch
 
-class VQVAE(pl.LightningModule):
+class VQVAE2(pl.LightningModule):
     def __init__(self,
                  args,batch_size, learning_rate,
                  ignore_keys=[],
@@ -41,7 +41,7 @@ class VQVAE(pl.LightningModule):
         self.enc_b = Encoder(args.in_channels, args.ch, args.num_res_blocks, args.num_res_ch, stride=4)
         self.enc_t = Encoder(args.ch, args.ch, args.num_res_blocks, args.num_res_ch, stride=2)
         self.quantize_conv_t = nn.Conv2d(args.ch, args.embed_dim, 1)
-        self.quantize_t = Quantize(args.embed_dim, args.n_embed)
+        self.quantize_t = Quantize(args.embed_dim, args.n_embed, args.decay)
         self.dec_t = Decoder(
             args.embed_dim, args.embed_dim, args.ch, args.num_res_blocks, args.num_res_ch, stride=2
         )
@@ -103,22 +103,30 @@ class VQVAE(pl.LightningModule):
 
         return dec
 
-    def training_step(self, batch, batch_idx):
-        #temporary fix for tpu pod training progress bar
-        #if self.global_step % self.args.refresh_rate = 0:
-        #    print('Step:', end='',flush=True)
-        #print('Step: %s' %self.global_step)        
-        
+    def training_step(self, batch, batch_idx):         
         x, _ = batch
         xrec, qloss = self(x)
 
         recon_loss = self.recon_loss(xrec, x)
         latent_loss = qloss.mean()
         loss = recon_loss + self.latent_loss_weight * latent_loss
-        self.log("train/recloss", recon_loss, prog_bar=True, logger=True, on_step=True, on_epoch=True)
-        self.log("train/latentloss", latent_loss, prog_bar=True, logger=True, on_step=True, on_epoch=True)
-        self.log("train/totalloss", loss, prog_bar=True, logger=True, on_step=True, on_epoch=True)
-        
+        self.log("train/rec_loss", recon_loss, prog_bar=True, logger=False, on_step=True, on_epoch=True)
+        self.log("train/embed_loss", latent_loss, prog_bar=True, logger=False, on_step=True, on_epoch=True)
+        self.log("train/total_loss", loss, prog_bar=True, logger=False, on_step=True, on_epoch=True)
+        log_dict = dict()      
+        if x.shape[1] > 3:
+            # colorize with random projection
+            assert xrec.shape[1] > 3
+            x = self.to_rgb(x)
+            xrec = self.to_rgb(xrec)
+        log_dict["train/rec_loss"] = recon_loss
+        log_dict["train/embed_loss"] = latent_loss
+        log_dict["train/total_loss"] = loss                      
+        log_dict["train/inputs"] = x
+        log_dict["train/reconstructions"] = xrec 
+
+        self.log_dict(log_dict, prog_bar=False, logger=True, on_step=True, on_epoch=True)
+
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -129,13 +137,27 @@ class VQVAE(pl.LightningModule):
         latent_loss = qloss.mean()
         loss = recon_loss + self.latent_loss_weight * latent_loss
         
-        self.log("val/recloss", recon_loss,
-                   prog_bar=True, logger=True, on_step=True, on_epoch=True, sync_dist=True)
-        self.log("val/latentloss", latent_loss,
-                   prog_bar=True, logger=True, on_step=True, on_epoch=True, sync_dist=True)
-        self.log("val/totalloss", loss,
-                   prog_bar=True, logger=True, on_step=True, on_epoch=True, sync_dist=True)
-        return loss
+        self.log("val/rec_loss", recon_loss,
+                   prog_bar=True, logger=False, on_step=True, on_epoch=True, sync_dist=True)
+        self.log("val/embed_loss", latent_loss,
+                   prog_bar=True, logger=False, on_step=True, on_epoch=True, sync_dist=True)
+        self.log("val/total_loss", loss,
+                   prog_bar=True, logger=False, on_step=True, on_epoch=True, sync_dist=True)
+        log_dict = dict()      
+        if x.shape[1] > 3:
+            # colorize with random projection
+            assert xrec.shape[1] > 3
+            x = self.to_rgb(x)
+            xrec = self.to_rgb(xrec)
+
+        log_dict["val/rec_loss"] = recon_loss
+        log_dict["val/embed_loss"] = latent_loss
+        log_dict["val/total_loss"] = loss                      
+        log_dict["val/inputs"] = x
+        log_dict["val/reconstructions"] = xrec      
+        self.log_dict(log_dict, prog_bar=False, logger=True, on_step=True, on_epoch=True)
+
+        return self.log_dict
 
     def configure_optimizers(self):
         lr = self.hparams.learning_rate
@@ -185,8 +207,8 @@ class Quantize(nn.Module):
             embed_onehot_sum = embed_onehot.sum(0)
             embed_sum = flatten.transpose(0, 1) @ embed_onehot
 
-            self.all_reduce(embed_onehot_sum)
-            self.all_reduce(embed_sum)
+            #self.all_reduce(embed_onehot_sum)
+            #self.all_reduce(embed_sum)
 
             self.cluster_size.data.mul_(self.decay).add_(
                 embed_onehot_sum, alpha=1 - self.decay
@@ -206,7 +228,7 @@ class Quantize(nn.Module):
 
     def embed_code(self, embed_id):
         return F.embedding(embed_id, self.embed.transpose(0, 1))
-
+    '''
     def all_reduce(self, tensor, op=dist.ReduceOp.SUM):
         world_size = self.get_world_size()
 
@@ -225,7 +247,7 @@ class Quantize(nn.Module):
             return 1
 
         return dist.get_world_size()
-
+    '''
 
 class ResBlock(nn.Module):
     def __init__(self, in_channel, channel):

@@ -52,7 +52,7 @@ if __name__ == "__main__":
                     help='number of gpus')                   
     parser.add_argument('--num_sanity_val_steps', type=int, default=0,
                     help='num_sanity_val_steps')                     
-    parser.add_argument('--learning_rate', default=4.5e-6, type=float,
+    parser.add_argument('--learning_rate', default=4.5e-3, type=float,
                     help='base learning rate')
     parser.add_argument('--lr_decay_rate', type = float, default = 0.98, 
                     help = 'learning rate decay')
@@ -136,7 +136,8 @@ if __name__ == "__main__":
                                     T.Lambda(lambda img: img.convert('RGB') if img.mode != 'RGB' else img),
                                     T.Resize(args.img_size),
                                     T.CenterCrop(args.img_size),
-                                    T.ToTensor()
+                                    T.ToTensor(),
+                                    T.Normalize(((0.5,) * 3, (0.5,) * 3)),
                                     ])
     if not args.fake_data:
         train_dataset = ImageFolder(args.train_dir, transform)

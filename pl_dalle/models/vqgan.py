@@ -82,17 +82,30 @@ class VQGAN(pl.LightningModule):
             # autoencode
             aeloss, log_dict_ae = self.loss(qloss, x, xrec, optimizer_idx, self.global_step,
                                             last_layer=self.get_last_layer(), split="train")
-            self.log("train/aeloss", aeloss, prog_bar=True, logger=False, on_step=True, on_epoch=True)
-            self.log_dict(log_dict_ae, prog_bar=False, logger=True, on_step=True, on_epoch=True)
+            self.log("train/rec_loss", aeloss, prog_bar=True, logger=False, on_step=True, on_epoch=True)
+            log_dict = log_dict_ae     
+            if x.shape[1] > 3:
+                # colorize with random projection
+                assert xrec.shape[1] > 3
+                x = self.to_rgb(x)
+                xrec = self.to_rgb(xrec)
+            log_dict["train/rec_loss"] = aeloss
+            log_dict["train/embed_loss"] = qloss                     
+            log_dict["train/inputs"] = x
+            log_dict["train/reconstructions"] = xrec 
+            self.log_dict(log_dict, prog_bar=False, logger=True, on_step=True, on_epoch=True)
+
             return aeloss
 
         if optimizer_idx == 1:
             # discriminator
             discloss, log_dict_disc = self.loss(qloss, x, xrec, optimizer_idx, self.global_step,
                                             last_layer=self.get_last_layer(), split="train")
-            self.log("train/discloss", discloss, prog_bar=True,logger=False, on_step=True, on_epoch=True)
+            self.log("train/dis_closs", discloss, prog_bar=True,logger=False, on_step=True, on_epoch=True)
             self.log_dict(log_dict_disc, prog_bar=False, logger=True, on_step=True, on_epoch=True)
             return discloss
+
+            
 
     def validation_step(self, batch, batch_idx):
         x, _ = batch
@@ -102,13 +115,24 @@ class VQGAN(pl.LightningModule):
 
         discloss, log_dict_disc = self.loss(qloss, x, xrec, 1, self.global_step,
                                             last_layer=self.get_last_layer(), split="val")
-        rec_loss = log_dict_ae["val/rec_loss"]
-        self.log("val/rec_loss", rec_loss,
-                   prog_bar=True, logger=True, on_step=True, on_epoch=True, sync_dist=True)
-        self.log("val/aeloss", aeloss,
-                   prog_bar=True, logger=True, on_step=True, on_epoch=True, sync_dist=True)
-        self.log_dict(log_dict_ae)
-        self.log_dict(log_dict_disc)
+
+        self.log("val/rec_loss", aeloss,
+                   prog_bar=True, logger=False, on_step=True, on_epoch=True, sync_dist=True)
+        self.log("val/dis_closs", discloss, prog_bar=True,logger=False, on_step=True, on_epoch=True)
+
+        log_dict = log_dict_ae.update(log_dict_disc)     
+        if x.shape[1] > 3:
+            # colorize with random projection
+            assert xrec.shape[1] > 3
+            x = self.to_rgb(x)
+            xrec = self.to_rgb(xrec)
+        log_dict["val/rec_loss"] = aeloss
+        log_dict["val/disc_loss"] =discloss
+        log_dict["val/embed_loss"] = qloss                     
+        log_dict["val/inputs"] = x
+        log_dict["val/reconstructions"] = xrec 
+        self.log_dict(log_dict, prog_bar=False, logger=True, on_step=True, on_epoch=True)
+        
         return self.log_dict
 
 
@@ -191,13 +215,25 @@ class GumbelVQGAN(VQGAN):
             aeloss, log_dict_ae = self.loss(qloss, x, xrec, optimizer_idx, self.global_step,
                                             last_layer=self.get_last_layer(), split="train")
 
-            self.log_dict(log_dict_ae, prog_bar=False, logger=True, on_step=True, on_epoch=True)
+            self.log("train/rec_loss", aeloss, prog_bar=True, logger=False, on_step=True, on_epoch=True)
+            log_dict = log_dict_ae     
+            if x.shape[1] > 3:
+                # colorize with random projection
+                assert xrec.shape[1] > 3
+                x = self.to_rgb(x)
+                xrec = self.to_rgb(xrec)
+            log_dict["train/rec_loss"] = aeloss
+            log_dict["train/embed_loss"] = qloss                     
+            log_dict["train/inputs"] = x
+            log_dict["train/reconstructions"] = xrec 
+            self.log_dict(log_dict, prog_bar=False, logger=True, on_step=True, on_epoch=True)
             return aeloss
 
         if optimizer_idx == 1:
             # discriminator
             discloss, log_dict_disc = self.loss(qloss, x, xrec, optimizer_idx, self.global_step,
                                             last_layer=self.get_last_layer(), split="train")
+            self.log("train/dis_closs", discloss, prog_bar=True,logger=False, on_step=True, on_epoch=True)
             self.log_dict(log_dict_disc, prog_bar=False, logger=True, on_step=True, on_epoch=True)
             return discloss
 
