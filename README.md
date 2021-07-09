@@ -2,7 +2,7 @@
 
 Refactoring 
 [Taming Transformers](https://github.com/CompVis/taming-transformers) and [DALLE-pytorch](https://https://github.com/lucidrains/DALLE-pytorch)
-for TPU VM with Pytorch-Lightning(https://github.com/PyTorchLightning/pytorch-lightning)
+for TPU VM with [Pytorch Lightning](https://github.com/PyTorchLightning/pytorch-lightning)
 
 ## Requirements
 
