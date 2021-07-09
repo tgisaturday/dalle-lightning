@@ -9,7 +9,8 @@ import torch
 from torchvision import transforms as T
 from torch.utils.data import DataLoader
 from torchvision.datasets import ImageFolder
-from taming.models.vqgan import VQModel, GumbelVQ
+from pl_dalle.models.vqgan import VQGAN, GumbelVQGAN
+from pl_dalle.models.vqvae import VQVAE, GumbelVQVAE
 
 import pytorch_lightning as pl
 from pytorch_lightning import seed_everything
@@ -100,9 +101,7 @@ if __name__ == "__main__":
     parser.add_argument('--fake_data', action='store_true', default=False,
                     help='using fake_data for debugging') 
     parser.add_argument('--use_tpus', action='store_true', default=False,
-                    help='using tpu') 
-    parser.add_argument('--is_pod', action='store_true', default=False,
-                    help='using tpu as pod')                                                                
+                    help='using tpu')                                                               
     parser.add_argument('--resume', action='store_true', default=False,
                     help='whether to resume from checkpoint')                   
     parser.add_argument('--seed', type=int, default=42,
@@ -113,14 +112,22 @@ if __name__ == "__main__":
                     help='num_sanity_val_steps')                     
     parser.add_argument('--learning_rate', default=4.5e-6, type=float,
                     help='base learning rate')
+    parser.add_argument('--lr_decay_rate', type = float, default = 0.98, 
+                    help = 'learning rate decay')
+    parser.add_argument('--starting_temp', type = float, default = 1., 
+                    help = 'starting temperature')
+    parser.add_argument('--temp_min', type = float, default = 0.5, 
+                    help = 'minimum temperature to anneal to')
+    parser.add_argument('--anneal_rate', type = float, default = 1e-6, 
+                    help = 'temperature annealing rate')          
     parser.add_argument('--batch_size', type=int, default=8,
-                    help='dataconfig')  
+                    help='training settings')  
     parser.add_argument('--epochs', type=int, default=30,
-                    help='dataconfig')                                    
+                    help='training settings')                                    
     parser.add_argument('--num_workers', type=int, default=0,
-                    help='dataconfig')   
+                    help='training settings')   
     parser.add_argument('--img_size', type=int, default=256,
-                    help='dataconfig')
+                    help='training settings')
 
     parser.add_argument('--test', action='store_true', default=False,
                     help='test run')                     
@@ -132,27 +139,30 @@ if __name__ == "__main__":
     parser.add_argument('--n_embed', type=int, default=1024,
                     help='codebook size')        
     parser.add_argument('--double_z', type=bool, default=False,
-                    help='ddconfig')
+                    help='model settings')
     parser.add_argument('--z_channels', type=int, default=256,
-                    help='ddconfig')
+                    help='model settings')
     parser.add_argument('--resolution', type=int, default=256,
-                    help='ddconfig')
+                    help='model settings')
     parser.add_argument('--in_channels', type=int, default=3,
-                    help='ddconfig')
+                    help='model settings')
     parser.add_argument('--out_ch', type=int, default=3,
-                    help='ddconfig')    
+                    help='model settings')    
     parser.add_argument('--ch', type=int, default=128,
-                    help='ddconfig')  
+                    help='model settings')  
     parser.add_argument('--ch_mult', type=list, default=[1,1,2,2,4],
-                    help='ddconfig')  
+                    help='model settings')  
     parser.add_argument('--num_res_blocks', type=int, default=2,
-                    help='ddconfig')                     
+                    help='model settings')                     
     parser.add_argument('--attn_resolutions', type=list, default=[16],
-                    help='ddconfig')  
+                    help='model settings')  
     parser.add_argument('--dropout', type=float, default=0.0,
-                    help='ddconfig')  
+                    help='model settings')  
 
     #loss configuration
+    parser.add_argument('--smooth_l1_loss', dest = 'smooth_l1_loss', action = 'store_true')
+    parser.add_argument('--kl_loss_weight', type = float, default=1e-8,
+                    help = 'KL loss weight')
     parser.add_argument('--disc_conditional', type=bool, default=False,
                     help='lossconfig')      
     parser.add_argument('--disc_in_channels', type=int, default=3,
@@ -199,10 +209,13 @@ if __name__ == "__main__":
 
     # model
     if args.model == 'vqgan':
-        model = VQModel(args, args.batch_size, args.learning_rate)
+        model = VQGAN(args, args.batch_size, args.learning_rate)
     elif args.model == 'gvqgan':
-        model = GumbelVQ(args, args.batch_size, args.learning_rate)        
-
+        model = GumbelVQGAN(args, args.batch_size, args.learning_rate)        
+    elif args.model == 'vqvae':
+        model = VQVAE(args, args.batch_size, args.learning_rate)
+    elif args.model == 'gvqvae':
+        model = GumbelVQVAE(args, args.batch_size, args.learning_rate) 
     default_root_dir = args.log_dir
 
     if args.resume:

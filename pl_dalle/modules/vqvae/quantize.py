@@ -3,6 +3,7 @@ import torch.nn as nn
 from torch import einsum
 from einops import rearrange
 import torch.nn.functional as F
+import numpy as np
 
 
 class LegacyVectorQuantizer(nn.Module):
@@ -163,7 +164,7 @@ class GumbelQuantize(nn.Module):
         back=torch.gather(used[None,:][inds.shape[0]*[0],:], 1, inds)
         return back.reshape(ishape)
 
-    def forward(self, z, temp=None, return_logits=False):
+    def forward(self, z, temp=None,return_logits=False):
         # force hard = True when we are in eval mode, as we must quantize. actually, always true seems to work
         hard = self.straight_through if self.training else True
         temp = self.temperature if temp is None else temp
@@ -214,7 +215,7 @@ class VectorQuantizer(nn.Module):
     # backwards compatibility we use the buggy version by default, but you can
     # specify legacy=False to fix it.
     def __init__(self, n_e, e_dim, beta, remap=None, unknown_index="random",
-                 sane_index_shape=False, legacy=True):
+                 same_index_shape=False, legacy=True):
         super().__init__()
         self.n_e = n_e
         self.e_dim = e_dim
@@ -237,7 +238,7 @@ class VectorQuantizer(nn.Module):
         else:
             self.re_embed = n_e
 
-        self.sane_index_shape = sane_index_shape
+        self.same_index_shape = same_index_shape
 
     def remap_to_used(self, inds):
         ishape = inds.shape
@@ -300,7 +301,7 @@ class VectorQuantizer(nn.Module):
             min_encoding_indices = self.remap_to_used(min_encoding_indices)
             min_encoding_indices = min_encoding_indices.reshape(-1,1) # flatten
 
-        if self.sane_index_shape:
+        if self.same_index_shape:
             min_encoding_indices = min_encoding_indices.reshape(
                 z_q.shape[0], z_q.shape[2], z_q.shape[3])
 

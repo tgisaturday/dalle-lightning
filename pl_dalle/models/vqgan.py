@@ -2,20 +2,21 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import pytorch_lightning as pl
+import math
+from einops import rearrange
 
+from pl_dalle.modules.diffusionmodules.model import Encoder, Decoder, VUNet
+from pl_dalle.modules.vqvae.quantize import VectorQuantizer
+from pl_dalle.modules.vqvae.quantize import GumbelQuantize
+from pl_dalle.modules.losses.vqperceptual import VQLPIPSWithDiscriminator
 
-from taming.modules.diffusionmodules.model import Encoder, Decoder, VUNet
-from taming.modules.vqvae.quantize import VectorQuantizer
-from taming.modules.vqvae.quantize import GumbelQuantize
-from taming.modules.losses.vqperceptual import VQLPIPSWithDiscriminator
-
-class VQModel(pl.LightningModule):
+class VQGAN(pl.LightningModule):
     def __init__(self,
                  args,batch_size, learning_rate,
                  ignore_keys=[],
                  monitor=None,
                  remap=None,
-                 sane_index_shape=False,  # tell vector quantizer to return indices as bhw
+                 same_index_shape=False,  # tell vector quantizer to return indices as bhw
                  ):
         super().__init__()
         self.save_hyperparameters()
@@ -38,7 +39,7 @@ class VQModel(pl.LightningModule):
                                             disc_in_channels=args.disc_in_channels,disc_weight=args.disc_weight)
 
         self.quantize = VectorQuantizer(args.n_embed, args.embed_dim, beta=0.25,
-                                        remap=remap, sane_index_shape=sane_index_shape)
+                                        remap=remap, same_index_shape=same_index_shape)
         self.quant_conv = torch.nn.Conv2d(args.z_channels, args.embed_dim, 1)
         self.post_quant_conv = torch.nn.Conv2d(args.embed_dim, args.z_channels, 1)
 
@@ -62,17 +63,19 @@ class VQModel(pl.LightningModule):
         dec = self.decode(quant_b)
         return dec
 
+    @torch.no_grad()
+    def get_codebook_indices(self, img):
+        b = img.shape[0]
+        img = (2 * img) - 1
+        _, _, [_, _, indices] = self.model.encode(img)
+        return rearrange(indices, '(b n) -> b n', b = b)
+
     def forward(self, input):
         quant, diff, _ = self.encode(input)
         dec = self.decode(quant)
         return dec, diff
 
-    def training_step(self, batch, batch_idx, optimizer_idx):
-        #temporary fix for tpu pod training progress bar
-        #if self.global_step % self.args.refresh_rate = 0:
-        #    print('Step:', end='',flush=True)
-        #print('Step: %s' %self.global_step)        
-        
+    def training_step(self, batch, batch_idx, optimizer_idx):     
         x, _ = batch
         xrec, qloss = self(x)
         if optimizer_idx == 0:
@@ -139,29 +142,28 @@ class VQModel(pl.LightningModule):
         return log
 
 
-class GumbelVQ(VQModel):
+class GumbelVQGAN(VQGAN):
     def __init__(self,
                  args, batch_size, learning_rate,
                  ignore_keys=[],
                  monitor=None,
-                 temperature = 0.9,
-                 kl_weight=1e-8,
                  remap=None,
                  ):
         self.save_hyperparameters()
         self.args = args    
-        super().__init__( args, batch_size, learning_rate,
+        super().__init__(args, batch_size, learning_rate,
                          ignore_keys=ignore_keys,
                          monitor=monitor,
                          )
 
         self.loss.n_classes = args.n_embed
         self.vocab_size = args.n_embed
-        self.temperature = temperature
+
         self.quantize = GumbelQuantize(args.z_channels, args.embed_dim,
                                        n_embed=args.n_embed,
-                                       kl_weight=kl_weight, temp_init=temperature,
+                                       kl_weight=args.kl_loss_weight, temp_init=args.starting_temp,
                                        remap=remap)
+
 
     def encode_to_prequant(self, x):
         h = self.encoder(x)
@@ -171,8 +173,17 @@ class GumbelVQ(VQModel):
     def decode_code(self, code_b):
         raise NotImplementedError
 
+    @torch.no_grad()
+    def get_codebook_indices(self, img):
+        b = img.shape[0]
+        img = (2 * img) - 1
+        _, _, [_, _, indices] = self.model.encode(img)
+        return rearrange(indices, 'b h w -> b (h w)', b=b)
+
     def training_step(self, batch, batch_idx, optimizer_idx):
         x, _ = batch
+        self.temperature = max(self.temperature * math.exp(-self.anneal_rate * self.global_step), self.temp_min)
+        self.quantize.temperature = self.temperature
         xrec, qloss = self(x)
 
         if optimizer_idx == 0:
@@ -192,7 +203,7 @@ class GumbelVQ(VQModel):
 
     def validation_step(self, batch, batch_idx):
         x, _ = batch
-        xrec, qloss = self(x, return_pred_indices=True)
+        xrec, qloss = self(x)
         aeloss, log_dict_ae = self.loss(qloss, x, xrec, 0, self.global_step,
                                         last_layer=self.get_last_layer(), split="val")
 

@@ -3,8 +3,6 @@ torchvision
 albumentations
 opencv-python
 pudb
-imageio
-imageio-ffmpeg
-git+https://github.com/tgisaturday/pytorch-lightning.git
+git+https://github.com/PyTorchLightning/pytorch-lightning.git
 pytorch-lightning-bolts
 einops

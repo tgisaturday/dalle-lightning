@@ -1,20 +1,10 @@
-# Taming Transformers for High-Resolution Image Synthesis, CVPR 2021 (Oral)
+# Text-to-Image Translation (DALL-E) for TPU in Pytorch
 
-Refactoring [Taming Transformers](https://github.com/CompVis/taming-transformers) for TPU VM. 
+Refactoring 
+[Taming Transformers](https://github.com/CompVis/taming-transformers) 
+[DALLE-pytorch](https://https://github.com/lucidrains/DALLE-pytorch)
 
-![teaser](assets/mountain.jpeg)
-
-[**Taming Transformers for High-Resolution Image Synthesis**](https://compvis.github.io/taming-transformers/)<br/>
-[Patrick Esser](https://github.com/pesser)\*,
-[Robin Rombach](https://github.com/rromb)\*,
-[Björn Ommer](https://hci.iwr.uni-heidelberg.de/Staff/bommer)<br/>
-\* equal contribution
-
-**tl;dr** We combine the efficiancy of convolutional approaches with the expressivity of transformers by introducing a convolutional VQGAN, which learns a codebook of context-rich visual parts, whose composition is modeled with an autoregressive transformer.
-
-![teaser](assets/teaser.png)
-[arXiv](https://arxiv.org/abs/2012.09841) | [BibTeX](#bibtex) | [Project Page](https://compvis.github.io/taming-transformers/)
-
+for TPU VM with Pytorch Lightning(https://github.com/PyTorchLightning/pytorch-lightning)
 
 ## Requirements
 
@@ -26,17 +16,20 @@ pip install -r requirements.txt
 
 Place any image dataset with ImageNet-style directory structure (at least 1 subfolder) to fit the dataset into pytorch ImageFolder.
 
-## Training models
+## Training VQVAEs
 You can easily test main.py with randomly generated fake data.
 ```
-python main.py --use_tpus --fake_data
+python train_vae.py --use_tpus --fake_data
 ```
 
 For actual training provide specific directory for train_dir, val_dir, log_dir:
 
 ```
-python main.py --use_tpus --train_dir [training_set] --val_dir [val_set] --log_dir [where to save results]
+python train_vae.py --use_tpus --train_dir [training_set] --val_dir [val_set] --log_dir [where to save results]
 ```
+
+## Training DALL-E
+TBU
 
 ## BibTeX
 
@@ -50,3 +43,15 @@ python main.py --use_tpus --train_dir [training_set] --val_dir [val_set] --log_d
       primaryClass={cs.CV}
 }
 ```
+```
+@misc{ramesh2021zeroshot,
+    title   = {Zero-Shot Text-to-Image Generation}, 
+    author  = {Aditya Ramesh and Mikhail Pavlov and Gabriel Goh and Scott Gray and Chelsea Voss and Alec Radford and Mark Chen and Ilya Sutskever},
+    year    = {2021},
+    eprint  = {2102.12092},
+    archivePrefix = {arXiv},
+    primaryClass = {cs.CV}
+}
+```
+
+

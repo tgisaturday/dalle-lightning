@@ -33,12 +33,12 @@ python3 -m torch_xla.core.xrt_run_server --port 51011 --restart
 sudo /opt/google-cloud-sdk/bin/gcloud components update
 
 export PROJECT_ID=lgai-vision-tpu
-export TPU_NAME=tpu-vm-pod-128
+export TPU_NAME=tpu-vm-pod-256
 export ZONE=europe-west4-a
 export RUNTIME_VERSION=v2-alpha
 
 gcloud alpha compute tpus tpu-vm create ${TPU_NAME} \
---zone ${ZONE} --project ${PROJECT_ID} --accelerator-type v3-128 \
+--zone ${ZONE} --project ${PROJECT_ID} --accelerator-type v3-256 \
 --version ${RUNTIME_VERSION}  --reserved 
 
 gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
@@ -51,9 +51,15 @@ export ZONE=europe-west4-a
 gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
 --zone ${ZONE} --project ${PROJECT_ID} 
 
+gcloud compute config-ssh
+
 gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
 --zone ${ZONE} --project ${PROJECT_ID} --worker=all \
   --command "git clone https://github.com/tgisaturday/taming-transformers-tpu.git"
+
+gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
+--zone ${ZONE} --project ${PROJECT_ID} --worker=all \
+  --command "git clone https://github.com/kaushikb11/minGPT.git"
 
 
 gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
@@ -85,14 +91,18 @@ gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
 --zone ${ZONE} --project ${PROJECT_ID} --worker=all \
   --command "sudo mkdir -p /datasets && sudo mount 10.46.147.34:/hyperdata /datasets"
 
-python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-128 --restart-tpuvm-pod-server -- python3 /home/taehoon.kim/taming-transformers-tpu/main.py --use_tpus --refresh_rate 1 --fake_data --disc_start 1
+python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-256 --restart-tpuvm-pod-server -- python3 taming-transformers-tpu/tpu_script/boring.py 
+
+python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-128 --restart-tpuvm-pod-server -- python3 taming-transformers-tpu/main.py --use_tpus --refresh_rate 1 --fake_data --disc_start 1
+
+python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-128 --restart-tpuvm-pod-server -- python3 minGPT/benchmark.py --n_layer 14 --n_head 16 --n_embd 3072 --precision 16 --limit_train_batches 120
 
 
-python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod --restart-tpuvm-pod-server -- python3 /home/taehoon.kim/taming-transformers-tpu/main.py --use_tpus --refresh_rate 1 --train_dir /datasets/coco_train/ --val_dir /datasets/coco_val/ --disc_start 1
+python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod --restart-tpuvm-pod-server -- python3 taming-transformers-tpu/main.py --use_tpus --refresh_rate 1 --train_dir /datasets/coco_train/ --val_dir /datasets/coco_val/ --disc_start 1
 
-python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-64 --restart-tpuvm-pod-server -- python3 /home/taehoon.kim/taming-transformers-tpu/main.py --use_tpus --refresh_rate 1 --train_dir /datasets/coco_train/ --val_dir /datasets/coco_val/ --disc_start 1
+python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-64 --restart-tpuvm-pod-server -- python3 taming-transformers-tpu/main.py --use_tpus --refresh_rate 1 --train_dir /datasets/coco_train/ --val_dir /datasets/coco_val/ --disc_start 1
 
-python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-128 --restart-tpuvm-pod-server -- python3 /home/taehoon.kim/taming-transformers-tpu/main.py --use_tpus --refresh_rate 1 --train_dir /datasets/coco_train/ --val_dir /datasets/coco_val/ --disc_start 1
+python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-128 --restart-tpuvm-pod-server -- python3 taming-transformers-tpu/main.py --use_tpus --refresh_rate 1 --train_dir /datasets/coco_train/ --val_dir /datasets/coco_val/ --disc_start 1
 
 
 python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-256 --restart-tpuvm-pod-server -- python3 /home/taehoon.kim/taming-transformers-tpu/main.py --use_tpus --refresh_rate 1 --train_dir /datasets/coco_train/ --val_dir /datasets/coco_val/ --disc_start 1
