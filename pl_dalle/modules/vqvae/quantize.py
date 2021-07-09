@@ -211,16 +211,12 @@ class VectorQuantizer(nn.Module):
     Improved version over VectorQuantizer, can be used as a drop-in replacement. Mostly
     avoids costly matrix multiplications and allows for post-hoc remapping of indices.
     """
-    # NOTE: due to a bug the beta term was applied to the wrong term. for
-    # backwards compatibility we use the buggy version by default, but you can
-    # specify legacy=False to fix it.
     def __init__(self, n_e, e_dim, beta, remap=None, unknown_index="random",
-                 same_index_shape=False, legacy=True):
+                 same_index_shape=False):
         super().__init__()
         self.n_e = n_e
         self.e_dim = e_dim
         self.beta = beta
-        self.legacy = legacy
 
         self.embedding = nn.Embedding(self.n_e, self.e_dim)
         self.embedding.weight.data.uniform_(-1.0 / self.n_e, 1.0 / self.n_e)
@@ -283,11 +279,8 @@ class VectorQuantizer(nn.Module):
         min_encodings = None
 
         # compute loss for embedding
-        if not self.legacy:
-            loss = self.beta * torch.mean((z_q.detach()-z)**2) + \
-                   torch.mean((z_q - z.detach()) ** 2)
-        else:
-            loss = torch.mean((z_q.detach()-z)**2) + self.beta * \
+
+        loss = torch.mean((z_q.detach()-z)**2) + self.beta * \
                    torch.mean((z_q - z.detach()) ** 2)
 
         # preserve gradients

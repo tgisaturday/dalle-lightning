@@ -31,6 +31,15 @@ python train_vae.py --use_tpus --train_dir [training_set] --val_dir [val_set] --
 ## Training DALL-E
 TBU
 
+## TODO
+- [x] Add VQVAE, VQGAN, and Gumbel VQVAE(Discrete VAE), Gumbel VQGAN
+- [ ] Debug VAEs (Single TPU Node, TPU Pods, GPUs)
+- [ ] Add [VQVAE2] (https://arxiv.org/abs/1906.00446)
+- [ ] Resolve SIGSEGV issue with large TPU Pods [pytorch-xla #3028](https://github.com/pytorch/xla/issues/3028)
+- [ ] Add DALL-E
+- [ ] Debug DALL-E (Single TPU Node, TPU Pods, GPUs)
+- [ ] Add [HiT] (https://arxiv.org/abs/2106.07631)
+
 ## BibTeX
 
 ```
