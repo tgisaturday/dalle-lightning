@@ -206,7 +206,7 @@ if __name__ == "__main__":
                             ])
     transform_val = T.Compose([
                                     T.Lambda(lambda img: img.convert('RGB') if img.mode != 'RGB' else img),
-                                    #T.Resize(args.img_size),
+                                    T.Resize(args.img_size),
                                     T.CenterCrop(args.img_size),
                                     T.ToTensor(),
                                     T.Normalize(((0.5,) * 3, (0.5,) * 3)),
