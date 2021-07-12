@@ -7,9 +7,6 @@ import shutil
 import datetime
 
 import torch
-from torch.nn.utils import clip_grad_norm_
-from torch.optim import Adam
-from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import DataLoader
 
 from pl_dalle.models.vqgan import VQGAN, GumbelVQGAN
@@ -87,7 +84,7 @@ if __name__ == "__main__":
                     help='training settings')  
     parser.add_argument('--learning_rate', default=3e-4, type=float,
                     help='base learning rate')
-    parser.add_argument('--lr_decay', dest = 'lr_decay', action = 'store_true')
+    parser.add_argument('--lr_decay', action = 'store_true')
     parser.add_argument('--lr_decay_rate', type = float, default = 0.98, 
                     help = 'learning rate decay')                                          
     parser.add_argument('--num_workers', type=int, default=0,
@@ -98,9 +95,14 @@ if __name__ == "__main__":
     parser.add_argument('--hug', dest='hug', action='store_true')
     parser.add_argument('--resize_ratio', type=float, default=0.75,
                     help='Random resized crop lower ratio')
+    parser.add_argument('--ga_steps', default = 1, type = int, 
+                    help = 'Number of steps to accumulate gradients across per each iteration.')                
     parser.add_argument('--truncate_captions', dest='truncate_captions', action='store_true',
                     help='Captions passed in which exceed the max token length will be truncated if this is set.')
-
+    parser.add_argument('--stable_softmax', dest='stable_softmax', action='store_true', default=False,
+                    help='Prevent values from becoming too large during softmax. Helps with stability in fp16 and Mixture of Quantization training.')
+    parser.add_argument('--sparse_attn', dest='sparse_attn', action='store_true', default=False,
+                    help='Use sparse attention')
     #VAE configuration
     parser.add_argument('--vae', type=str, default='vqgan')
     '''
@@ -139,16 +141,21 @@ if __name__ == "__main__":
     '''
 
     #Transformer configuration
+    parser.add_argument('--attn_types', default = 'full', type = str, 
+                    help = 'comma separated list of attention types. attention type can be: full or sparse or axial_row or axial_col or conv_like.')
     parser.add_argument('--hidden_dim', default = 512, type = int, 
                     help = 'Model dimension')
     parser.add_argument('--text_seq_len', default = 256, type = int, 
                     help = 'Text sequence length')
+    parser.add_argument('--num_text_tokens', default = 10000, type = int, 
+                    help = 'Number of text tokens')                    
     parser.add_argument('--depth', default = 2, type = int, 
                     help = 'Model depth')
     parser.add_argument('--heads', default = 8, type = int, 
                     help = 'Model number of heads')
     parser.add_argument('--dim_head', default = 64, type = int, 
                     help = 'Model head dimension')
+    parser.add_argument('--reversible', action='store_true', default=False)                    
     parser.add_argument('--ff_dropout', default = 0.0, type = float, 
                     help = 'Feed forward dropout.')
     parser.add_argument('--attn_dropout', default = 0.0, type = float, 
@@ -188,6 +195,7 @@ if __name__ == "__main__":
     elif args.vae == 'vqvae2':
         vae = VQVAE2.load_from_checkpoint(args.vae_path)
 
+    model = DALLE(args, args.batch_size, args.learning_rate, vae=vae)
 
     transform_train = T.Compose([
                             T.Lambda(lambda img: img.convert('RGB') if img.mode != 'RGB' else img),
@@ -242,40 +250,18 @@ if __name__ == "__main__":
         train_loader = DataLoader(train_dataset, batch_size=args.batch_size, num_workers=args.num_workers,shuffle=True, drop_last=True)      
         val_loader = DataLoader(val_dataset, batch_size=args.batch_size, num_workers=args.num_workers, drop_last=True)  
 
-    model = DALLE(args, args.batch_size, args.learning_rate, vae=vae)
-
-    '''
-    # optimizer
-
-    opt = Adam(get_trainable_params(dalle), lr=LEARNING_RATE)
-    if RESUME and opt_state:
-        opt.load_state_dict(opt_state)
-
-    if LR_DECAY:
-        scheduler = ReduceLROnPlateau(
-        opt,
-        mode="min",
-        factor=0.5,
-        patience=10,
-        cooldown=10,
-        min_lr=1e-6,
-        verbose=True,
-        )
-    if RESUME and scheduler_state:
-        scheduler.load_state_dict(scheduler_state)
-    else:
-        scheduler = None
-    '''
 
     if args.use_tpus:
         trainer = Trainer(tpu_cores=tpus, gpus= gpus, default_root_dir=default_root_dir,
-                          max_epochs=args.epochs, progress_bar_refresh_rate=args.refresh_rate,precision=16,
+                          max_epochs=args.epochs, progress_bar_refresh_rate=args.refresh_rate,precision=args.precision,
+                          gradient_clip_val=args.clip_grad_norm, accumulate_grad_batches=args.ga_steps,
                           num_sanity_val_steps=args.num_sanity_val_steps,
                           resume_from_checkpoint = ckpt_path)
     else:
         trainer = Trainer(tpu_cores=tpus, gpus= gpus, default_root_dir=default_root_dir,
-                          max_epochs=args.epochs, progress_bar_refresh_rate=args.refresh_rate,precision=16,
-                          accelerator='ddp',
+                          max_epochs=args.epochs, progress_bar_refresh_rate=args.refresh_rate,precision=args.precision,
+                          accelerator='ddp', accumulate_grad_batches=args.ga_steps,
+                          gradient_clip_val=args.clip_grad_norm,
                           num_sanity_val_steps=args.num_sanity_val_steps,
                           resume_from_checkpoint = ckpt_path)
     

@@ -20,6 +20,8 @@ class VQGAN(pl.LightningModule):
         super().__init__()
         self.save_hyperparameters()
         self.args = args     
+        self.image_size = args.resolution
+        self.num_tokens = args.codebook_dim
         
         self.encoder = Encoder(hidden_dim=args.hidden_dim, in_channels=args.in_channels, ch_mult= args.ch_mult,
                                 num_res_blocks=args.num_res_blocks, 

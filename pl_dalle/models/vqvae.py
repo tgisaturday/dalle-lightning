@@ -21,7 +21,9 @@ class VQVAE(pl.LightningModule):
         super().__init__()
         self.save_hyperparameters()
         self.args = args     
-        
+        self.image_size = args.resolution
+        self.num_tokens = args.codebook_dim
+
         self.encoder = Encoder(hidden_dim=args.hidden_dim, in_channels=args.in_channels, ch_mult= args.ch_mult,
                                 num_res_blocks=args.num_res_blocks, 
                                 attn_resolutions=args.attn_resolutions,
@@ -78,9 +80,9 @@ class VQVAE(pl.LightningModule):
         x, _ = batch
         xrec, qloss = self(x)
         if self.smooth_l1_loss:
-            aeloss = F.smooth_l1_loss(x, xrec, self.global_step)
+            aeloss = F.smooth_l1_loss(x, xrec)
         else:
-            aeloss = F.mse_loss(x, xrec, self.global_step)            
+            aeloss = F.mse_loss(x, xrec)            
         self.log("train/rec_loss", aeloss, prog_bar=True, logger=False, on_step=True, on_epoch=True)
         self.log("train/embed_loss", qloss, prog_bar=True, logger=False, on_step=True, on_epoch=True)
         loss = aeloss + qloss
@@ -103,9 +105,9 @@ class VQVAE(pl.LightningModule):
         x, _ = batch
         xrec, qloss = self(x)
         if self.smooth_l1_loss:
-            aeloss = F.smooth_l1_loss(x, xrec, self.global_step)
+            aeloss = F.smooth_l1_loss(x, xrec)
         else:
-            aeloss = F.mse_loss(x, xrec, self.global_step)            
+            aeloss = F.mse_loss(x, xrec)            
         self.log("val/rec_loss", aeloss, prog_bar=True, logger=False, on_step=True, on_epoch=True)
         self.log("val/embed_loss", qloss, prog_bar=True, logger=False, on_step=True, on_epoch=True)
         loss = aeloss + qloss
@@ -194,9 +196,9 @@ class GumbelVQVAE(VQVAE):
         xrec, qloss = self(x)
 
         if self.smooth_l1_loss:
-            aeloss = F.smooth_l1_loss(x, xrec, self.global_step)
+            aeloss = F.smooth_l1_loss(x, xrec)
         else:
-            aeloss = F.mse_loss(x, xrec, self.global_step)            
+            aeloss = F.mse_loss(x, xrec)            
         self.log("train/rec_loss", aeloss, prog_bar=True, logger=False, on_step=True, on_epoch=True)
         self.log("train/embed_loss", qloss, prog_bar=True, logger=False, on_step=True, on_epoch=True)
         loss = aeloss + qloss
@@ -220,9 +222,9 @@ class GumbelVQVAE(VQVAE):
         xrec, qloss = self(x)
         self.quantize.temperature = 1.0
         if self.smooth_l1_loss:
-            aeloss = F.smooth_l1_loss(x, xrec, self.global_step)
+            aeloss = F.smooth_l1_loss(x, xrec)
         else:
-            aeloss = F.mse_loss(x, xrec, self.global_step)            
+            aeloss = F.mse_loss(x, xrec)            
         self.log("val/rec_loss", aeloss, prog_bar=True, logger=False, on_step=True, on_epoch=True)
         self.log("val/embed_loss", qloss, prog_bar=True, logger=False, on_step=True, on_epoch=True)
         loss = aeloss + qloss

@@ -37,6 +37,8 @@ class VQVAE2(pl.LightningModule):
         self.args = args  
         self.recon_loss = nn.MSELoss()
         self.latent_loss_weight = args.latent_weight
+        self.image_size = args.resolution
+        self.num_tokens = args.codebook_dim
 
         self.enc_b = Encoder(args.in_channels, args.ch, args.num_res_blocks, args.num_res_ch, stride=4)
         self.enc_t = Encoder(args.ch, args.ch, args.num_res_blocks, args.num_res_ch, stride=2)
