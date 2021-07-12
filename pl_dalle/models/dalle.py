@@ -8,9 +8,8 @@ import pytorch_lightning as pl
 from axial_positional_embedding import AxialPositionalEmbedding
 from einops import rearrange
 
-from dalle_pytorch import distributed_utils, tokenizer
-from dalle_pytorch.vae import OpenAIDiscreteVAE, VQGanVAE
-from dalle_pytorch.transformer import Transformer, DivideMax
+from pl_dalle.modules.dalle import tokenizer
+from pl_dalle.modules.dalle.transformer import Transformer, DivideMax
 from torch.optim import Adam
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 # helpers

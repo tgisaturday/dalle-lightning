@@ -104,6 +104,13 @@ class VQVAE2(pl.LightningModule):
         dec = self.decode(quant_t, quant_b)
 
         return dec
+    @torch.no_grad()
+    def get_codebook_indices(self, img):
+        #Needs to be fixed
+        b = img.shape[0]
+        img = (2 * img) - 1
+        _, _, [_, _, indices] = self.model.encode(img)
+        return rearrange(indices, 'b h w -> b (h w)', b=b)
 
     def training_step(self, batch, batch_idx):         
         x, _ = batch
