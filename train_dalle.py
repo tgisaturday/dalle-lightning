@@ -1,31 +1,49 @@
-import argparse, os, sys, datetime, glob, importlib
-import numpy as np
-import random
-from PIL import Image
+import argparse
+from pathlib import Path
+import time
+from glob import glob
+import os
+import shutil
+import datetime
+
 import torch
-
-# vision imports
-
-from torchvision import transforms as T
+from torch.nn.utils import clip_grad_norm_
+from torch.optim import Adam
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import DataLoader
-from torchvision.datasets import ImageFolder
+
 from pl_dalle.models.vqgan import VQGAN, GumbelVQGAN
 from pl_dalle.models.vqvae import VQVAE, GumbelVQVAE
 from pl_dalle.models.vqvae2 import VQVAE2
+from pl_dalle.models.dalle import DALLE
+
+from dalle_pytorch.loader import TextImageDataset
+from pl_dalle.modules.tokenizer import tokenizer, HugTokenizer, YttmTokenizer
+
+
+from torchvision import transforms as T
+from PIL import Image
+from io import BytesIO
 
 import pytorch_lightning as pl
 from pytorch_lightning import seed_everything
 from pytorch_lightning import Trainer
 
+def exists(val):
+    return val is not None
 
+def get_trainable_params(model):
+    return [params for params in model.parameters() if params.requires_grad]
 
 
 if __name__ == "__main__":
 
+    # argument parsing
     now = datetime.datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
 
+    parser = argparse.ArgumentParser()
 
-    parser = argparse.ArgumentParser(description='VQVAE Training for Pytorch TPU')
+    parser = argparse.ArgumentParser(description='DALL-E Training for Pytorch TPU')
 
     #path configuration
     parser.add_argument('--train_dir', type=str, default='dalle-lightning-tpu/data/train/',
@@ -34,8 +52,16 @@ if __name__ == "__main__":
                     help='path to val dataset')                    
     parser.add_argument('--log_dir', type=str, default='dalle-lightning-tpu/results/',
                     help='path to save logs')
+
+    parser.add_argument('--vae_path', type=str,
+                   help='path to your trained VAE')
+
     parser.add_argument('--ckpt_path', type=str,default='dalle-lightning-tpu/results/checkpoints/last.ckpt',
-                    help='path to previous checkpoint')  
+                    help='path to previous checkpoint')
+
+    parser.add_argument('--bpe_path', type=str, default='dalle-lightning-tpu/data/',
+                    help='path to your BPE json file')
+
 
     #training configuration
     parser.add_argument('--refresh_rate', type=int, default=1,
@@ -53,31 +79,28 @@ if __name__ == "__main__":
     parser.add_argument('--gpus', type=int, default=16,
                     help='number of gpus')                   
     parser.add_argument('--num_sanity_val_steps', type=int, default=0,
-                    help='num_sanity_val_steps')                     
-    parser.add_argument('--learning_rate', default=4.5e-3, type=float,
-                    help='base learning rate')
-    parser.add_argument('--lr_decay_rate', type = float, default = 0.98, 
-                    help = 'learning rate decay')
-    parser.add_argument('--starting_temp', type = float, default = 1., 
-                    help = 'starting temperature')
-    parser.add_argument('--temp_min', type = float, default = 0.5, 
-                    help = 'minimum temperature to anneal to')
-    parser.add_argument('--anneal_rate', type = float, default = 1e-6, 
-                    help = 'temperature annealing rate')          
+                    help='num_sanity_val_steps') 
+
     parser.add_argument('--batch_size', type=int, default=8,
                     help='training settings')  
-    parser.add_argument('--epochs', type=int, default=30,
-                    help='training settings')                                    
+    parser.add_argument('--epochs', type=int, default=20,
+                    help='training settings')  
+    parser.add_argument('--learning_rate', default=3e-4, type=float,
+                    help='base learning rate')
+    parser.add_argument('--lr_decay', dest = 'lr_decay', action = 'store_true')
+    parser.add_argument('--lr_decay_rate', type = float, default = 0.98, 
+                    help = 'learning rate decay')                                          
     parser.add_argument('--num_workers', type=int, default=0,
                     help='training settings')   
     parser.add_argument('--img_size', type=int, default=256,
-                    help='training settings')
-
-    parser.add_argument('--test', action='store_true', default=False,
-                    help='test run')                     
-
-    #model configuration
-    parser.add_argument('--model', type=str, default='vqgan')
+                    help='training settings')  
+    parser.add_argument('--clip_grad_norm', default = 0.5, type = float, help = 'Clip gradient norm')
+    parser.add_argument('--hug', dest='hug', action='store_true')
+    parser.add_argument('--resize_ratio', type=float, default=0.75,
+                    help='Random resized crop lower ratio')
+    #VAE configuration
+    parser.add_argument('--vae', type=str, default='vqgan')
+    '''
     parser.add_argument('--embed_dim', type=int, default=256,
                     help='number of embedding dimension for codebook')       
     parser.add_argument('--codebook_dim', type=int, default=1024,
@@ -110,67 +133,32 @@ if __name__ == "__main__":
                     help='model settings')                                      
     parser.add_argument('--latent_weight', type=float, default=0.25,
                     help='model settings')
+    '''
 
-    #loss configuration
-    parser.add_argument('--smooth_l1_loss', dest = 'smooth_l1_loss', action = 'store_true')
-    parser.add_argument('--kl_loss_weight', type = float, default=1e-8,
-                    help = 'KL loss weight')
-    parser.add_argument('--disc_conditional', type=bool, default=False,
-                    help='lossconfig')      
-    parser.add_argument('--disc_in_channels', type=int, default=3,
-                    help='lossconfig') 
-    parser.add_argument('--disc_start', type=int, default=250001,
-                    help='lossconfig') 
-    parser.add_argument('--disc_weight', type=float, default=0.8,
-                    help='lossconfig') 
-    parser.add_argument('--codebook_weight', type=float, default=1.0,
-                    help='lossconfig') 
+    #Transformer configuration
+    parser.add_argument('--hidden_dim', default = 512, type = int, 
+                    help = 'Model dimension')
+    parser.add_argument('--text_seq_len', default = 256, type = int, 
+                    help = 'Text sequence length')
+    parser.add_argument('--depth', default = 2, type = int, 
+                    help = 'Model depth')
+    parser.add_argument('--heads', default = 8, type = int, 
+                    help = 'Model number of heads')
+    parser.add_argument('--dim_head', default = 64, type = int, 
+                    help = 'Model head dimension')
+    parser.add_argument('--ff_dropout', default = 0.0, type = float, 
+                    help = 'Feed forward dropout.')
+    parser.add_argument('--attn_dropout', default = 0.0, type = float, 
+                    help = 'Feed forward dropout.')
+    parser.add_argument('--loss_img_weight', default = 7, type = int, 
+                    help = 'Image loss weight')
 
-    #misc configuration
- 
     args = parser.parse_args()
 
     #random seed fix
     seed_everything(args.seed)   
 
-    #data = ImageDataModule(args.train_dir, args.val_dir, args.batch_size, args.num_workers, args.img_size, args.fake_data)
-    
-    transform = T.Compose([
-                                    T.Lambda(lambda img: img.convert('RGB') if img.mode != 'RGB' else img),
-                                    T.Resize(args.img_size),
-                                    T.CenterCrop(args.img_size),
-                                    T.ToTensor(),
-                                    T.Normalize(((0.5,) * 3, (0.5,) * 3)),
-                                    ])
-    if not args.fake_data:
-        train_dataset = ImageFolder(args.train_dir, transform)
-        val_dataset = ImageFolder(args.val_dir, transform)   
-    if args.fake_data:
-        import torch_xla.utils.utils as xu
-        import torch_xla.core.xla_model as xm        
-        train_loader = xu.SampleGenerator(
-                        data=(torch.zeros(args.batch_size, 3, args.img_size , args.img_size ),
-                        torch.zeros(args.batch_size, dtype=torch.int64)),
-                        sample_count=1200000 // args.batch_size // xm.xrt_world_size())
-        val_loader = xu.SampleGenerator(
-                        data=(torch.zeros(args.batch_size, 3, args.img_size , args.img_size ),
-                        torch.zeros(args.batch_size, dtype=torch.int64)),
-                        sample_count=50000 // args.batch_size // xm.xrt_world_size())                           
-    else:
-        train_loader = DataLoader(train_dataset, batch_size=args.batch_size, num_workers=args.num_workers,shuffle=True)      
-        val_loader = DataLoader(val_dataset, batch_size=args.batch_size, num_workers=args.num_workers)  
-
-    # model
-    if args.model == 'vqgan':
-        model = VQGAN(args, args.batch_size, args.learning_rate)
-    elif args.model == 'gvqgan':
-        model = GumbelVQGAN(args, args.batch_size, args.learning_rate)        
-    elif args.model == 'vqvae':
-        model = VQVAE(args, args.batch_size, args.learning_rate)
-    elif args.model == 'gvqvae':
-        model = GumbelVQVAE(args, args.batch_size, args.learning_rate) 
-    elif args.model == 'vqvae2':
-        model = VQVAE2(args, args.batch_size, args.learning_rate) 
+    # tokenizer
 
     default_root_dir = args.log_dir
     if args.resume:
@@ -185,14 +173,72 @@ if __name__ == "__main__":
         tpus = None
         gpus = args.gpus
 
+    if exists(args.bpe_path):
+        klass = HugTokenizer if args.hug else YttmTokenizer
+        tokenizer = klass(args.bpe_path)
+
+    transform = T.Compose([
+                            T.Lambda(lambda img: img.convert('RGB') if img.mode != 'RGB' else img),
+                            T.RandomResizedCrop(args.img_size,
+                                    scale=(args.resize_ratio, 1.),ratio=(1., 1.)),
+                            T.ToTensor(),
+                            T.Normalize(((0.5,) * 3, (0.5,) * 3)),
+                            ])
+    def imagetransform(b):
+        return Image.open(BytesIO(b))
+
+    def tokenize(s):
+        return tokenizer.tokenize(s.decode('utf-8'),
+                args.text_seq_len,
+                truncate_text=args.truncate_captions).squeeze(0)
+
+    # model
+    if args.vae == 'vqgan':
+        vae = VQGAN.load_from_checkpoint(args.vae_path)
+    elif args.vae == 'gvqgan':
+        vae = GumbelVQGAN.load_from_checkpoint(args.vae_path)        
+    elif args.vae == 'vqvae':
+        vae = VQVAE.load_from_checkpoint(args.vae_path)
+    elif args.vae == 'gvqvae':
+        vae = GumbelVQVAE.load_from_checkpoint(args.vae_path) 
+    elif args.vae == 'vqvae2':
+        vae = VQVAE2.load_from_checkpoint(args.vae_path)
+    
+    # initialize DALL-E
+
+    model = DALLE(args, args.batch_size, args.learning_rate, vae=vae)
+
+
+# optimizer
+
+opt = Adam(get_trainable_params(dalle), lr=LEARNING_RATE)
+if RESUME and opt_state:
+    opt.load_state_dict(opt_state)
+
+if LR_DECAY:
+    scheduler = ReduceLROnPlateau(
+        opt,
+        mode="min",
+        factor=0.5,
+        patience=10,
+        cooldown=10,
+        min_lr=1e-6,
+        verbose=True,
+    )
+    if RESUME and scheduler_state:
+        scheduler.load_state_dict(scheduler_state)
+else:
+    scheduler = None
+
+
     if args.use_tpus:
         trainer = Trainer(tpu_cores=tpus, gpus= gpus, default_root_dir=default_root_dir,
-                          max_epochs=args.epochs, progress_bar_refresh_rate=args.refresh_rate,precision=args.precision,
+                          max_epochs=args.epochs, progress_bar_refresh_rate=args.refresh_rate,precision=16,
                           num_sanity_val_steps=args.num_sanity_val_steps,
                           resume_from_checkpoint = ckpt_path)
     else:
         trainer = Trainer(tpu_cores=tpus, gpus= gpus, default_root_dir=default_root_dir,
-                          max_epochs=args.epochs, progress_bar_refresh_rate=args.refresh_rate,precision=args.precision,
+                          max_epochs=args.epochs, progress_bar_refresh_rate=args.refresh_rate,precision=16,
                           accelerator='ddp',
                           num_sanity_val_steps=args.num_sanity_val_steps,
                           resume_from_checkpoint = ckpt_path)
@@ -203,5 +249,3 @@ if __name__ == "__main__":
         trainer.fit(model, train_dataloaders=train_loader, val_dataloaders=val_loader)
     else:
         trainer.test(model, dataloaders=val_loader)
-
-

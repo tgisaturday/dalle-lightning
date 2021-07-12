@@ -6,3 +6,10 @@ pudb
 git+https://github.com/PyTorchLightning/pytorch-lightning.git
 pytorch-lightning-bolts
 einops
+regex
+g-mlp-pytorch
+ftfy
+tokenizers
+transformers
+youtokentome
+WebDataset

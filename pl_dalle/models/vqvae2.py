@@ -41,12 +41,12 @@ class VQVAE2(pl.LightningModule):
         self.enc_b = Encoder(args.in_channels, args.ch, args.num_res_blocks, args.num_res_ch, stride=4)
         self.enc_t = Encoder(args.ch, args.ch, args.num_res_blocks, args.num_res_ch, stride=2)
         self.quantize_conv_t = nn.Conv2d(args.ch, args.embed_dim, 1)
-        self.quantize_t = Quantize(args.embed_dim, args.n_embed, args.decay)
+        self.quantize_t = Quantize(args.embed_dim, args.codebook_dim, args.decay)
         self.dec_t = Decoder(
             args.embed_dim, args.embed_dim, args.ch, args.num_res_blocks, args.num_res_ch, stride=2
         )
         self.quantize_conv_b = nn.Conv2d(args.embed_dim + args.ch, args.embed_dim, 1)
-        self.quantize_b = Quantize(args.embed_dim, args.n_embed)
+        self.quantize_b = Quantize(args.embed_dim, args.codebook_dim)
         self.upsample_t = nn.ConvTranspose2d(
             args.embed_dim, args.embed_dim, 4, stride=2, padding=1
         )
@@ -178,17 +178,17 @@ class VQVAE2(pl.LightningModule):
         return log
 
 class Quantize(nn.Module):
-    def __init__(self, dim, n_embed, decay=0.99, eps=1e-5):
+    def __init__(self, dim, codebook_dim, decay=0.99, eps=1e-5):
         super().__init__()
 
         self.dim = dim
-        self.n_embed = n_embed
+        self.codebook_dim = codebook_dim
         self.decay = decay
         self.eps = eps
 
-        embed = torch.randn(dim, n_embed)
+        embed = torch.randn(dim, codebook_dim)
         self.register_buffer("embed", embed)
-        self.register_buffer("cluster_size", torch.zeros(n_embed))
+        self.register_buffer("cluster_size", torch.zeros(codebook_dim))
         self.register_buffer("embed_avg", embed.clone())
 
     def forward(self, input):
@@ -199,7 +199,7 @@ class Quantize(nn.Module):
             + self.embed.pow(2).sum(0, keepdim=True)
         )
         _, embed_ind = (-dist).max(1)
-        embed_onehot = F.one_hot(embed_ind, self.n_embed).type(flatten.dtype)
+        embed_onehot = F.one_hot(embed_ind, self.codebook_dim).type(flatten.dtype)
         embed_ind = embed_ind.view(*input.shape[:-1])
         quantize = self.embed_code(embed_ind)
 
@@ -216,7 +216,7 @@ class Quantize(nn.Module):
             self.embed_avg.data.mul_(self.decay).add_(embed_sum, alpha=1 - self.decay)
             n = self.cluster_size.sum()
             cluster_size = (
-                (self.cluster_size + self.eps) / (n + self.n_embed * self.eps) * n
+                (self.cluster_size + self.eps) / (n + self.codebook_dim * self.eps) * n
             )
             embed_normalized = self.embed_avg / cluster_size.unsqueeze(0)
             self.embed.data.copy_(embed_normalized)

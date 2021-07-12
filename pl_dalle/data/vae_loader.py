@@ -1,3 +1,9 @@
+import torch
+from torchvision import transforms as T
+from torch.utils.data import DataLoader
+from torchvision.datasets import ImageFolder
+from pytorch_lightning import LightningDataModule
+
 class ImageDataModule(LightningDataModule):
 
     def __init__(self, train_dir, val_dir, batch_size, num_workers, img_size, fake_data=False):
@@ -13,7 +19,8 @@ class ImageDataModule(LightningDataModule):
                                     T.Lambda(lambda img: img.convert('RGB') if img.mode != 'RGB' else img),
                                     T.Resize(self.img_size),
                                     T.CenterCrop(self.img_size),
-                                    T.ToTensor()
+                                    T.ToTensor(),
+                                    T.Normalize(((0.5,) * 3, (0.5,) * 3)),           
                                     ])
                                     
     def setup(self, stage=None):

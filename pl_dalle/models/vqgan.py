@@ -5,9 +5,8 @@ import pytorch_lightning as pl
 import math
 from einops import rearrange
 
-from pl_dalle.modules.diffusionmodules.model import Encoder, Decoder, VUNet
-from pl_dalle.modules.vqvae.quantize import VectorQuantizer
-from pl_dalle.modules.vqvae.quantize import GumbelQuantize
+from pl_dalle.modules.vqvae.vae import Encoder, Decoder
+from pl_dalle.modules.vqvae.quantize import VectorQuantizer,GumbelQuantize
 from pl_dalle.modules.losses.vqperceptual import VQLPIPSWithDiscriminator
 
 class VQGAN(pl.LightningModule):
@@ -22,14 +21,14 @@ class VQGAN(pl.LightningModule):
         self.save_hyperparameters()
         self.args = args     
         
-        self.encoder = Encoder(ch=args.ch, out_ch=args.out_ch, ch_mult= args.ch_mult,
+        self.encoder = Encoder(hidden_dim=args.hidden_dim, in_channels=args.in_channels, ch_mult= args.ch_mult,
                                 num_res_blocks=args.num_res_blocks, 
                                 attn_resolutions=args.attn_resolutions,
-                                dropout=args.dropout, in_channels=args.in_channels, 
+                                dropout=args.dropout, 
                                 resolution=args.resolution, z_channels=args.z_channels,
                                 double_z=args.double_z)
 
-        self.decoder = Decoder(ch=args.ch, out_ch=args.out_ch, ch_mult= args.ch_mult,
+        self.decoder = Decoder(hidden_dim=args.hidden_dim, out_channels=args.out_channels, ch_mult= args.ch_mult,
                                 num_res_blocks=args.num_res_blocks, 
                                 attn_resolutions=args.attn_resolutions,
                                 dropout=args.dropout, in_channels=args.in_channels, 
@@ -38,7 +37,7 @@ class VQGAN(pl.LightningModule):
         self.loss = VQLPIPSWithDiscriminator(disc_start=args.disc_start, codebook_weight=args.codebook_weight,
                                             disc_in_channels=args.disc_in_channels,disc_weight=args.disc_weight)
 
-        self.quantize = VectorQuantizer(args.n_embed, args.embed_dim, beta=0.25,
+        self.quantize = VectorQuantizer(args.codebook_dim, args.embed_dim, beta=0.25,
                                         remap=remap, same_index_shape=same_index_shape)
         self.quant_conv = torch.nn.Conv2d(args.z_channels, args.embed_dim, 1)
         self.post_quant_conv = torch.nn.Conv2d(args.embed_dim, args.z_channels, 1)
@@ -180,11 +179,11 @@ class GumbelVQGAN(VQGAN):
                          monitor=monitor,
                          )
 
-        self.loss.n_classes = args.n_embed
-        self.vocab_size = args.n_embed
+        self.loss.n_classes = args.codebook_dim
+        self.vocab_size = args.codebook_dim
 
         self.quantize = GumbelQuantize(args.z_channels, args.embed_dim,
-                                       n_embed=args.n_embed,
+                                       codebook_dim=args.codebook_dim,
                                        kl_weight=args.kl_loss_weight, temp_init=args.starting_temp,
                                        remap=remap)
 
