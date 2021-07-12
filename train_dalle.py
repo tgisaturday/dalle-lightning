@@ -17,7 +17,7 @@ from pl_dalle.models.vqvae import VQVAE, GumbelVQVAE
 from pl_dalle.models.vqvae2 import VQVAE2
 from pl_dalle.models.dalle import DALLE
 
-from dalle_pytorch.loader import TextImageDataset
+from pl_dalle.loader import TextImageDataset
 from pl_dalle.modules.tokenizer import tokenizer, HugTokenizer, YttmTokenizer
 
 
@@ -98,6 +98,9 @@ if __name__ == "__main__":
     parser.add_argument('--hug', dest='hug', action='store_true')
     parser.add_argument('--resize_ratio', type=float, default=0.75,
                     help='Random resized crop lower ratio')
+    parser.add_argument('--truncate_captions', dest='truncate_captions', action='store_true',
+                    help='Captions passed in which exceed the max token length will be truncated if this is set.')
+
     #VAE configuration
     parser.add_argument('--vae', type=str, default='vqgan')
     '''
@@ -173,25 +176,6 @@ if __name__ == "__main__":
         tpus = None
         gpus = args.gpus
 
-    if exists(args.bpe_path):
-        klass = HugTokenizer if args.hug else YttmTokenizer
-        tokenizer = klass(args.bpe_path)
-
-    transform = T.Compose([
-                            T.Lambda(lambda img: img.convert('RGB') if img.mode != 'RGB' else img),
-                            T.RandomResizedCrop(args.img_size,
-                                    scale=(args.resize_ratio, 1.),ratio=(1., 1.)),
-                            T.ToTensor(),
-                            T.Normalize(((0.5,) * 3, (0.5,) * 3)),
-                            ])
-    def imagetransform(b):
-        return Image.open(BytesIO(b))
-
-    def tokenize(s):
-        return tokenizer.tokenize(s.decode('utf-8'),
-                args.text_seq_len,
-                truncate_text=args.truncate_captions).squeeze(0)
-
     # model
     if args.vae == 'vqgan':
         vae = VQGAN.load_from_checkpoint(args.vae_path)
@@ -203,20 +187,72 @@ if __name__ == "__main__":
         vae = GumbelVQVAE.load_from_checkpoint(args.vae_path) 
     elif args.vae == 'vqvae2':
         vae = VQVAE2.load_from_checkpoint(args.vae_path)
-    
-    # initialize DALL-E
+
+
+    transform_train = T.Compose([
+                            T.Lambda(lambda img: img.convert('RGB') if img.mode != 'RGB' else img),
+                            T.RandomResizedCrop(args.img_size,
+                                    scale=(args.resize_ratio, 1.),ratio=(1., 1.)),
+                            T.ToTensor(),
+                            T.Normalize(((0.5,) * 3, (0.5,) * 3)),
+                            ])
+    transform_val = T.Compose([
+                                    T.Lambda(lambda img: img.convert('RGB') if img.mode != 'RGB' else img),
+                                    #T.Resize(args.img_size),
+                                    T.CenterCrop(args.img_size),
+                                    T.ToTensor(),
+                                    T.Normalize(((0.5,) * 3, (0.5,) * 3)),
+                                    ])
+    if exists(args.bpe_path):
+        klass = HugTokenizer if args.hug else YttmTokenizer
+        tokenizer = klass(args.bpe_path)  
+
+    if args.fake_data:
+        import torch_xla.utils.utils as xu
+        import torch_xla.core.xla_model as xm        
+        train_loader = xu.SampleGenerator(
+                        data=(torch.zeros(args.batch_size, 3, args.img_size , args.img_size ),
+                        torch.zeros(args.batch_size, args.text_seq_len)),
+                        sample_count=1200000 // args.batch_size // xm.xrt_world_size())
+        val_loader = xu.SampleGenerator(
+                        data=(torch.zeros(args.batch_size, 3, args.img_size , args.img_size ),
+                        torch.zeros(args.batch_size, args.text_seq_len)),
+                        sample_count=50000 // args.batch_size // xm.xrt_world_size())                           
+    else:
+        train_dataset = TextImageDataset(
+            args.train_dir,
+            text_len=args.text_seq_len,
+            image_size=args.image_size,
+            resize_ratio=args.resize_ratio,
+            truncate_captions=args.truncate_captions,
+            tokenizer=tokenizer,
+            transform=transform_train,
+            shuffle=True,
+        )
+        val_dataset = TextImageDataset(
+            args.val_dir,
+            text_len=args.text_seq_len,
+            image_size=args.image_size,
+            resize_ratio=args.resize_ratio,
+            truncate_captions=args.truncate_captions,
+            tokenizer=tokenizer,
+            transform=transform_val,        
+            shuffle=False,
+        )       
+        train_loader = DataLoader(train_dataset, batch_size=args.batch_size, num_workers=args.num_workers,shuffle=True, drop_last=True)      
+        val_loader = DataLoader(val_dataset, batch_size=args.batch_size, num_workers=args.num_workers, drop_last=True)  
 
     model = DALLE(args, args.batch_size, args.learning_rate, vae=vae)
 
+    '''
+    # optimizer
 
-# optimizer
+    opt = Adam(get_trainable_params(dalle), lr=LEARNING_RATE)
+    if RESUME and opt_state:
+        opt.load_state_dict(opt_state)
 
-opt = Adam(get_trainable_params(dalle), lr=LEARNING_RATE)
-if RESUME and opt_state:
-    opt.load_state_dict(opt_state)
-
-if LR_DECAY:
-    scheduler = ReduceLROnPlateau(
+    if LR_DECAY:
+        scheduler = ReduceLROnPlateau(
         opt,
         mode="min",
         factor=0.5,
@@ -224,12 +260,12 @@ if LR_DECAY:
         cooldown=10,
         min_lr=1e-6,
         verbose=True,
-    )
+        )
     if RESUME and scheduler_state:
         scheduler.load_state_dict(scheduler_state)
-else:
-    scheduler = None
-
+    else:
+        scheduler = None
+    '''
 
     if args.use_tpus:
         trainer = Trainer(tpu_cores=tpus, gpus= gpus, default_root_dir=default_root_dir,

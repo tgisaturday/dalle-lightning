@@ -135,16 +135,21 @@ if __name__ == "__main__":
 
     #data = ImageDataModule(args.train_dir, args.val_dir, args.batch_size, args.num_workers, args.img_size, args.fake_data)
     
-    transform = T.Compose([
+    transform_train = T.Compose([
+                            T.Lambda(lambda img: img.convert('RGB') if img.mode != 'RGB' else img),
+                            T.RandomResizedCrop(args.img_size,
+                                    scale=(args.resize_ratio, 1.),ratio=(1., 1.)),
+                            T.ToTensor(),
+                            T.Normalize(((0.5,) * 3, (0.5,) * 3)),
+                            ])
+    transform_val = T.Compose([
                                     T.Lambda(lambda img: img.convert('RGB') if img.mode != 'RGB' else img),
-                                    T.Resize(args.img_size),
+                                    #T.Resize(args.img_size),
                                     T.CenterCrop(args.img_size),
                                     T.ToTensor(),
                                     T.Normalize(((0.5,) * 3, (0.5,) * 3)),
                                     ])
-    if not args.fake_data:
-        train_dataset = ImageFolder(args.train_dir, transform)
-        val_dataset = ImageFolder(args.val_dir, transform)   
+ 
     if args.fake_data:
         import torch_xla.utils.utils as xu
         import torch_xla.core.xla_model as xm        
@@ -157,6 +162,8 @@ if __name__ == "__main__":
                         torch.zeros(args.batch_size, dtype=torch.int64)),
                         sample_count=50000 // args.batch_size // xm.xrt_world_size())                           
     else:
+        train_dataset = ImageFolder(args.train_dir, transform_train)
+        val_dataset = ImageFolder(args.val_dir, transform_val)          
         train_loader = DataLoader(train_dataset, batch_size=args.batch_size, num_workers=args.num_workers,shuffle=True)      
         val_loader = DataLoader(val_dataset, batch_size=args.batch_size, num_workers=args.num_workers)  
 
