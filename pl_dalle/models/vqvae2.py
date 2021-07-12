@@ -2,6 +2,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 import pytorch_lightning as pl
+from einops import rearrange
 
 #from torch import distributed as dist
 # import vqvae.distributed as dist_fn
@@ -38,7 +39,7 @@ class VQVAE2(pl.LightningModule):
         self.recon_loss = nn.MSELoss()
         self.latent_loss_weight = args.latent_weight
         self.image_size = args.resolution
-        self.num_tokens = args.codebook_dim
+        self.num_tokens = args.codebook_dim * 2 #two codebooks
 
         self.enc_b = Encoder(args.in_channels, args.ch, args.num_res_blocks, args.num_res_ch, stride=4)
         self.enc_t = Encoder(args.ch, args.ch, args.num_res_blocks, args.num_res_ch, stride=2)
@@ -104,13 +105,16 @@ class VQVAE2(pl.LightningModule):
         dec = self.decode(quant_t, quant_b)
 
         return dec
+
     @torch.no_grad()
     def get_codebook_indices(self, img):
-        #Needs to be fixed
         b = img.shape[0]
         img = (2 * img) - 1
-        _, _, [_, _, indices] = self.model.encode(img)
-        return rearrange(indices, 'b h w -> b (h w)', b=b)
+        _, _, _, id_t, id_b = self.model.encode(img)
+        id_t = rearrange(id_t, 'b h w -> b (h w)', b=b)
+        id_b = rearrange(id_b, 'b h w -> b (h w)', b=b)
+        indices = torch.cat((id_t,id_b),1)        
+        return indices
 
     def training_step(self, batch, batch_idx):         
         x, _ = batch
