@@ -68,7 +68,7 @@ if __name__ == "__main__":
                     help='training settings')  
     parser.add_argument('--epochs', type=int, default=30,
                     help='training settings')                                    
-    parser.add_argument('--num_workers', type=int, default=0,
+    parser.add_argument('--num_workers', type=int, default=8,
                     help='training settings')   
     parser.add_argument('--img_size', type=int, default=256,
                     help='training settings')

@@ -13,10 +13,10 @@ python3 -m torch_xla.distributed.xla_dist --tpu=${TPU_NAME} -- python3 home/taeh
 
 gcloud services enable tpu.googleapis.com
 
-gcloud alpha compute tpus tpu-vm create tpu-vm-torch --zone=europe-west4-a --accelerator-type=v3-8 --version=v2-alpha 
+gcloud alpha compute tpus tpu-vm create tpu-vm-3 --zone=europe-west4-a --accelerator-type=v3-8 --version=v2-alpha 
 
 
-gcloud alpha compute tpus tpu-vm ssh tpu-vm-torch --zone europe-west4-a --project lgai-vision-tpu
+gcloud alpha compute tpus tpu-vm ssh tpu-vm-2 --zone europe-west4-a --project lgai-vision-tpu
 
 export XRT_TPU_CONFIG="localservice;0;localhost:51011"
 

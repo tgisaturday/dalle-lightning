@@ -27,7 +27,9 @@ python train_vae.py --use_tpus --train_dir [training_set] --val_dir [val_set] --
 ```
 
 ## Training DALL-E
-TBU
+```
+python train_dalle.py --use_tpus --train_dir [training_set] --val_dir [val_set] --log_dir [where to save results] --vae_path [pretrained vae] --bpe_path [pretrained bpe]
+```
 
 ## TODO
 - [x] Add VQVAE, VQGAN, and Gumbel VQVAE(Discrete VAE), Gumbel VQGAN

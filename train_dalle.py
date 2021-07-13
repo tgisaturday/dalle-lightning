@@ -87,7 +87,7 @@ if __name__ == "__main__":
     parser.add_argument('--lr_decay', action = 'store_true')
     parser.add_argument('--lr_decay_rate', type = float, default = 0.98, 
                     help = 'learning rate decay')                                          
-    parser.add_argument('--num_workers', type=int, default=0,
+    parser.add_argument('--num_workers', type=int, default=8,
                     help='training settings')   
     parser.add_argument('--img_size', type=int, default=256,
                     help='training settings')  
