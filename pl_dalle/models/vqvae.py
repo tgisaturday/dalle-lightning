@@ -179,7 +179,7 @@ class GumbelVQVAE(VQVAE):
         _, _, [_, _, indices] = self.model.encode(img)
         return rearrange(indices, 'b h w -> b (h w)', b=b)
 
-    def training_step(self, batch, batch_idx, optimizer_idx):
+    def training_step(self, batch, batch_idx):
         x, _ = batch
         self.temperature = max(self.temperature * math.exp(-self.anneal_rate * self.global_step), self.temp_min)
         self.quantize.temperature = self.temperature
