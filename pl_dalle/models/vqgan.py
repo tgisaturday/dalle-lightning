@@ -51,7 +51,7 @@ class VQGAN(pl.LightningModule):
     def encode(self, x):
         h = self.encoder(x)
         h = self.quant_conv(h)
-        quant, emb_loss, info = self.quantize(h)
+        quant, emb_loss, info = self.quantize(h,self.device)
         return quant, emb_loss, info
 
     def decode(self, quant):

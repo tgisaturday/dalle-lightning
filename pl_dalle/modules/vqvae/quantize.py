@@ -36,7 +36,7 @@ class VectorQuantizer(nn.Module):
 
         self.same_index_shape = same_index_shape
 
-    def remap_to_used(self, inds):
+    def remap_to_used(self, inds, device):
         ishape = inds.shape
         assert len(ishape)>1
         inds = inds.reshape(ishape[0],-1)
@@ -45,7 +45,7 @@ class VectorQuantizer(nn.Module):
         new = match.argmax(-1)
         unknown = match.sum(2)<1
         if self.unknown_index == "random":
-            new[unknown]=torch.randint(0,self.re_embed,size=new[unknown].shape).to(device=new.device)
+            new[unknown]=torch.randint(0,self.re_embed,size=new[unknown].shape, device = device)
         else:
             new[unknown] = self.unknown_index
         return new.reshape(ishape)
@@ -60,7 +60,7 @@ class VectorQuantizer(nn.Module):
         back=torch.gather(used[None,:][inds.shape[0]*[0],:], 1, inds)
         return back.reshape(ishape)
 
-    def forward(self, z, temp=None, rescale_logits=False, return_logits=False):
+    def forward(self, z, device, temp=None, rescale_logits=False, return_logits=False):
         assert temp is None or temp==1.0, "Only for interface compatible with Gumbel"
         assert rescale_logits==False, "Only for interface compatible with Gumbel"
         assert return_logits==False, "Only for interface compatible with Gumbel"
@@ -91,7 +91,7 @@ class VectorQuantizer(nn.Module):
 
         if self.remap is not None:
             min_encoding_indices = min_encoding_indices.reshape(z.shape[0],-1) # add batch axis
-            min_encoding_indices = self.remap_to_used(min_encoding_indices)
+            min_encoding_indices = self.remap_to_used(min_encoding_indices, device)
             min_encoding_indices = min_encoding_indices.reshape(-1,1) # flatten
 
         if self.same_index_shape:
@@ -154,7 +154,7 @@ class GumbelQuantize(nn.Module):
         else:
             self.re_embed = codebook_dim
     
-    def remap_to_used(self, inds):
+    def remap_to_used(self, inds, device):
         ishape = inds.shape
         assert len(ishape)>1
         inds = inds.reshape(ishape[0],-1)
@@ -163,7 +163,7 @@ class GumbelQuantize(nn.Module):
         new = match.argmax(-1)
         unknown = match.sum(2)<1
         if self.unknown_index == "random":
-            new[unknown]=torch.randint(0,self.re_embed,size=new[unknown].shape).to(device=new.device)
+            new[unknown]=torch.randint(0,self.re_embed,size=new[unknown].shape, device=device)
         else:
             new[unknown] = self.unknown_index
         return new.reshape(ishape)
@@ -178,7 +178,7 @@ class GumbelQuantize(nn.Module):
         back=torch.gather(used[None,:][inds.shape[0]*[0],:], 1, inds)
         return back.reshape(ishape)
 
-    def forward(self, z, temp=None,return_logits=False):
+    def forward(self, z, device, temp=None,return_logits=False):
         # force hard = True when we are in eval mode, as we must quantize. actually, always true seems to work
         hard = self.straight_through if self.training else True
         temp = self.temperature if temp is None else temp
@@ -186,7 +186,7 @@ class GumbelQuantize(nn.Module):
         logits = self.proj(z)
         if self.remap is not None:
             # continue only with used logits
-            full_zeros = torch.zeros_like(logits)
+            full_zeros = torch.zeros_like(logits, device=device)
             logits = logits[:,self.used,...]
 
         soft_one_hot = F.gumbel_softmax(logits, tau=temp, dim=1, hard=hard)
@@ -202,7 +202,7 @@ class GumbelQuantize(nn.Module):
 
         ind = soft_one_hot.argmax(dim=1)
         if self.remap is not None:
-            ind = self.remap_to_used(ind)
+            ind = self.remap_to_used(ind, device)
         if self.use_vqinterface:
             if return_logits:
                 return z_q, diff, (None, None, ind), logits
@@ -217,5 +217,103 @@ class GumbelQuantize(nn.Module):
             indices = self.unmap_to_all(indices)
         one_hot = F.one_hot(indices, num_classes=self.codebook_dim).permute(0, 3, 1, 2).float()
         z_q = einsum('b n h w, n d -> b d h w', one_hot, self.embed.weight)
+        return z_q
+
+
+
+class LegacyVectorQuantizer(nn.Module):
+    """
+    see https://github.com/MishaLaskin/vqvae/blob/d761a999e2267766400dc646d82d3ac3657771d4/models/quantizer.py
+    ____________________________________________
+    Discretization bottleneck part of the VQ-VAE.
+    Inputs:
+    - n_e : number of embeddings
+    - e_dim : dimension of embedding
+    - beta : commitment cost used in loss term, beta * ||z_e(x)-sg[e]||^2
+    _____________________________________________
+    """
+
+    def __init__(self, n_e, e_dim, beta):
+        super(VectorQuantizer, self).__init__()
+        self.n_e = n_e
+        self.e_dim = e_dim
+        self.beta = beta
+
+        self.embedding = nn.Embedding(self.n_e, self.e_dim)
+        self.embedding.weight.data.uniform_(-1.0 / self.n_e, 1.0 / self.n_e)
+
+    def forward(self, z, device):
+        """
+        Inputs the output of the encoder network z and maps it to a discrete
+        one-hot vector that is the index of the closest embedding vector e_j
+        z (continuous) -> z_q (discrete)
+        z.shape = (batch, channel, height, width)
+        quantization pipeline:
+            1. get encoder input (B,C,H,W)
+            2. flatten input to (B*H*W,C)
+        """
+        # reshape z -> (batch, height, width, channel) and flatten
+        z = z.permute(0, 2, 3, 1).contiguous()
+        z_flattened = z.view(-1, self.e_dim)
+        # distances from z to embeddings e_j (z - e)^2 = z^2 + e^2 - 2 e * z
+
+        d = torch.sum(z_flattened ** 2, dim=1, keepdim=True) + \
+            torch.sum(self.embedding.weight**2, dim=1) - 2 * \
+            torch.matmul(z_flattened, self.embedding.weight.t())
+
+        ## could possible replace this here
+        # #\start...
+        # find closest encodings
+        min_encoding_indices = torch.argmin(d, dim=1).unsqueeze(1)
+
+        min_encodings = torch.zeros(
+            min_encoding_indices.shape[0], self.n_e, device=device)
+        min_encodings.scatter_(1, min_encoding_indices, 1)
+
+        # dtype min encodings: torch.float32
+        # min_encodings shape: torch.Size([2048, 512])
+        # min_encoding_indices.shape: torch.Size([2048, 1])
+
+        # get quantized latent vectors
+        z_q = torch.matmul(min_encodings, self.embedding.weight).view(z.shape)
+        #.........\end
+
+        # with:
+        # .........\start
+        #min_encoding_indices = torch.argmin(d, dim=1)
+        #z_q = self.embedding(min_encoding_indices)
+        # ......\end......... (TODO)
+
+        # compute loss for embedding
+        loss = torch.mean((z_q.detach()-z)**2) + self.beta * \
+            torch.mean((z_q - z.detach()) ** 2)
+
+        # preserve gradients
+        z_q = z + (z_q - z).detach()
+
+        # perplexity
+        e_mean = torch.mean(min_encodings, dim=0)
+        perplexity = torch.exp(-torch.sum(e_mean * torch.log(e_mean + 1e-10)))
+
+        # reshape back to match original input shape
+        z_q = z_q.permute(0, 3, 1, 2).contiguous()
+
+        return z_q, loss, (perplexity, min_encodings, min_encoding_indices)
+
+    def get_codebook_entry(self, indices, shape, device):
+        # shape specifying (batch, height, width, channel)
+        # TODO: check for more easy handling with nn.Embedding
+        min_encodings = torch.zeros(indices.shape[0], self.n_e, device=device)
+        min_encodings.scatter_(1, indices[:,None], 1)
+
+        # get quantized latent vectors
+        z_q = torch.matmul(min_encodings.float(), self.embedding.weight)
+
+        if shape is not None:
+            z_q = z_q.view(shape)
+
+            # reshape back to match original input shape
+            z_q = z_q.permute(0, 3, 1, 2).contiguous()
+
         return z_q
 
