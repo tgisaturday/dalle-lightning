@@ -154,7 +154,6 @@ class GumbelVQVAE(VQVAE):
                          ignore_keys=ignore_keys
                          )
 
-        self.loss.n_classes = args.codebook_dim
         self.vocab_size = args.codebook_dim
         self.temperature = args.starting_temp
         self.anneal_rate = args.anneal_rate
