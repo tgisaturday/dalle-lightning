@@ -43,20 +43,20 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='DALL-E Training for Pytorch TPU')
 
     #path configuration
-    parser.add_argument('--train_dir', type=str, default='dalle-lightning/data/train/',
+    parser.add_argument('--train_dir', type=str, default='ataset/train/',
                     help='path to train dataset')
-    parser.add_argument('--val_dir', type=str, default='dalle-lightning/data/val/',
+    parser.add_argument('--val_dir', type=str, default='dataset/val/',
                     help='path to val dataset')                    
-    parser.add_argument('--log_dir', type=str, default='dalle-lightning/results/',
+    parser.add_argument('--log_dir', type=str, default='results/',
                     help='path to save logs')
 
     parser.add_argument('--vae_path', type=str,
                    help='path to your trained VAE')
 
-    parser.add_argument('--ckpt_path', type=str,default='dalle-lightning/results/checkpoints/last.ckpt',
+    parser.add_argument('--ckpt_path', type=str,default='results/checkpoints/last.ckpt',
                     help='path to previous checkpoint')
 
-    parser.add_argument('--bpe_path', type=str, default='dalle-lightning/data/',
+    parser.add_argument('--bpe_path', type=str, default='data/',
                     help='path to your BPE json file')
 
 
