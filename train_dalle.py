@@ -103,6 +103,9 @@ if __name__ == "__main__":
                     help='Prevent values from becoming too large during softmax. Helps with stability in fp16 and Mixture of Quantization training.')
     parser.add_argument('--sparse_attn', dest='sparse_attn', action='store_true', default=False,
                     help='Use sparse attention')
+
+    parser.add_argument('--test', action='store_true', default=False,
+                    help='test run')                      
     #VAE configuration
     parser.add_argument('--vae', type=str, default='vqgan')
     '''

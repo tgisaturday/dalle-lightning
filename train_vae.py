@@ -72,7 +72,9 @@ if __name__ == "__main__":
                     help='training settings')   
     parser.add_argument('--img_size', type=int, default=256,
                     help='training settings')
-
+    parser.add_argument('--resize_ratio', type=float, default=0.75,
+                    help='Random resized crop lower ratio')
+                    
     parser.add_argument('--test', action='store_true', default=False,
                     help='test run')                     
 
