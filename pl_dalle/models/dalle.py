@@ -434,12 +434,12 @@ class DALLE(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         text, images = batch
         loss, loss_text, loss_img = self(text, images, return_loss=True)
-        self.log("train/total_loss", loss, prog_bar=True, logger=False, on_step=True, on_epoch=True) 
+        self.log("train/total_loss", loss, prog_bar=True, logger=False, on_step=True, on_epoch=False) 
         log_dict = []   
         log_dict["train/total_loss"] = loss
         log_dict["train/text_loss"] = loss_text                     
         log_dict["train/img_loss"] = loss_img
-        self.log_dict(log_dict, prog_bar=False, logger=True, on_step=True, on_epoch=True)
+        self.log_dict(log_dict, prog_bar=False, logger=True, on_step=False, on_epoch=True)
 
         return loss
     
@@ -447,12 +447,12 @@ class DALLE(pl.LightningModule):
     def validation_step(self, batch, batch_idx):   
         text, images = batch
         loss, loss_text, loss_img = self(text, images, return_loss=True)
-        self.log("val/total_loss", loss, prog_bar=True, logger=False, on_step=True, on_epoch=True) 
+        self.log("val/total_loss", loss, prog_bar=True, logger=False, on_step=True, on_epoch=False) 
         log_dict = []   
         log_dict["val/total_loss"] = loss
         log_dict["val/text_loss"] = loss_text                     
         log_dict["val/img_loss"] = loss_img
-        self.log_dict(log_dict, prog_bar=False, logger=True, on_step=True, on_epoch=True)
+        self.log_dict(log_dict, prog_bar=False, logger=True, on_step=False, on_epoch=True)
 
         return loss
 
