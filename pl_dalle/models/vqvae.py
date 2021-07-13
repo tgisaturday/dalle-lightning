@@ -129,7 +129,7 @@ class VQVAE(pl.LightningModule):
 
     def configure_optimizers(self):
         lr = self.hparams.learning_rate
-        opt = torch.optim.Adam(self.parameters,lr=lr, betas=(0.5, 0.9))
+        opt = torch.optim.Adam(self.parameters(),lr=lr, betas=(0.5, 0.9))
         sched = torch.optim.lr_scheduler.ExponentialLR(optimizer = opt, gamma = self.args.lr_decay_rate)
         return opt, sched
 
