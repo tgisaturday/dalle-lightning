@@ -84,7 +84,7 @@ class VQVAE(pl.LightningModule):
         else:
             aeloss = F.mse_loss(x, xrec)   
         loss = aeloss + qloss                     
-        self.log("train/rec_loss", aeloss, prog_bar=True, logger=False, on_step=True, on_epoch=True)
+        self.log("train/rec_loss", aeloss, prog_bar=True, logger=False, on_step=True, on_epoch=False)
 
         log_dict = dict()      
         if x.shape[1] > 3:
@@ -98,7 +98,7 @@ class VQVAE(pl.LightningModule):
         log_dict["train/inputs"] = x
         log_dict["train/reconstructions"] = xrec 
 
-        self.log_dict(log_dict, prog_bar=False, logger=True, on_step=True, on_epoch=True)
+        self.log_dict(log_dict, prog_bar=False, logger=True, on_step=False, on_epoch=True)
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -109,7 +109,7 @@ class VQVAE(pl.LightningModule):
         else:
             aeloss = F.mse_loss(x, xrec)   
         loss = aeloss + qloss                     
-        self.log("val/rec_loss", aeloss, prog_bar=True, logger=False, on_step=True, on_epoch=True)
+        self.log("val/rec_loss", aeloss, prog_bar=True, logger=False, on_step=True, on_epoch=False)
 
         log_dict = dict()      
         if x.shape[1] > 3:
@@ -123,7 +123,7 @@ class VQVAE(pl.LightningModule):
         log_dict["val/inputs"] = x
         log_dict["val/reconstructions"] = xrec 
 
-        self.log_dict(log_dict, prog_bar=False, logger=True, on_step=True, on_epoch=True)
+        self.log_dict(log_dict, prog_bar=False, logger=True, on_step=False, on_epoch=True)
         return log_dict
 
 
@@ -200,7 +200,7 @@ class GumbelVQVAE(VQVAE):
         else:
             aeloss = F.mse_loss(x, xrec) 
         loss = aeloss + qloss                      
-        self.log("train/rec_loss", aeloss, prog_bar=True, logger=False, on_step=True, on_epoch=True)
+        self.log("train/rec_loss", aeloss, prog_bar=True, logger=False, on_step=True, on_epoch=False)
         log_dict = dict()      
         if x.shape[1] > 3:
             # colorize with random projection
@@ -213,7 +213,7 @@ class GumbelVQVAE(VQVAE):
         log_dict["train/inputs"] = x
         log_dict["train/reconstructions"] = xrec 
 
-        self.log_dict(log_dict, prog_bar=False, logger=True, on_step=True, on_epoch=True)
+        self.log_dict(log_dict, prog_bar=False, logger=True, on_step=False, on_epoch=True)
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -225,8 +225,7 @@ class GumbelVQVAE(VQVAE):
         else:
             aeloss = F.mse_loss(x, xrec)  
         loss = aeloss + qloss                      
-        self.log("val/rec_loss", aeloss,
-                 prog_bar=True, logger=True, on_step=False, on_epoch=True, sync_dist=True)
+        self.log("val/rec_loss", aeloss, prog_bar=True, logger=False, on_step=False, on_epoch=False)
   
         log_dict = dict()      
         if x.shape[1] > 3:
@@ -240,7 +239,7 @@ class GumbelVQVAE(VQVAE):
         log_dict["val/inputs"] = x
         log_dict["val/reconstructions"] = xrec 
 
-        self.log_dict(log_dict, prog_bar=False, logger=True, on_step=True, on_epoch=True)
+        self.log_dict(log_dict, prog_bar=False, logger=True, on_step=False, on_epoch=True)
         return log_dict
 
     def log_images(self, batch, **kwargs):

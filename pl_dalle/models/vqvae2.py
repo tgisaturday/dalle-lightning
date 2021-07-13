@@ -123,7 +123,7 @@ class VQVAE2(pl.LightningModule):
         recon_loss = self.recon_loss(xrec, x)
         latent_loss = qloss.mean()
         loss = recon_loss + self.latent_loss_weight * latent_loss
-        self.log("train/rec_loss", recon_loss, prog_bar=True, logger=False, on_step=True, on_epoch=True)
+        self.log("train/rec_loss", recon_loss, prog_bar=True, logger=False, on_step=True, on_epoch=False)
 
         log_dict = dict()      
         if x.shape[1] > 3:
@@ -137,7 +137,7 @@ class VQVAE2(pl.LightningModule):
         log_dict["train/inputs"] = x
         log_dict["train/reconstructions"] = xrec 
 
-        self.log_dict(log_dict, prog_bar=False, logger=True, on_step=True, on_epoch=True)
+        self.log_dict(log_dict, prog_bar=False, logger=True, on_step=False, on_epoch=True)
 
         return loss
 
@@ -149,8 +149,7 @@ class VQVAE2(pl.LightningModule):
         latent_loss = qloss.mean()
         loss = recon_loss + self.latent_loss_weight * latent_loss
         
-        self.log("val/rec_loss", recon_loss,
-                   prog_bar=True, logger=False, on_step=True, on_epoch=True, sync_dist=True)
+        self.log("val/rec_loss", recon_loss, prog_bar=True, logger=False, on_step=True, on_epoch=False)
         log_dict = dict()      
         if x.shape[1] > 3:
             # colorize with random projection
@@ -163,7 +162,7 @@ class VQVAE2(pl.LightningModule):
         log_dict["val/total_loss"] = loss                      
         log_dict["val/inputs"] = x
         log_dict["val/reconstructions"] = xrec      
-        self.log_dict(log_dict, prog_bar=False, logger=True, on_step=True, on_epoch=True)
+        self.log_dict(log_dict, prog_bar=False, logger=True, on_step=False, on_epoch=True)
 
         return self.log_dict
 
