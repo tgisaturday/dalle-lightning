@@ -182,6 +182,7 @@ class GumbelVQGAN(VQGAN):
         self.loss.n_classes = args.codebook_dim
         self.vocab_size = args.codebook_dim
         self.temperature = args.starting_temp
+        self.anneal_rate = args.anneal_rate
         self.quantize = GumbelQuantize(args.z_channels, args.embed_dim,
                                        codebook_dim=args.codebook_dim,
                                        kl_weight=args.kl_loss_weight, temp_init=args.starting_temp,
