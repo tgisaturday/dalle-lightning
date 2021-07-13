@@ -12,10 +12,7 @@ from pl_dalle.modules.losses.vqperceptual import VQLPIPSWithDiscriminator
 class VQGAN(pl.LightningModule):
     def __init__(self,
                  args,batch_size, learning_rate,
-                 ignore_keys=[],
-                 monitor=None,
-                 remap=None,
-                 same_index_shape=False,  # tell vector quantizer to return indices as bhw
+                 ignore_keys=[]
                  ):
         super().__init__()
         self.save_hyperparameters()
@@ -39,14 +36,9 @@ class VQGAN(pl.LightningModule):
         self.loss = VQLPIPSWithDiscriminator(disc_start=args.disc_start, codebook_weight=args.codebook_weight,
                                             disc_in_channels=args.disc_in_channels,disc_weight=args.disc_weight)
 
-        self.quantize = VectorQuantizer(args.codebook_dim, args.embed_dim, beta=0.25,
-                                        remap=remap, same_index_shape=same_index_shape)
+        self.quantize = VectorQuantizer(args.codebook_dim, args.embed_dim, beta=0.25)
         self.quant_conv = torch.nn.Conv2d(args.z_channels, args.embed_dim, 1)
         self.post_quant_conv = torch.nn.Conv2d(args.embed_dim, args.z_channels, 1)
-
-
-        if monitor is not None:
-            self.monitor = monitor
 
     def encode(self, x):
         h = self.encoder(x)
@@ -168,15 +160,12 @@ class VQGAN(pl.LightningModule):
 class GumbelVQGAN(VQGAN):
     def __init__(self,
                  args, batch_size, learning_rate,
-                 ignore_keys=[],
-                 monitor=None,
-                 remap=None,
+                 ignore_keys=[]
                  ):
         self.save_hyperparameters()
         self.args = args    
         super().__init__(args, batch_size, learning_rate,
-                         ignore_keys=ignore_keys,
-                         monitor=monitor,
+                         ignore_keys=ignore_keys
                          )
 
         self.loss.n_classes = args.codebook_dim
@@ -184,10 +173,10 @@ class GumbelVQGAN(VQGAN):
         self.temperature = args.starting_temp
         self.anneal_rate = args.anneal_rate
         self.temp_min = args.temp_min
-        self.quantize = GumbelQuantize(args.z_channels, args.embed_dim,
+        self.quantize = GumbelQuantize(args.z_channels, 
                                        codebook_dim=args.codebook_dim,
-                                       kl_weight=args.kl_loss_weight, temp_init=args.starting_temp,
-                                       remap=remap)
+                                       embedding_dim=args.embed_dim,
+                                       kl_weight=args.kl_loss_weight, temp_init=args.starting_temp)
 
 
     def encode_to_prequant(self, x):

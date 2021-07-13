@@ -11,56 +11,16 @@ class VectorQuantizer(nn.Module):
     Improved version over VectorQuantizer, can be used as a drop-in replacement. Mostly
     avoids costly matrix multiplications and allows for post-hoc remapping of indices.
     """
-    def __init__(self, n_e, e_dim, beta, remap=None, unknown_index="random",
-                 same_index_shape=False):
+    def __init__(self, codebook_dim, embedding_dim, beta, unknown_index="random"):
         super().__init__()
-        self.n_e = n_e
-        self.e_dim = e_dim
+        self.embedding_dim = embedding_dim
+        self.codebook_dim = codebook_dim
         self.beta = beta
 
-        self.embedding = nn.Embedding(self.n_e, self.e_dim)
+        self.embedding = nn.Embedding(self.codebook_dim, self.embedding_dim)
         self.embedding.weight.data.uniform_(-1.0 / self.n_e, 1.0 / self.n_e)
 
-        self.remap = remap
-        if self.remap is not None:
-            self.register_buffer("used", torch.tensor(np.load(self.remap)))
-            self.re_embed = self.used.shape[0]
-            self.unknown_index = unknown_index # "random" or "extra" or integer
-            if self.unknown_index == "extra":
-                self.unknown_index = self.re_embed
-                self.re_embed = self.re_embed+1
-            print(f"Remapping {self.n_e} indices to {self.re_embed} indices. "
-                  f"Using {self.unknown_index} for unknown indices.")
-        else:
-            self.re_embed = n_e
-
-        self.same_index_shape = same_index_shape
-
-    def remap_to_used(self, inds, device):
-        ishape = inds.shape
-        assert len(ishape)>1
-        inds = inds.reshape(ishape[0],-1)
-        used = self.used.to(inds)
-        match = (inds[:,:,None]==used[None,None,...]).long()
-        new = match.argmax(-1)
-        unknown = match.sum(2)<1
-        if self.unknown_index == "random":
-            new[unknown]=torch.randint(0,self.re_embed,size=new[unknown].shape, device = device)
-        else:
-            new[unknown] = self.unknown_index
-        return new.reshape(ishape)
-
-    def unmap_to_all(self, inds):
-        ishape = inds.shape
-        assert len(ishape)>1
-        inds = inds.reshape(ishape[0],-1)
-        used = self.used.to(inds)
-        if self.re_embed > self.used.shape[0]: # extra token
-            inds[inds>=self.used.shape[0]] = 0 # simply set to zero
-        back=torch.gather(used[None,:][inds.shape[0]*[0],:], 1, inds)
-        return back.reshape(ishape)
-
-    def forward(self, z, device, temp=None, rescale_logits=False, return_logits=False):
+    def forward(self, z, temp=None, rescale_logits=False, return_logits=False):
         assert temp is None or temp==1.0, "Only for interface compatible with Gumbel"
         assert rescale_logits==False, "Only for interface compatible with Gumbel"
         assert return_logits==False, "Only for interface compatible with Gumbel"
@@ -89,24 +49,9 @@ class VectorQuantizer(nn.Module):
         # reshape back to match original input shape
         z_q = rearrange(z_q, 'b h w c -> b c h w').contiguous()
 
-        if self.remap is not None:
-            min_encoding_indices = min_encoding_indices.reshape(z.shape[0],-1) # add batch axis
-            min_encoding_indices = self.remap_to_used(min_encoding_indices, device)
-            min_encoding_indices = min_encoding_indices.reshape(-1,1) # flatten
-
-        if self.same_index_shape:
-            min_encoding_indices = min_encoding_indices.reshape(
-                z_q.shape[0], z_q.shape[2], z_q.shape[3])
-
         return z_q, loss, (perplexity, min_encodings, min_encoding_indices)
 
     def get_codebook_entry(self, indices, shape):
-        # shape specifying (batch, height, width, channel)
-        if self.remap is not None:
-            indices = indices.reshape(shape[0],-1) # add batch axis
-            indices = self.unmap_to_all(indices)
-            indices = indices.reshape(-1) # flatten again
-
         # get quantized latent vectors
         z_q = self.embedding(indices)
 
@@ -124,9 +69,8 @@ class GumbelQuantize(nn.Module):
     Categorical Reparameterization with Gumbel-Softmax, Jang et al. 2016
     https://arxiv.org/abs/1611.01144
     """
-    def __init__(self, num_hiddens, embedding_dim, codebook_dim, straight_through=True,
-                 kl_weight=5e-4, temp_init=1.0, use_vqinterface=True,
-                 remap=None, unknown_index="random"):
+    def __init__(self, num_hiddens,codebook_dim, embedding_dim, straight_through=True,
+                 kl_weight=5e-4, temp_init=1.0, use_vqinterface=True, unknown_index="random"):
         super().__init__()
 
         self.embedding_dim = embedding_dim
@@ -141,59 +85,14 @@ class GumbelQuantize(nn.Module):
 
         self.use_vqinterface = use_vqinterface
 
-        self.remap = remap
-        if self.remap is not None:
-            self.register_buffer("used", torch.tensor(np.load(self.remap)))
-            self.re_embed = self.used.shape[0]
-            self.unknown_index = unknown_index # "random" or "extra" or integer
-            if self.unknown_index == "extra":
-                self.unknown_index = self.re_embed
-                self.re_embed = self.re_embed+1
-            print(f"Remapping {self.codebook_dim} indices to {self.re_embed} indices. "
-                  f"Using {self.unknown_index} for unknown indices.")
-        else:
-            self.re_embed = codebook_dim
-    
-    def remap_to_used(self, inds, device):
-        ishape = inds.shape
-        assert len(ishape)>1
-        inds = inds.reshape(ishape[0],-1)
-        used = self.used.to(inds)
-        match = (inds[:,:,None]==used[None,None,...]).long()
-        new = match.argmax(-1)
-        unknown = match.sum(2)<1
-        if self.unknown_index == "random":
-            new[unknown]=torch.randint(0,self.re_embed,size=new[unknown].shape, device=device)
-        else:
-            new[unknown] = self.unknown_index
-        return new.reshape(ishape)
-
-    def unmap_to_all(self, inds):
-        ishape = inds.shape
-        assert len(ishape)>1
-        inds = inds.reshape(ishape[0],-1)
-        used = self.used.to(inds)
-        if self.re_embed > self.used.shape[0]: # extra token
-            inds[inds>=self.used.shape[0]] = 0 # simply set to zero
-        back=torch.gather(used[None,:][inds.shape[0]*[0],:], 1, inds)
-        return back.reshape(ishape)
-
-    def forward(self, z, device, temp=None,return_logits=False):
+    def forward(self, z, temp=None,return_logits=False):
         # force hard = True when we are in eval mode, as we must quantize. actually, always true seems to work
         hard = self.straight_through if self.training else True
         temp = self.temperature if temp is None else temp
 
         logits = self.proj(z)
-        if self.remap is not None:
-            # continue only with used logits
-            full_zeros = torch.zeros_like(logits, device=device)
-            logits = logits[:,self.used,...]
 
         soft_one_hot = F.gumbel_softmax(logits, tau=temp, dim=1, hard=hard)
-        if self.remap is not None:
-            # go back to all entries but unused set to zero
-            full_zeros[:,self.used,...] = soft_one_hot
-            soft_one_hot = full_zeros
         z_q = einsum('b n h w, n d -> b d h w', soft_one_hot, self.embed.weight)
 
         # + kl divergence to the prior loss
@@ -201,8 +100,6 @@ class GumbelQuantize(nn.Module):
         diff = self.kl_weight * torch.sum(qy * torch.log(qy * self.codebook_dim + 1e-10), dim=1).mean()
 
         ind = soft_one_hot.argmax(dim=1)
-        if self.remap is not None:
-            ind = self.remap_to_used(ind, device)
         if self.use_vqinterface:
             if return_logits:
                 return z_q, diff, (None, None, ind), logits
@@ -213,8 +110,6 @@ class GumbelQuantize(nn.Module):
         b, h, w, c = shape
         assert b*h*w == indices.shape[0]
         indices = rearrange(indices, '(b h w) -> b h w', b=b, h=h, w=w)
-        if self.remap is not None:
-            indices = self.unmap_to_all(indices)
         one_hot = F.one_hot(indices, num_classes=self.codebook_dim).permute(0, 3, 1, 2).float()
         z_q = einsum('b n h w, n d -> b d h w', one_hot, self.embed.weight)
         return z_q
