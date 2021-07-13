@@ -43,7 +43,7 @@ class VQGAN(pl.LightningModule):
     def encode(self, x):
         h = self.encoder(x)
         h = self.quant_conv(h)
-        quant, emb_loss, info = self.quantize(h,self.device)
+        quant, emb_loss, info = self.quantize(h)
         return quant, emb_loss, info
 
     def decode(self, quant):
@@ -145,7 +145,6 @@ class VQGAN(pl.LightningModule):
     def log_images(self, batch, **kwargs):
         log = dict()
         x, _ = batch
-        x = x.to(self.device)
         xrec, _ = self(x)
         if x.shape[1] > 3:
             # colorize with random projection
@@ -254,7 +253,6 @@ class GumbelVQGAN(VQGAN):
     def log_images(self, batch, **kwargs):
         log = dict()
         x, _ = batch
-        x = x.to(self.device)
         # encode
         h = self.encoder(x)
         h = self.quant_conv(h)
