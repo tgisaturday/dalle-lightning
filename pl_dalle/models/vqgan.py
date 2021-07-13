@@ -119,7 +119,6 @@ class VQGAN(pl.LightningModule):
 
         self.log("val/rec_loss", aeloss,
                    prog_bar=True, logger=False, on_step=True, on_epoch=True, sync_dist=True)
-        self.log("val/dis_closs", discloss, prog_bar=True,logger=False, on_step=True, on_epoch=True)
 
         log_dict = log_dict_ae.update(log_dict_disc)     
         if x.shape[1] > 3:
@@ -246,11 +245,10 @@ class GumbelVQGAN(VQGAN):
 
         discloss, log_dict_disc = self.loss(qloss, x, xrec, 1, self.global_step,
                                             last_layer=self.get_last_layer(), split="val")
-        rec_loss = log_dict_ae["val/rec_loss"]
-        self.log("val/rec_loss", rec_loss,
+
+        self.log("val/rec_loss", aeloss,
                  prog_bar=True, logger=True, on_step=False, on_epoch=True, sync_dist=True)
-        self.log("val/aeloss", aeloss,
-                 prog_bar=True, logger=True, on_step=False, on_epoch=True, sync_dist=True)
+  
         self.log_dict(log_dict_ae)
         self.log_dict(log_dict_disc)
         return self.log_dict

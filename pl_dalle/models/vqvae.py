@@ -82,10 +82,10 @@ class VQVAE(pl.LightningModule):
         if self.smooth_l1_loss:
             aeloss = F.smooth_l1_loss(x, xrec)
         else:
-            aeloss = F.mse_loss(x, xrec)            
+            aeloss = F.mse_loss(x, xrec)   
+        loss = aeloss + qloss                     
         self.log("train/rec_loss", aeloss, prog_bar=True, logger=False, on_step=True, on_epoch=True)
-        self.log("train/embed_loss", qloss, prog_bar=True, logger=False, on_step=True, on_epoch=True)
-        loss = aeloss + qloss
+
         log_dict = dict()      
         if x.shape[1] > 3:
             # colorize with random projection
@@ -107,10 +107,10 @@ class VQVAE(pl.LightningModule):
         if self.smooth_l1_loss:
             aeloss = F.smooth_l1_loss(x, xrec)
         else:
-            aeloss = F.mse_loss(x, xrec)            
+            aeloss = F.mse_loss(x, xrec)   
+        loss = aeloss + qloss                     
         self.log("val/rec_loss", aeloss, prog_bar=True, logger=False, on_step=True, on_epoch=True)
-        self.log("val/embed_loss", qloss, prog_bar=True, logger=False, on_step=True, on_epoch=True)
-        loss = aeloss + qloss
+
         log_dict = dict()      
         if x.shape[1] > 3:
             # colorize with random projection
@@ -198,10 +198,9 @@ class GumbelVQVAE(VQVAE):
         if self.smooth_l1_loss:
             aeloss = F.smooth_l1_loss(x, xrec)
         else:
-            aeloss = F.mse_loss(x, xrec)            
+            aeloss = F.mse_loss(x, xrec) 
+        loss = aeloss + qloss                      
         self.log("train/rec_loss", aeloss, prog_bar=True, logger=False, on_step=True, on_epoch=True)
-        self.log("train/embed_loss", qloss, prog_bar=True, logger=False, on_step=True, on_epoch=True)
-        loss = aeloss + qloss
         log_dict = dict()      
         if x.shape[1] > 3:
             # colorize with random projection
@@ -224,10 +223,11 @@ class GumbelVQVAE(VQVAE):
         if self.smooth_l1_loss:
             aeloss = F.smooth_l1_loss(x, xrec)
         else:
-            aeloss = F.mse_loss(x, xrec)            
-        self.log("val/rec_loss", aeloss, prog_bar=True, logger=False, on_step=True, on_epoch=True)
-        self.log("val/embed_loss", qloss, prog_bar=True, logger=False, on_step=True, on_epoch=True)
-        loss = aeloss + qloss
+            aeloss = F.mse_loss(x, xrec)  
+        loss = aeloss + qloss                      
+        self.log("val/rec_loss", aeloss,
+                 prog_bar=True, logger=True, on_step=False, on_epoch=True, sync_dist=True)
+  
         log_dict = dict()      
         if x.shape[1] > 3:
             # colorize with random projection

@@ -124,8 +124,7 @@ class VQVAE2(pl.LightningModule):
         latent_loss = qloss.mean()
         loss = recon_loss + self.latent_loss_weight * latent_loss
         self.log("train/rec_loss", recon_loss, prog_bar=True, logger=False, on_step=True, on_epoch=True)
-        self.log("train/embed_loss", latent_loss, prog_bar=True, logger=False, on_step=True, on_epoch=True)
-        self.log("train/total_loss", loss, prog_bar=True, logger=False, on_step=True, on_epoch=True)
+
         log_dict = dict()      
         if x.shape[1] > 3:
             # colorize with random projection
@@ -151,10 +150,6 @@ class VQVAE2(pl.LightningModule):
         loss = recon_loss + self.latent_loss_weight * latent_loss
         
         self.log("val/rec_loss", recon_loss,
-                   prog_bar=True, logger=False, on_step=True, on_epoch=True, sync_dist=True)
-        self.log("val/embed_loss", latent_loss,
-                   prog_bar=True, logger=False, on_step=True, on_epoch=True, sync_dist=True)
-        self.log("val/total_loss", loss,
                    prog_bar=True, logger=False, on_step=True, on_epoch=True, sync_dist=True)
         log_dict = dict()      
         if x.shape[1] > 3:
