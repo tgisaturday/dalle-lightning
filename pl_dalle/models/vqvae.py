@@ -131,7 +131,7 @@ class VQVAE(pl.LightningModule):
         lr = self.hparams.learning_rate
         opt = torch.optim.Adam(self.parameters(),lr=lr, betas=(0.5, 0.9))
         sched = torch.optim.lr_scheduler.ExponentialLR(optimizer = opt, gamma = self.args.lr_decay_rate)
-        return opt, sched
+        return [opt], [sched]
 
     def get_last_layer(self):
         return self.decoder.conv_out.weight

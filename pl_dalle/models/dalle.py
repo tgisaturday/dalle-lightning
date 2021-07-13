@@ -470,7 +470,7 @@ class DALLE(pl.LightningModule):
             min_lr=1e-6,
             verbose=True,
             )    
-            return opt, scheduler
+            return [opt], [scheduler]
         else:
-            return opt      
+            return [opt], []     
      
