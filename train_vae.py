@@ -74,7 +74,7 @@ if __name__ == "__main__":
                     help='training settings')
     parser.add_argument('--resize_ratio', type=float, default=0.75,
                     help='Random resized crop lower ratio')
-                    
+
     parser.add_argument('--test', action='store_true', default=False,
                     help='test run')                     
 
@@ -142,14 +142,14 @@ if __name__ == "__main__":
                             T.RandomResizedCrop(args.img_size,
                                     scale=(args.resize_ratio, 1.),ratio=(1., 1.)),
                             T.ToTensor(),
-                            T.Normalize(((0.5,) * 3, (0.5,) * 3)),
+                            #T.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
                             ])
     transform_val = T.Compose([
                                     T.Lambda(lambda img: img.convert('RGB') if img.mode != 'RGB' else img),
                                     T.Resize(args.img_size),
                                     T.CenterCrop(args.img_size),
                                     T.ToTensor(),
-                                    T.Normalize(((0.5,) * 3, (0.5,) * 3)),
+                                    #T.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
                                     ])
  
     if args.fake_data:
