@@ -41,14 +41,14 @@ class VQVAE2(pl.LightningModule):
         self.image_size = args.resolution
         self.num_tokens = args.codebook_dim * 2 #two codebooks
 
-        self.enc_b = Encoder(args.in_channels, args.ch, args.num_res_blocks, args.num_res_ch, stride=4)
-        self.enc_t = Encoder(args.ch, args.ch, args.num_res_blocks, args.num_res_ch, stride=2)
-        self.quantize_conv_t = nn.Conv2d(args.ch, args.embed_dim, 1)
+        self.enc_b = Encoder(args.in_channels, args.hidden_dim, args.num_res_blocks, args.num_res_ch, stride=4)
+        self.enc_t = Encoder(args.hidden_dim, args.hidden_dim, args.num_res_blocks, args.num_res_ch, stride=2)
+        self.quantize_conv_t = nn.Conv2d(args.hidden_dim, args.embed_dim, 1)
         self.quantize_t = Quantize(args.embed_dim, args.codebook_dim, args.decay)
         self.dec_t = Decoder(
-            args.embed_dim, args.embed_dim, args.ch, args.num_res_blocks, args.num_res_ch, stride=2
+            args.embed_dim, args.embed_dim, args.hidden_dim, args.num_res_blocks, args.num_res_ch, stride=2
         )
-        self.quantize_conv_b = nn.Conv2d(args.embed_dim + args.ch, args.embed_dim, 1)
+        self.quantize_conv_b = nn.Conv2d(args.embed_dim + args.hidden_dim, args.embed_dim, 1)
         self.quantize_b = Quantize(args.embed_dim, args.codebook_dim)
         self.upsample_t = nn.ConvTranspose2d(
             args.embed_dim, args.embed_dim, 4, stride=2, padding=1
@@ -56,7 +56,7 @@ class VQVAE2(pl.LightningModule):
         self.dec = Decoder(
             args.embed_dim + args.embed_dim,
             args.in_channels,
-            args.ch,
+            args.hidden_dim,
             args.num_res_blocks,
             args.num_res_ch,
             stride=4,
