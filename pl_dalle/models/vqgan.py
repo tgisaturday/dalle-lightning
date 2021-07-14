@@ -35,9 +35,8 @@ class VQGAN(pl.LightningModule):
         
         self.loss = VQLPIPSWithDiscriminator(disc_start=args.disc_start, codebook_weight=args.codebook_weight,
                                             disc_in_channels=args.disc_in_channels,disc_weight=args.disc_weight)
-
-        self.quantize = VectorQuantizer(args.codebook_dim, args.embed_dim, beta=0.25)
         self.quant_conv = torch.nn.Conv2d(args.z_channels, args.embed_dim, 1)
+        self.quantize = VectorQuantizer(args.codebook_dim, args.embed_dim, beta=0.25)
         self.post_quant_conv = torch.nn.Conv2d(args.embed_dim, args.z_channels, 1)
 
     def encode(self, x):
@@ -148,6 +147,8 @@ class GumbelVQGAN(VQGAN):
         self.temperature = args.starting_temp
         self.anneal_rate = args.anneal_rate
         self.temp_min = args.temp_min
+        #quant conv channel should be different for gumbel
+        self.quant_conv = torch.nn.Conv2d(args.z_channels, args.codebook_dim, 1)       
         self.quantize = GumbelQuantize(codebook_dim=args.codebook_dim,
                                        embedding_dim=args.embed_dim,
                                        kl_weight=args.kl_loss_weight, temp_init=args.starting_temp)

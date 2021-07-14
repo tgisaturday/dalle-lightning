@@ -36,8 +36,8 @@ class VQVAE(pl.LightningModule):
         
 
         self.smooth_l1_loss = args.smooth_l1_loss
+        self.quant_conv = torch.nn.Conv2d(args.z_channels, args.embed_dim, 1)        
         self.quantize = VectorQuantizer(args.codebook_dim, args.embed_dim, beta=0.25)
-        self.quant_conv = torch.nn.Conv2d(args.z_channels, args.embed_dim, 1)
         self.post_quant_conv = torch.nn.Conv2d(args.embed_dim, args.z_channels, 1)
 
     def encode(self, x):
@@ -130,6 +130,8 @@ class GumbelVQVAE(VQVAE):
         self.temperature = args.starting_temp
         self.anneal_rate = args.anneal_rate
         self.temp_min = args.temp_min
+        #quant conv channel should be different for gumbel
+        self.quant_conv = torch.nn.Conv2d(args.z_channels, args.codebook_dim, 1)           
         self.quantize = GumbelQuantize(codebook_dim=args.codebook_dim,
                                        embedding_dim=args.embed_dim,
                                        kl_weight=args.kl_loss_weight, temp_init=args.starting_temp)
