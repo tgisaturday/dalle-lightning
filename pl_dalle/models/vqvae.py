@@ -5,7 +5,7 @@ import pytorch_lightning as pl
 import math
 
 from pl_dalle.modules.vqvae.vae import Encoder, Decoder
-from pl_dalle.modules.vqvae.quantize import VectorQuantizer,GumbelQuantize
+from pl_dalle.modules.vqvae.quantize import VectorQuantizer, EMAVectorQuantizer, GumbelQuantizer
 
 
 
@@ -112,32 +112,40 @@ class VQVAE(pl.LightningModule):
 
     def get_last_layer(self):
         return self.decoder.conv_out.weight
-        
+
+class EMAVQVAE(VQVAE):
+    def __init__(self,
+                 args, batch_size, learning_rate, log_images=False,
+                 ignore_keys=[]
+                 ):  
+        super().__init__(args, batch_size, learning_rate,
+                         ignore_keys=ignore_keys
+                         )
+     
+        self.quantize = EMAVectorQuantizer(codebook_dim=args.codebook_dim,
+                                       embedding_dim=args.embed_dim,
+                                       beta=args.quant_beta, decay=args.quant_decay, eps=args.quant_eps)        
 
 class GumbelVQVAE(VQVAE):
     def __init__(self,
                  args, batch_size, learning_rate, log_images=False,
                  ignore_keys=[]
-                 ):
-        self.save_hyperparameters()
-        self.args = args    
-        self.log_images = log_images
-        super().__init__(args, batch_size, learning_rate,
+                 ):  
+        super().__init__(args, batch_size, learning_rate, log_images,
                          ignore_keys=ignore_keys
                          )
-
-        self.vocab_size = args.codebook_dim
         self.temperature = args.starting_temp
         self.anneal_rate = args.anneal_rate
         self.temp_min = args.temp_min
         #quant conv channel should be different for gumbel
         self.quant_conv = torch.nn.Conv2d(args.z_channels, args.codebook_dim, 1)           
-        self.quantize = GumbelQuantize(codebook_dim=args.codebook_dim,
+        self.quantize = GumbelQuantizer(codebook_dim=args.codebook_dim,
                                        embedding_dim=args.embed_dim,
                                        kl_weight=args.kl_loss_weight, temp_init=args.starting_temp)
 
     def training_step(self, batch, batch_idx):
         x, _ = batch
+        #temperature annealing
         self.temperature = max(self.temperature * math.exp(-self.anneal_rate * self.global_step), self.temp_min)
         self.quantize.temperature = self.temperature
         xrec, qloss = self(x)

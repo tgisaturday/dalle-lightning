@@ -9,8 +9,8 @@ import torch
 from torchvision import transforms as T
 from torch.utils.data import DataLoader
 from torchvision.datasets import ImageFolder
-from pl_dalle.models.vqgan import VQGAN, GumbelVQGAN
-from pl_dalle.models.vqvae import VQVAE, GumbelVQVAE
+from pl_dalle.models.vqgan import VQGAN, EMAVQGAN, GumbelVQGAN
+from pl_dalle.models.vqvae import VQVAE, EMAVQVAE, GumbelVQVAE
 from pl_dalle.models.vqvae2 import VQVAE2
 
 import pytorch_lightning as pl
@@ -105,8 +105,13 @@ if __name__ == "__main__":
     parser.add_argument('--attn_resolutions', type=list, default=[16],
                     help='model settings')  
     parser.add_argument('--dropout', type=float, default=0.0,
-                    help='model settings')  
-
+                    help='model settings') 
+    parser.add_argument('--quant_beta', type=float, default=0.5,
+                    help='quantizer beta')                     
+    parser.add_argument('--quant_ema_decay', type=float, default=0.99,
+                    help='quantizer ema decay')
+    parser.add_argument('--quant_ema_eps', type=float, default=1e-5,
+                    help='quantizer ema epsilon')                    
     #vqvae2. to-be merged
     parser.add_argument('--num_res_ch', type=int, default=32,
                     help='model settings')  
@@ -174,10 +179,14 @@ if __name__ == "__main__":
     # model
     if args.model == 'vqgan':
         model = VQGAN(args, args.batch_size, args.learning_rate, args.log_images)
+    elif args.model == 'evqgan':
+        model = EMAVQGAN(args, args.batch_size, args.learning_rate, args.log_images)          
     elif args.model == 'gvqgan':
         model = GumbelVQGAN(args, args.batch_size, args.learning_rate, args.log_images)        
     elif args.model == 'vqvae':
         model = VQVAE(args, args.batch_size, args.learning_rate, args.log_images)
+    elif args.model == 'evqvae':
+        model = EMAVQVAE(args, args.batch_size, args.learning_rate, args.log_images)        
     elif args.model == 'gvqvae':
         model = GumbelVQVAE(args, args.batch_size, args.learning_rate, args.log_images) 
     elif args.model == 'vqvae2':

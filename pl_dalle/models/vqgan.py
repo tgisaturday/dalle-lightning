@@ -5,7 +5,7 @@ import pytorch_lightning as pl
 import math
 
 from pl_dalle.modules.vqvae.vae import Encoder, Decoder
-from pl_dalle.modules.vqvae.quantize import VectorQuantizer,GumbelQuantize
+from pl_dalle.modules.vqvae.quantize import VectorQuantizer, EMAVectorQuantizer, GumbelQuantizer
 from pl_dalle.modules.losses.vqperceptual import VQLPIPSWithDiscriminator
 
 class VQGAN(pl.LightningModule):
@@ -36,7 +36,7 @@ class VQGAN(pl.LightningModule):
         self.loss = VQLPIPSWithDiscriminator(disc_start=args.disc_start, codebook_weight=args.codebook_weight,
                                             disc_in_channels=args.disc_in_channels,disc_weight=args.disc_weight)
         self.quant_conv = torch.nn.Conv2d(args.z_channels, args.embed_dim, 1)
-        self.quantize = VectorQuantizer(args.codebook_dim, args.embed_dim, beta=0.25)
+        self.quantize = VectorQuantizer(args.codebook_dim, args.embed_dim, beta=args.quant_beta)
         self.post_quant_conv = torch.nn.Conv2d(args.embed_dim, args.z_channels, 1)
 
     def encode(self, x):
@@ -129,33 +129,42 @@ class VQGAN(pl.LightningModule):
     def get_last_layer(self):
         return self.decoder.conv_out.weight
         
+class EMAVQGAN(VQGAN):
+    def __init__(self,
+                 args, batch_size, learning_rate, log_images=False,
+                 ignore_keys=[]
+                 ):
+        super().__init__(args, batch_size, learning_rate, log_images,
+                         ignore_keys=ignore_keys
+                         )
+     
+        self.quantize = EMAVectorQuantizer(codebook_dim=args.codebook_dim,
+                                       embedding_dim=args.embed_dim,
+                                       beta=args.quant_beta, decay=args.quant_decay, eps=args.quant_eps)
+
 
 
 class GumbelVQGAN(VQGAN):
     def __init__(self,
                  args, batch_size, learning_rate,log_images=False,
                  ignore_keys=[]
-                 ):
-        self.save_hyperparameters()
-        self.args = args    
-        super().__init__(args, batch_size, learning_rate,
+                 ): 
+        super().__init__(args, batch_size, learning_rate, log_images,
                          ignore_keys=ignore_keys
                          )
-        self.log_images = log_images
-        self.loss.n_classes = args.codebook_dim
-        self.vocab_size = args.codebook_dim
         self.temperature = args.starting_temp
         self.anneal_rate = args.anneal_rate
         self.temp_min = args.temp_min
         #quant conv channel should be different for gumbel
         self.quant_conv = torch.nn.Conv2d(args.z_channels, args.codebook_dim, 1)       
-        self.quantize = GumbelQuantize(codebook_dim=args.codebook_dim,
+        self.quantize = GumbelQuantizer(codebook_dim=args.codebook_dim,
                                        embedding_dim=args.embed_dim,
                                        kl_weight=args.kl_loss_weight, temp_init=args.starting_temp)
 
 
     def training_step(self, batch, batch_idx, optimizer_idx):
         x, _ = batch
+        #temperature annealing
         self.temperature = max(self.temperature * math.exp(-self.anneal_rate * self.global_step), self.temp_min)
         self.quantize.temperature = self.temperature
         xrec, qloss = self(x)
