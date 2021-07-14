@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 from torch import einsum
 import torch.nn.functional as F
-import numpy as np
 
 
 class VectorQuantizer(nn.Module):
