@@ -25,13 +25,13 @@ class VectorQuantizer(nn.Module):
         assert return_logits==False, "Only for interface compatible with Gumbel"
         # reshape z -> (batch, height, width, channel) and flatten
         #z, 'b c h w -> b h w c'
-        z = z.permute(0, 2, 3, 1).contiguous()
+        z = z.permute(0, 2, 3, 1)
         z_flattened = z.view(-1, self.embedding_dim)
         # distances from z to embeddings e_j (z - e)^2 = z^2 + e^2 - 2 e * z
 
         d = torch.sum(z_flattened ** 2, dim=1, keepdim=True) + \
             torch.sum(self.embedding.weight**2, dim=1) - 2 * \
-            torch.einsum('bd,dn->bn', z_flattened, self.embedding.weight.permute(1,0).continuous()) # 'n d -> d n'
+            torch.einsum('bd,dn->bn', z_flattened, self.embedding.weight.permute(1,0)) # 'n d -> d n'
 
         min_encoding_indices = torch.argmin(d, dim=1)
         z_q = self.embedding(min_encoding_indices).view(z.shape)
