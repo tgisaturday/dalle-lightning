@@ -118,13 +118,12 @@ class EMAVQVAE(VQVAE):
                  args, batch_size, learning_rate, log_images=False,
                  ignore_keys=[]
                  ):  
-        super().__init__(args, batch_size, learning_rate,
+        super().__init__(args, batch_size, learning_rate, log_images,
                          ignore_keys=ignore_keys
                          )
-     
         self.quantize = EMAVectorQuantizer(codebook_dim=args.codebook_dim,
                                        embedding_dim=args.embed_dim,
-                                       beta=args.quant_beta, decay=args.quant_decay, eps=args.quant_eps)        
+                                       beta=args.quant_beta, decay=args.quant_ema_decay, eps=args.quant_ema_eps)        
 
 class GumbelVQVAE(VQVAE):
     def __init__(self,
