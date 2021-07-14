@@ -2,7 +2,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 import pytorch_lightning as pl
-from einops import rearrange
+from torch import distributed as dist
 
 #from torch import distributed as dist
 # import vqvae.distributed as dist_fn
@@ -27,29 +27,27 @@ from einops import rearrange
 
 class VQVAE2(pl.LightningModule):
     def __init__(self,
-                 args,batch_size, learning_rate,
-                 ignore_keys=[],
-                 monitor=None,
-                 remap=None,
-                 same_index_shape=False,  # tell vector quantizer to return indices as bhw
+                 args,batch_size, learning_rate, log_images=False,
+                 ignore_keys=[]
                  ):
         super().__init__()
         self.save_hyperparameters()
         self.args = args  
         self.recon_loss = nn.MSELoss()
         self.latent_loss_weight = args.latent_weight
+        self.log_images=log_images       
         self.image_size = args.resolution
         self.num_tokens = args.codebook_dim * 2 #two codebooks
 
         self.enc_b = Encoder(args.in_channels, args.hidden_dim, args.num_res_blocks, args.num_res_ch, stride=4)
         self.enc_t = Encoder(args.hidden_dim, args.hidden_dim, args.num_res_blocks, args.num_res_ch, stride=2)
         self.quantize_conv_t = nn.Conv2d(args.hidden_dim, args.embed_dim, 1)
-        self.quantize_t = Quantize(args.embed_dim, args.codebook_dim, args.decay)
+        self.quantize_t = Quantize(args.embed_dim, args.codebook_dim, args.quant_ema_decay)
         self.dec_t = Decoder(
             args.embed_dim, args.embed_dim, args.hidden_dim, args.num_res_blocks, args.num_res_ch, stride=2
         )
         self.quantize_conv_b = nn.Conv2d(args.embed_dim + args.hidden_dim, args.embed_dim, 1)
-        self.quantize_b = Quantize(args.embed_dim, args.codebook_dim)
+        self.quantize_b = Quantize(args.embed_dim, args.codebook_dim, args.quant_ema_decay)
         self.upsample_t = nn.ConvTranspose2d(
             args.embed_dim, args.embed_dim, 4, stride=2, padding=1
         )
@@ -61,8 +59,6 @@ class VQVAE2(pl.LightningModule):
             args.num_res_ch,
             stride=4,
         )
-        if monitor is not None:
-            self.monitor = monitor
 
     def forward(self, input):
         quant_t, quant_b, diff, _, _ = self.encode(input)
@@ -96,23 +92,16 @@ class VQVAE2(pl.LightningModule):
 
         return dec
 
-    def decode_code(self, code_t, code_b):
-        quant_t = self.quantize_t.embed_code(code_t)
-        quant_t = quant_t.permute(0, 3, 1, 2)
-        quant_b = self.quantize_b.embed_code(code_b)
-        quant_b = quant_b.permute(0, 3, 1, 2)
-
-        dec = self.decode(quant_t, quant_b)
-
-        return dec
 
     @torch.no_grad()
     def get_codebook_indices(self, img):
         b = img.shape[0]
         img = (2 * img) - 1
         _, _, _, id_t, id_b = self.model.encode(img)
-        id_t = rearrange(id_t, 'b h w -> b (h w)', b=b)
-        id_b = rearrange(id_b, 'b h w -> b (h w)', b=b)
+        #id_t = rearrange(id_t, 'b h w -> b (h w)', b=b)
+        id_t = id_t.view(b,-1)
+        #id_b = rearrange(id_b, 'b h w -> b (h w)', b=b)
+        id_b = id_b.view(b,-1)
         indices = torch.cat((id_t,id_b),1)        
         return indices
 
@@ -123,21 +112,17 @@ class VQVAE2(pl.LightningModule):
         recon_loss = self.recon_loss(xrec, x)
         latent_loss = qloss.mean()
         loss = recon_loss + self.latent_loss_weight * latent_loss
-        self.log("train/ae_loss", recon_loss, prog_bar=True, logger=False)
 
-        log_dict = dict()      
-        if x.shape[1] > 3:
-            # colorize with random projection
-            assert xrec.shape[1] > 3
-            x = self.to_rgb(x)
-            xrec = self.to_rgb(xrec)
-        log_dict["train/rec_loss"] = recon_loss
-        log_dict["train/embed_loss"] = latent_loss
-        log_dict["train/total_loss"] = loss                      
-        log_dict["train/inputs"] = x
-        log_dict["train/reconstructions"] = xrec 
+        self.log("train/rec_loss", recon_loss, prog_bar=True, logger=True)
+        self.log("train/embed_loss", latent_loss, prog_bar=True, logger=True)
+        self.log("train/total_loss", loss, prog_bar=True, logger=True)                
+       
+        if self.log_images:            
+            log_dict = dict() 
+            log_dict["train/inputs"] = x
+            log_dict["train/reconstructions"] = xrec 
+            self.log_dict(log_dict, prog_bar=False, logger=True)
 
-        self.log_dict(log_dict, prog_bar=False, logger=True)
 
         return loss
 
@@ -149,22 +134,16 @@ class VQVAE2(pl.LightningModule):
         latent_loss = qloss.mean()
         loss = recon_loss + self.latent_loss_weight * latent_loss
         
-        self.log("val/ae_loss", recon_loss, prog_bar=True, logger=False)
-        log_dict = dict()      
-        if x.shape[1] > 3:
-            # colorize with random projection
-            assert xrec.shape[1] > 3
-            x = self.to_rgb(x)
-            xrec = self.to_rgb(xrec)
-
-        log_dict["val/rec_loss"] = recon_loss
-        log_dict["val/embed_loss"] = latent_loss
-        log_dict["val/total_loss"] = loss                      
-        log_dict["val/inputs"] = x
-        log_dict["val/reconstructions"] = xrec      
-        self.log_dict(log_dict, prog_bar=False, logger=True)
-
-        return self.log_dict
+        self.log("val/rec_loss", recon_loss, prog_bar=True, logger=True)
+        self.log("val/embed_loss", latent_loss, prog_bar=True, logger=True)
+        self.log("val/total_loss", loss, prog_bar=True, logger=True)  
+           
+        if self.log_images:    
+            log_dict = dict()               
+            log_dict["val/inputs"] = x
+            log_dict["val/reconstructions"] = xrec 
+            self.log_dict(log_dict, prog_bar=False, logger=True)
+        return loss
 
     def configure_optimizers(self):
         lr = self.hparams.learning_rate
@@ -235,26 +214,8 @@ class Quantize(nn.Module):
 
     def embed_code(self, embed_id):
         return F.embedding(embed_id, self.embed.transpose(0, 1))
-    '''
-    def all_reduce(self, tensor, op=dist.ReduceOp.SUM):
-        world_size = self.get_world_size()
-
-        if world_size == 1:
-            return tensor
-
-        dist.all_reduce(tensor, op=op)
-
-        return tensor
-
-    def get_world_size(self):
-        if not dist.is_available():
-            return 1
-
-        if not dist.is_initialized():
-            return 1
-
-        return dist.get_world_size()
-    '''
+    
+    
 
 class ResBlock(nn.Module):
     def __init__(self, in_channel, channel):

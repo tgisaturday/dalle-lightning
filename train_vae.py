@@ -111,12 +111,11 @@ if __name__ == "__main__":
     parser.add_argument('--quant_ema_decay', type=float, default=0.99,
                     help='quantizer ema decay')
     parser.add_argument('--quant_ema_eps', type=float, default=1e-5,
-                    help='quantizer ema epsilon')                    
-    #vqvae2. to-be merged
+                    help='quantizer ema epsilon')  
+                              
+    #vqvae2 specialized options
     parser.add_argument('--num_res_ch', type=int, default=32,
-                    help='model settings')  
-    parser.add_argument('--decay', type=float, default=0.99,
-                    help='model settings')                                      
+                    help='model settings')                                        
     parser.add_argument('--latent_weight', type=float, default=0.25,
                     help='model settings')
 
