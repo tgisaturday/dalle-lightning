@@ -45,7 +45,9 @@ if __name__ == "__main__":
     parser.add_argument('--fake_data', action='store_true', default=False,
                     help='using fake_data for debugging') 
     parser.add_argument('--use_tpus', action='store_true', default=False,
-                    help='using tpu')                                                               
+                    help='using tpu')
+    parser.add_argument('--log_images', action='store_true', default=False,
+                    help='log image outputs. not recommended for tpus')                                                                         
     parser.add_argument('--resume', action='store_true', default=False,
                     help='whether to resume from checkpoint')                   
     parser.add_argument('--seed', type=int, default=42,
@@ -171,15 +173,15 @@ if __name__ == "__main__":
 
     # model
     if args.model == 'vqgan':
-        model = VQGAN(args, args.batch_size, args.learning_rate)
+        model = VQGAN(args, args.batch_size, args.learning_rate, args.log_images)
     elif args.model == 'gvqgan':
-        model = GumbelVQGAN(args, args.batch_size, args.learning_rate)        
+        model = GumbelVQGAN(args, args.batch_size, args.learning_rate, args.log_images)        
     elif args.model == 'vqvae':
-        model = VQVAE(args, args.batch_size, args.learning_rate)
+        model = VQVAE(args, args.batch_size, args.learning_rate, args.log_images)
     elif args.model == 'gvqvae':
-        model = GumbelVQVAE(args, args.batch_size, args.learning_rate) 
+        model = GumbelVQVAE(args, args.batch_size, args.learning_rate, args.log_images) 
     elif args.model == 'vqvae2':
-        model = VQVAE2(args, args.batch_size, args.learning_rate) 
+        model = VQVAE2(args, args.batch_size, args.learning_rate, args.log_images) 
 
     default_root_dir = args.log_dir
     if args.resume:

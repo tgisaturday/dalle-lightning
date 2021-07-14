@@ -11,12 +11,13 @@ from pl_dalle.modules.vqvae.quantize import VectorQuantizer,GumbelQuantize
 
 class VQVAE(pl.LightningModule):
     def __init__(self,
-                 args,batch_size, learning_rate,
+                 args,batch_size, learning_rate,log_images=False,
                  ignore_keys=[]
                  ):
         super().__init__()
         self.save_hyperparameters()
         self.args = args     
+        self.log_images=log_images
         self.image_size = args.resolution
         self.num_tokens = args.codebook_dim
 
@@ -74,21 +75,17 @@ class VQVAE(pl.LightningModule):
             aeloss = F.mse_loss(x, xrec)   
         loss = aeloss + qloss                     
         self.log("train/loss", loss, prog_bar=True, logger=False)
-        '''
+        
         log_dict = dict()      
-        if x.shape[1] > 3:
-            # colorize with random projection
-            assert xrec.shape[1] > 3
-            x = self.to_rgb(x)
-            xrec = self.to_rgb(xrec)
         log_dict["train/rec_loss"] = aeloss
         log_dict["train/embed_loss"] = qloss
-        log_dict["train/total_loss"] = loss                      
-        log_dict["train/inputs"] = x
-        log_dict["train/reconstructions"] = xrec 
+        log_dict["train/total_loss"] = loss         
+        if self.log_images:             
+            log_dict["train/inputs"] = x
+            log_dict["train/reconstructions"] = xrec 
 
         self.log_dict(log_dict, prog_bar=False, logger=True)
-        '''
+        
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -100,23 +97,18 @@ class VQVAE(pl.LightningModule):
             aeloss = F.mse_loss(x, xrec)   
         loss = aeloss + qloss                     
         self.log("val/loss", loss, prog_bar=True, logger=False)
-        '''
+        
         log_dict = dict()      
-        if x.shape[1] > 3:
-            # colorize with random projection
-            assert xrec.shape[1] > 3
-            x = self.to_rgb(x)
-            xrec = self.to_rgb(xrec)
+
         log_dict["val/rec_loss"] = aeloss
         log_dict["val/embed_loss"] = qloss
-        log_dict["val/total_loss"] = loss                      
-        log_dict["val/inputs"] = x
-        log_dict["val/reconstructions"] = xrec 
+        log_dict["val/total_loss"] = loss   
+        if self.log_images:                   
+            log_dict["val/inputs"] = x
+            log_dict["val/reconstructions"] = xrec 
         
         self.log_dict(log_dict, prog_bar=False, logger=True)
         return log_dict
-        '''
-        return loss
 
     def configure_optimizers(self):
         lr = self.hparams.learning_rate
@@ -127,22 +119,15 @@ class VQVAE(pl.LightningModule):
     def get_last_layer(self):
         return self.decoder.conv_out.weight
         
-    def log_images(self, batch, **kwargs):
-        log = dict()
-        x, _ = batch
-        xrec, _ = self(x)
-        log["inputs"] = x
-        log["reconstructions"] = xrec
-        return log
-
 
 class GumbelVQVAE(VQVAE):
     def __init__(self,
-                 args, batch_size, learning_rate,
+                 args, batch_size, learning_rate, log_images=False,
                  ignore_keys=[]
                  ):
         self.save_hyperparameters()
         self.args = args    
+        self.log_images = log_images
         super().__init__(args, batch_size, learning_rate,
                          ignore_keys=ignore_keys
                          )
@@ -167,7 +152,7 @@ class GumbelVQVAE(VQVAE):
             aeloss = F.mse_loss(x, xrec) 
         loss = aeloss + qloss                      
         self.log("train/loss", loss, prog_bar=True, logger=False)
-        '''
+        
         log_dict = dict()      
         if x.shape[1] > 3:
             # colorize with random projection
@@ -176,12 +161,13 @@ class GumbelVQVAE(VQVAE):
             xrec = self.to_rgb(xrec)
         log_dict["train/rec_loss"] = aeloss
         log_dict["train/embed_loss"] = qloss
-        log_dict["train/total_loss"] = loss                      
-        log_dict["train/inputs"] = x
-        log_dict["train/reconstructions"] = xrec 
+        log_dict["train/total_loss"] = loss   
+        if self.log_images:                   
+            log_dict["train/inputs"] = x
+            log_dict["train/reconstructions"] = xrec 
 
         self.log_dict(log_dict, prog_bar=False, logger=True)
-        '''
+        
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -194,20 +180,14 @@ class GumbelVQVAE(VQVAE):
             aeloss = F.mse_loss(x, xrec)  
         loss = aeloss + qloss                      
         self.log("val/loss", loss, prog_bar=True, logger=False)
-        '''
+        
         log_dict = dict()      
-        if x.shape[1] > 3:
-            # colorize with random projection
-            assert xrec.shape[1] > 3
-            x = self.to_rgb(x)
-            xrec = self.to_rgb(xrec)
         log_dict["val/rec_loss"] = aeloss
         log_dict["val/embed_loss"] = qloss
-        log_dict["val/total_loss"] = loss                      
-        log_dict["val/inputs"] = x
-        log_dict["val/reconstructions"] = xrec 
+        log_dict["val/total_loss"] = loss       
+        if self.log_images:               
+            log_dict["val/inputs"] = x
+            log_dict["val/reconstructions"] = xrec 
 
         self.log_dict(log_dict, prog_bar=False, logger=True)
         return log_dict
-        '''
-        return loss
