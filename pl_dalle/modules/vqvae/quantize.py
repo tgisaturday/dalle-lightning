@@ -58,7 +58,7 @@ class GumbelQuantize(nn.Module):
     Categorical Reparameterization with Gumbel-Softmax, Jang et al. 2016
     https://arxiv.org/abs/1611.01144
     """
-    def __init__(self, num_hiddens,codebook_dim, embedding_dim, straight_through=True,
+    def __init__(self, codebook_dim, embedding_dim, straight_through=True,
                  kl_weight=5e-4, temp_init=1.0, use_vqinterface=True, unknown_index="random"):
         super().__init__()
 
