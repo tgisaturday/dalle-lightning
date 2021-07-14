@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 from torch import einsum
-from einops import rearrange
 import torch.nn.functional as F
 import numpy as np
 
@@ -25,13 +24,14 @@ class VectorQuantizer(nn.Module):
         assert rescale_logits==False, "Only for interface compatible with Gumbel"
         assert return_logits==False, "Only for interface compatible with Gumbel"
         # reshape z -> (batch, height, width, channel) and flatten
-        z = rearrange(z, 'b c h w -> b h w c').contiguous()
+        #z, 'b c h w -> b h w c'
+        z = z.permute(0, 2, 3, 1).contiguous()
         z_flattened = z.view(-1, self.e_dim)
         # distances from z to embeddings e_j (z - e)^2 = z^2 + e^2 - 2 e * z
 
         d = torch.sum(z_flattened ** 2, dim=1, keepdim=True) + \
             torch.sum(self.embedding.weight**2, dim=1) - 2 * \
-            torch.einsum('bd,dn->bn', z_flattened, rearrange(self.embedding.weight, 'n d -> d n'))
+            torch.einsum('bd,dn->bn', z_flattened, self.embedding.weight.permute(1,0).continuous()) # 'n d -> d n'
 
         min_encoding_indices = torch.argmin(d, dim=1)
         z_q = self.embedding(min_encoding_indices).view(z.shape)
@@ -47,20 +47,10 @@ class VectorQuantizer(nn.Module):
         z_q = z + (z_q - z).detach()
 
         # reshape back to match original input shape
-        z_q = rearrange(z_q, 'b h w c -> b c h w').contiguous()
-
+        #z_q, 'b h w c -> b c h w'
+        z_q = z_q.permute(0, 3, 1, 2).contiguous()
         return z_q, loss, (perplexity, min_encodings, min_encoding_indices)
 
-    def get_codebook_entry(self, indices, shape):
-        # get quantized latent vectors
-        z_q = self.embedding(indices)
-
-        if shape is not None:
-            z_q = z_q.view(shape)
-            # reshape back to match original input shape
-            z_q = z_q.permute(0, 3, 1, 2).contiguous()
-
-        return z_q
 
 class GumbelQuantize(nn.Module):
     """
@@ -80,7 +70,6 @@ class GumbelQuantize(nn.Module):
         self.temperature = temp_init
         self.kl_weight = kl_weight
 
-        self.proj = nn.Conv2d(num_hiddens, codebook_dim, 1)
         self.embed = nn.Embedding(codebook_dim, embedding_dim)
 
         self.use_vqinterface = use_vqinterface
@@ -90,27 +79,18 @@ class GumbelQuantize(nn.Module):
         hard = self.straight_through if self.training else True
         temp = self.temperature if temp is None else temp
 
-        logits = self.proj(z)
 
-        soft_one_hot = F.gumbel_softmax(logits, tau=temp, dim=1, hard=hard)
+        soft_one_hot = F.gumbel_softmax(z, tau=temp, dim=1, hard=hard)
         z_q = einsum('b n h w, n d -> b d h w', soft_one_hot, self.embed.weight)
 
         # + kl divergence to the prior loss
-        qy = F.softmax(logits, dim=1)
+        qy = F.softmax(z, dim=1)
         diff = self.kl_weight * torch.sum(qy * torch.log(qy * self.codebook_dim + 1e-10), dim=1).mean()
 
         ind = soft_one_hot.argmax(dim=1)
         if self.use_vqinterface:
             if return_logits:
-                return z_q, diff, (None, None, ind), logits
+                return z_q, diff, (None, None, ind), z
             return z_q, diff, (None, None, ind)
         return z_q, diff, ind
-
-    def get_codebook_entry(self, indices, shape):
-        b, h, w, c = shape
-        assert b*h*w == indices.shape[0]
-        indices = rearrange(indices, '(b h w) -> b h w', b=b, h=h, w=w)
-        one_hot = F.one_hot(indices, num_classes=self.codebook_dim).permute(0, 3, 1, 2).float()
-        z_q = einsum('b n h w, n d -> b d h w', one_hot, self.embed.weight)
-        return z_q
 

@@ -3,7 +3,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 import pytorch_lightning as pl
 import math
-from einops import rearrange
 
 from pl_dalle.modules.vqvae.vae import Encoder, Decoder
 from pl_dalle.modules.vqvae.quantize import VectorQuantizer,GumbelQuantize
@@ -51,17 +50,15 @@ class VQVAE(pl.LightningModule):
         dec = self.decoder(quant)
         return dec
 
-    def decode_code(self, code_b):
-        quant_b = self.quantize.embed_code(code_b)
-        dec = self.decode(quant_b)
-        return dec
 
     @torch.no_grad()
     def get_codebook_indices(self, img):
         b = img.shape[0]
         img = (2 * img) - 1
         _, _, [_, _, indices] = self.model.encode(img)
-        return rearrange(indices, '(b n) -> b n', b = b)
+        n = indices.shape[0] // b
+        indices = indices.view(b,n)       
+        return indices
 
     def forward(self, input):
         quant, diff, _ = self.encode(input)
@@ -132,11 +129,6 @@ class VQVAE(pl.LightningModule):
         log = dict()
         x, _ = batch
         xrec, _ = self(x)
-        if x.shape[1] > 3:
-            # colorize with random projection
-            assert xrec.shape[1] > 3
-            x = self.to_rgb(x)
-            xrec = self.to_rgb(xrec)
         log["inputs"] = x
         log["reconstructions"] = xrec
         return log
@@ -161,22 +153,6 @@ class GumbelVQVAE(VQVAE):
                                        codebook_dim=args.codebook_dim,
                                        embedding_dim=args.embed_dim,
                                        kl_weight=args.kl_loss_weight, temp_init=args.starting_temp)
-
-
-    def encode_to_prequant(self, x):
-        h = self.encoder(x)
-        h = self.quant_conv(h)
-        return h
-
-    def decode_code(self, code_b):
-        raise NotImplementedError
-
-    @torch.no_grad()
-    def get_codebook_indices(self, img):
-        b = img.shape[0]
-        img = (2 * img) - 1
-        _, _, [_, _, indices] = self.model.encode(img)
-        return rearrange(indices, 'b h w -> b (h w)', b=b)
 
     def training_step(self, batch, batch_idx):
         x, _ = batch
@@ -230,16 +206,3 @@ class GumbelVQVAE(VQVAE):
 
         self.log_dict(log_dict, prog_bar=False, logger=True)
         return log_dict
-
-    def log_images(self, batch, **kwargs):
-        log = dict()
-        x, _ = batch
-        # encode
-        h = self.encoder(x)
-        h = self.quant_conv(h)
-        quant, _, _ = self.quantize(h)
-        # decode
-        x_rec = self.decode(quant)
-        log["inputs"] = x
-        log["reconstructions"] = x_rec
-        return log        
