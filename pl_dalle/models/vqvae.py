@@ -74,17 +74,15 @@ class VQVAE(pl.LightningModule):
         else:
             aeloss = F.mse_loss(x, xrec)   
         loss = aeloss + qloss                     
-        self.log("train/loss", loss, prog_bar=True, logger=False)
-        
-        log_dict = dict()      
-        log_dict["train/rec_loss"] = aeloss
-        log_dict["train/embed_loss"] = qloss
-        log_dict["train/total_loss"] = loss         
-        if self.log_images:             
+        self.log("train/rec_loss", aeloss, prog_bar=True, logger=True)
+        self.log("train/embed_loss", qloss, prog_bar=True, logger=True)
+        self.log("train/total_loss", loss, prog_bar=True, logger=True)                
+       
+        if self.log_images:            
+            log_dict = dict() 
             log_dict["train/inputs"] = x
             log_dict["train/reconstructions"] = xrec 
-
-        self.log_dict(log_dict, prog_bar=False, logger=True)
+            self.log_dict(log_dict, prog_bar=False, logger=True)
         
         return loss
 
@@ -96,19 +94,15 @@ class VQVAE(pl.LightningModule):
         else:
             aeloss = F.mse_loss(x, xrec)   
         loss = aeloss + qloss                     
-        self.log("val/loss", loss, prog_bar=True, logger=False)
-        
-        log_dict = dict()      
-
-        log_dict["val/rec_loss"] = aeloss
-        log_dict["val/embed_loss"] = qloss
-        log_dict["val/total_loss"] = loss   
-        if self.log_images:                   
+        self.log("val/rec_loss", aeloss, prog_bar=True, logger=True)
+        self.log("val/embed_loss", qloss, prog_bar=True, logger=True)
+        self.log("val/total_loss", loss, prog_bar=True, logger=True)     
+        if self.log_images:    
+            log_dict = dict()               
             log_dict["val/inputs"] = x
             log_dict["val/reconstructions"] = xrec 
-        
-        self.log_dict(log_dict, prog_bar=False, logger=True)
-        return log_dict
+            self.log_dict(log_dict, prog_bar=False, logger=True)
+        return loss
 
     def configure_optimizers(self):
         lr = self.hparams.learning_rate
@@ -145,49 +139,39 @@ class GumbelVQVAE(VQVAE):
         self.temperature = max(self.temperature * math.exp(-self.anneal_rate * self.global_step), self.temp_min)
         self.quantize.temperature = self.temperature
         xrec, qloss = self(x)
-
         if self.smooth_l1_loss:
             aeloss = F.smooth_l1_loss(x, xrec)
         else:
-            aeloss = F.mse_loss(x, xrec) 
-        loss = aeloss + qloss                      
-        self.log("train/loss", loss, prog_bar=True, logger=False)
-        
-        log_dict = dict()      
-        if x.shape[1] > 3:
-            # colorize with random projection
-            assert xrec.shape[1] > 3
-            x = self.to_rgb(x)
-            xrec = self.to_rgb(xrec)
-        log_dict["train/rec_loss"] = aeloss
-        log_dict["train/embed_loss"] = qloss
-        log_dict["train/total_loss"] = loss   
-        if self.log_images:                   
+            aeloss = F.mse_loss(x, xrec)   
+        loss = aeloss + qloss                     
+        self.log("train/rec_loss", aeloss, prog_bar=True, logger=True)
+        self.log("train/embed_loss", qloss, prog_bar=True, logger=True)
+        self.log("train/total_loss", loss, prog_bar=True, logger=True)                
+       
+        if self.log_images:            
+            log_dict = dict() 
             log_dict["train/inputs"] = x
             log_dict["train/reconstructions"] = xrec 
-
-        self.log_dict(log_dict, prog_bar=False, logger=True)
+            self.log_dict(log_dict, prog_bar=False, logger=True)
         
         return loss
 
+
     def validation_step(self, batch, batch_idx):
         x, _ = batch
-        xrec, qloss = self(x)
         self.quantize.temperature = 1.0
+        xrec, qloss = self(x)
         if self.smooth_l1_loss:
             aeloss = F.smooth_l1_loss(x, xrec)
         else:
-            aeloss = F.mse_loss(x, xrec)  
-        loss = aeloss + qloss                      
-        self.log("val/loss", loss, prog_bar=True, logger=False)
-        
-        log_dict = dict()      
-        log_dict["val/rec_loss"] = aeloss
-        log_dict["val/embed_loss"] = qloss
-        log_dict["val/total_loss"] = loss       
-        if self.log_images:               
+            aeloss = F.mse_loss(x, xrec)   
+        loss = aeloss + qloss                     
+        self.log("val/rec_loss", aeloss, prog_bar=True, logger=True)
+        self.log("val/embed_loss", qloss, prog_bar=True, logger=True)
+        self.log("val/total_loss", loss, prog_bar=True, logger=True)     
+        if self.log_images:    
+            log_dict = dict()               
             log_dict["val/inputs"] = x
             log_dict["val/reconstructions"] = xrec 
-
-        self.log_dict(log_dict, prog_bar=False, logger=True)
-        return log_dict
+            self.log_dict(log_dict, prog_bar=False, logger=True)
+        return loss
