@@ -72,6 +72,7 @@ class VQGAN(pl.LightningModule):
             aeloss, log_dict_ae = self.loss(qloss, x, xrec, optimizer_idx, self.global_step,
                                             last_layer=self.get_last_layer(), split="train")
             self.log("train/ae_loss", aeloss, prog_bar=True, logger=False)
+            '''
             log_dict = log_dict_ae     
             if x.shape[1] > 3:
                 # colorize with random projection
@@ -83,7 +84,7 @@ class VQGAN(pl.LightningModule):
             log_dict["train/inputs"] = x
             log_dict["train/reconstructions"] = xrec 
             self.log_dict(log_dict, prog_bar=False, logger=True)
-
+            '''
             return aeloss
 
         if optimizer_idx == 1:
@@ -91,7 +92,7 @@ class VQGAN(pl.LightningModule):
             discloss, log_dict_disc = self.loss(qloss, x, xrec, optimizer_idx, self.global_step,
                                             last_layer=self.get_last_layer(), split="train")
             self.log("train/dis_closs", discloss, prog_bar=True,logger=False)
-            self.log_dict(log_dict_disc, prog_bar=False, logger=True)
+            #self.log_dict(log_dict_disc, prog_bar=False, logger=True)
             return discloss
 
             
@@ -106,7 +107,7 @@ class VQGAN(pl.LightningModule):
                                             last_layer=self.get_last_layer(), split="val")
 
         self.log("val/ae_loss", aeloss, prog_bar=True, logger=False)
-
+        '''
         log_dict = log_dict_ae.update(log_dict_disc)     
         if x.shape[1] > 3:
             # colorize with random projection
@@ -121,6 +122,8 @@ class VQGAN(pl.LightningModule):
         self.log_dict(log_dict, prog_bar=False, logger=True)
         
         return self.log_dict
+        '''
+        return aeloss
 
 
     def configure_optimizers(self):
@@ -180,6 +183,7 @@ class GumbelVQGAN(VQGAN):
                                             last_layer=self.get_last_layer(), split="train")
 
             self.log("train/ae_loss", aeloss, prog_bar=True, logger=False)
+            '''
             log_dict = log_dict_ae     
             if x.shape[1] > 3:
                 # colorize with random projection
@@ -191,6 +195,7 @@ class GumbelVQGAN(VQGAN):
             log_dict["train/inputs"] = x
             log_dict["train/reconstructions"] = xrec 
             self.log_dict(log_dict, prog_bar=False, logger=True)
+            '''
             return aeloss
 
         if optimizer_idx == 1:
@@ -198,7 +203,7 @@ class GumbelVQGAN(VQGAN):
             discloss, log_dict_disc = self.loss(qloss, x, xrec, optimizer_idx, self.global_step,
                                             last_layer=self.get_last_layer(), split="train")
             self.log("train/dis_closs", discloss, prog_bar=True,logger=False)
-            self.log_dict(log_dict_disc, prog_bar=False, logger=True)
+            #self.log_dict(log_dict_disc, prog_bar=False, logger=True)
             return discloss
 
     def validation_step(self, batch, batch_idx):
@@ -211,6 +216,7 @@ class GumbelVQGAN(VQGAN):
                                             last_layer=self.get_last_layer(), split="val")
 
         self.log("val/ae_loss", aeloss, prog_bar=True, logger=False)
+        '''
         log_dict = log_dict_ae.update(log_dict_disc)     
         if x.shape[1] > 3:
             # colorize with random projection
@@ -224,4 +230,5 @@ class GumbelVQGAN(VQGAN):
         log_dict["val/reconstructions"] = xrec 
         self.log_dict(log_dict, prog_bar=False, logger=True)
         return self.log_dict
-    
+        '''
+        return aeloss
