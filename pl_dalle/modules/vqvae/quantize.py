@@ -56,7 +56,7 @@ class EMAVectorQuantizer(nn.Module):
         self.embedding.weight.data.uniform_(-1.0 / self.codebook_dim, 1.0 / self.codebook_dim)
         self.register_buffer('cluster_size', torch.zeros(self.codebook_dim))
         self.ema_w = nn.Parameter(torch.Tensor(self.codebook_dim, self.embedding_dim))
-        self.ema_w.weight.data.uniform_(-1.0 / self.codebook_dim, 1.0 / self.codebook_dim)
+        self.ema_w.data.uniform_(-1.0 / self.codebook_dim, 1.0 / self.codebook_dim)
         self.decay = decay
         self.eps = eps
 
