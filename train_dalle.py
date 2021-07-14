@@ -205,14 +205,14 @@ if __name__ == "__main__":
                             T.RandomResizedCrop(args.img_size,
                                     scale=(args.resize_ratio, 1.),ratio=(1., 1.)),
                             T.ToTensor(),
-                            #T.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+                            T.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
                             ])
     transform_val = T.Compose([
                                     T.Lambda(lambda img: img.convert('RGB') if img.mode != 'RGB' else img),
                                     T.Resize(args.img_size),
                                     T.CenterCrop(args.img_size),
                                     T.ToTensor(),
-                                    #T.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+                                    T.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
                                     ])
     if exists(args.bpe_path):
         klass = HugTokenizer if args.hug else YttmTokenizer
