@@ -77,8 +77,11 @@ class EMAVectorQuantizer(nn.Module):
         min_encodings = None
         # Use EMA to update the embedding vectors
         if self.training:
+            encoding_indices = min_encoding_indices.unsqueeze(1)
+            encodings = torch.zeros(encoding_indices.shape[0], self._num_embeddings, device=z.device)
+            encodings.scatter_(1, encoding_indices, 1)
             self.cluster_size = self.cluster_size * self.decay + \
-                                     (1 - self.decay) * torch.sum(min_encoding_indices, 0)
+                                     (1 - self.decay) * torch.sum(encodings, 0)
             
             # Laplace smoothing of the cluster size
             n = torch.sum(self.cluster_size.data)
@@ -86,7 +89,7 @@ class EMAVectorQuantizer(nn.Module):
                 (self.cluster_size + self.eps)
                 / (n + self.codebook_dim * self.eps) * n)
             
-            dw = torch.matmul(min_encoding_indices.t(), z_flattened)
+            dw = torch.matmul(encodings.t(), z_flattened)
             self.ema_w = nn.Parameter(self.ema_w * self.decay + (1 - self.decay) * dw)
             
             self.embedding.weight = nn.Parameter(self.ema_w / self.cluster_size.unsqueeze(1))
