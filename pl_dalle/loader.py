@@ -95,7 +95,7 @@ class TextImageDataModule(LightningDataModule):
             self.train_dataset = TextImageDataset(
                                     self.train_dir,
                                     text_len=self.text_seq_len,
-                                    image_size=self.image_size,
+                                    image_size=self.img_size,
                                     resize_ratio=self.resize_ratio,
                                     truncate_captions=self.truncate_captions,
                                     tokenizer=self.tokenizer,
@@ -105,7 +105,7 @@ class TextImageDataModule(LightningDataModule):
             self.val_dataset = TextImageDataset(
                                     self.val_dir,
                                     text_len=self.text_seq_len,
-                                    image_size=self.image_size,
+                                    image_size=self.img_size,
                                     resize_ratio=self.resize_ratio,
                                     truncate_captions=self.truncate_captions,
                                     tokenizer=self.tokenizer,
