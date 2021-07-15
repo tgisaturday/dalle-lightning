@@ -20,6 +20,7 @@ class VQVAE(pl.LightningModule):
         self.log_images=log_images
         self.image_size = args.resolution
         self.num_tokens = args.codebook_dim
+        
         f = self.image_size / self.args.attn_resolutions[0]
         self.num_layers = int(math.log(f)/math.log(2))
         

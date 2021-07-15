@@ -12,7 +12,7 @@ from torchvision.datasets import ImageFolder
 from pl_dalle.models.vqgan import VQGAN, EMAVQGAN, GumbelVQGAN
 from pl_dalle.models.vqvae import VQVAE, EMAVQVAE, GumbelVQVAE
 from pl_dalle.models.vqvae2 import VQVAE2
-
+from pl_dalle.loader import ImageDataModule
 import pytorch_lightning as pl
 from pytorch_lightning import seed_everything
 from pytorch_lightning import Trainer
@@ -140,38 +140,11 @@ if __name__ == "__main__":
     #random seed fix
     seed_everything(args.seed)   
 
-    transform_train = T.Compose([
-                            T.Lambda(lambda img: img.convert('RGB') if img.mode != 'RGB' else img),
-                            T.RandomResizedCrop(args.img_size,
-                                    scale=(args.resize_ratio, 1.),ratio=(1., 1.)),
-                            T.ToTensor(),
-                            T.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
-                            ])
-    transform_val = T.Compose([
-                                    T.Lambda(lambda img: img.convert('RGB') if img.mode != 'RGB' else img),
-                                    T.Resize(args.img_size),
-                                    T.CenterCrop(args.img_size),
-                                    T.ToTensor(),
-                                    T.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
-                                    ])
- 
-    if args.fake_data:
-        import torch_xla.utils.utils as xu
-        import torch_xla.core.xla_model as xm        
-        train_loader = xu.SampleGenerator(
-                        data=(torch.zeros(args.batch_size, 3, args.img_size , args.img_size ),
-                        torch.zeros(args.batch_size, dtype=torch.int64)),
-                        sample_count=10000 // args.batch_size // xm.xrt_world_size())
-        val_loader = xu.SampleGenerator(
-                        data=(torch.zeros(args.batch_size, 3, args.img_size , args.img_size ),
-                        torch.zeros(args.batch_size, dtype=torch.int64)),
-                        sample_count=5000 // args.batch_size // xm.xrt_world_size())                           
-    else:
-        train_dataset = ImageFolder(args.train_dir, transform_train)
-        val_dataset = ImageFolder(args.val_dir, transform_val)          
-        train_loader = DataLoader(train_dataset, batch_size=args.batch_size, num_workers=args.num_workers,shuffle=True)      
-        val_loader = DataLoader(val_dataset, batch_size=args.batch_size, num_workers=args.num_workers)  
-
+    datamodule = ImageDataModule(args.train_dir, args.val_dir, 
+                                args.batch_size, args.num_workers, 
+                                args.img_size, args.resize_ratio, 
+                                args.fake_data)
+   
     # model
     if args.model == 'vqgan':
         model = VQGAN(args, args.batch_size, args.learning_rate, args.log_images)
@@ -223,8 +196,8 @@ if __name__ == "__main__":
     print("Setting batch size: {} learning rate: {:.2e}".format(model.hparams.batch_size, model.hparams.learning_rate))
     
     if not args.test:    
-        trainer.fit(model, train_dataloaders=train_loader, val_dataloaders=val_loader)
+        trainer.fit(model, datamodule=datamodule)
     else:
-        trainer.test(model, dataloaders=val_loader)
+        trainer.test(model, datamodule=datamodule)
 
 
