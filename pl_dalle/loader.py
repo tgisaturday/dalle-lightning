@@ -5,8 +5,11 @@ import PIL
 
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms as T
-from torchvision.datasets import ImageFolder, FakeData
+from torchvision.datasets import ImageFolder, FakeData, VisionDataset
 from pytorch_lightning import LightningDataModule
+import torch
+from typing import Any, Callable, Optional, Tuple
+from torchvision import transforms
 
 class ImageDataModule(LightningDataModule):
 
@@ -52,6 +55,117 @@ class ImageDataModule(LightningDataModule):
     def test_dataloader(self):
         return DataLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers)
 
+
+class TextImageDataModule(LightningDataModule):
+
+    def __init__(self, train_dir, val_dir, batch_size, num_workers, img_size, text_seq_len,
+                resize_ratio=0.75, truncate_captions=False, tokenizer=None, fake_data=False):
+        super().__init__()
+        self.train_dir = train_dir
+        self.val_dir = val_dir
+        self.batch_size = batch_size
+        self.num_workers = num_workers
+        self.img_size = img_size
+        self.text_seq_len = text_seq_len
+        self.resize_ratio = resize_ratio
+        self.truncate_captions = truncate_captions
+        self.tokenizer = tokenizer
+        self.fake_data = fake_data
+
+        self.transform_train = T.Compose([
+                            T.Lambda(lambda img: img.convert('RGB') if img.mode != 'RGB' else img),
+                            T.RandomResizedCrop(img_size,
+                                    scale=(resize_ratio, 1.),ratio=(1., 1.)),
+                            T.ToTensor(),
+                            T.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+                            ])
+        self.transform_val = T.Compose([
+                                    T.Lambda(lambda img: img.convert('RGB') if img.mode != 'RGB' else img),
+                                    T.Resize(img_size),
+                                    T.CenterCrop(img_size),
+                                    T.ToTensor(),
+                                    T.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+                                    ])
+                                    
+    def setup(self, stage=None):
+        if self.fake_data:
+            self.train_dataset = FakeTextImageData(1200000, (3, self.img_size, self.img_size), self.text_seq_len, self.transform_train)
+            self.val_dataset = FakeTextImageData(50000, (3, self.img_size, self.img_size), self.text_seq_len, self.transform_train)
+        else:
+            self.train_dataset = TextImageDataset(
+                                    self.train_dir,
+                                    text_len=self.text_seq_len,
+                                    image_size=self.image_size,
+                                    resize_ratio=self.resize_ratio,
+                                    truncate_captions=self.truncate_captions,
+                                    tokenizer=self.tokenizer,
+                                    transform=self.transform_train,
+                                    shuffle=True,
+                                    )
+            self.val_dataset = TextImageDataset(
+                                    self.val_dir,
+                                    text_len=self.text_seq_len,
+                                    image_size=self.image_size,
+                                    resize_ratio=self.resize_ratio,
+                                    truncate_captions=self.truncate_captions,
+                                    tokenizer=self.tokenizer,
+                                    transform=self.transform_val,
+                                    shuffle=False,
+                                    )
+
+    def train_dataloader(self):
+        return DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=self.num_workers,shuffle=True)
+
+    def val_dataloader(self):
+        return DataLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers)
+
+    def test_dataloader(self):
+        return DataLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers)
+
+
+class FakeTextImageData(VisionDataset):
+    def __init__(
+            self,
+            size: int = 1000,
+            image_size: Tuple[int, int, int] = (3, 224, 224),
+            text_len: int = 10,
+            transform: Optional[Callable] = None,
+            target_transform: Optional[Callable] = None,
+            random_offset: int = 0,
+    ) -> None:
+        super(FakeTextImageData, self).__init__(None, transform=transform,  # type: ignore[arg-type]
+                                       target_transform=target_transform)
+        self.size = size
+        self.text_len = text_len
+        self.image_size = image_size
+        self.random_offset = random_offset
+
+    def __getitem__(self, index: int) -> Tuple[Any, Any]:
+        """
+        Args:
+            index (int): Index
+
+        Returns:
+            tuple: (image, target) where target is class_index of the target class.
+        """
+        # create random image that is consistent with the index id
+        if index >= len(self):
+            raise IndexError("{} index out of range".format(self.__class__.__name__))
+        rng_state = torch.get_rng_state()
+        torch.manual_seed(index + self.random_offset)
+        img = torch.randn(*self.image_size)
+        target = torch.zeros(self.text_len)
+        torch.set_rng_state(rng_state)
+
+        # convert to PIL Image
+        img = transforms.ToPILImage()(img)
+        if self.transform is not None:
+            img = self.transform(img)
+
+        return img, target
+
+    def __len__(self) -> int:
+        return self.size
 
 class TextImageDataset(Dataset):
     def __init__(self,
