@@ -4,21 +4,22 @@ import random
 from PIL import Image
 import torch
 
-from pytorch_lightning.callbacks import XLAStatsMonitor
 
 # vision imports
-
 from torchvision import transforms as T
 from torch.utils.data import DataLoader
 from torchvision.datasets import ImageFolder
+
 from pl_dalle.models.vqgan import VQGAN, EMAVQGAN, GumbelVQGAN
 from pl_dalle.models.vqvae import VQVAE, EMAVQVAE, GumbelVQVAE
 from pl_dalle.models.vqvae2 import VQVAE2
 from pl_dalle.loader import ImageDataModule
+
 import pytorch_lightning as pl
 from pytorch_lightning import seed_everything
 from pytorch_lightning import Trainer
-f
+from pytorch_lightning.callbacks import XLAStatsMonitor
+
 
 
 
