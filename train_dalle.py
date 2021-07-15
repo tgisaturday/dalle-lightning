@@ -15,7 +15,7 @@ from pl_dalle.models.vqvae2 import VQVAE2
 from pl_dalle.models.dalle import DALLE
 
 from pl_dalle.loader import TextImageDataset
-from pl_dalle.modules.tokenizer import tokenizer, HugTokenizer, YttmTokenizer
+from pl_dalle.modules.dalle.tokenizer import tokenizer, HugTokenizer, YttmTokenizer
 
 
 from torchvision import transforms as T
