@@ -3,7 +3,7 @@ torchvision
 albumentations
 opencv-python
 pudb
-git+https://github.com/tgisaturday/pytorch-lightning.git
+git+https://github.com/PyTorchLightning/pytorch-lightning.git
 pytorch-lightning-bolts
 einops
 regex

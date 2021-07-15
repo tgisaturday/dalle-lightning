@@ -53,6 +53,13 @@ gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
 
 gcloud compute config-ssh
 
+
+gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
+--zone ${ZONE} --project ${PROJECT_ID} --worker=all \
+  --command "git clone --recursive https://github.com/pytorch/xla.git"
+
+python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-256 --restart-tpuvm-pod-server -- python3 xla/test/test_train_mp_imagenet.py --fake_data --model=resnet50 --num_epochs=1
+
 gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
 --zone ${ZONE} --project ${PROJECT_ID} --worker=all \
   --command "git clone https://github.com/tgisaturday/dalle-lightning.git"
@@ -91,7 +98,7 @@ gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
 --zone ${ZONE} --project ${PROJECT_ID} --worker=all \
   --command "sudo mkdir -p /datasets && sudo mount 10.46.147.34:/hyperdata /datasets"
 
-python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-256 --restart-tpuvm-pod-server -- python3 taming-transformers-tpu/tpu_script/boring.py 
+python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-256 --restart-tpuvm-pod-server -- python3 dalle-lightning/train_vae.py --use_tpus --fake_data --model vqvae
 
 python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-128 --restart-tpuvm-pod-server -- python3 taming-transformers-tpu/main.py --use_tpus --refresh_rate 1 --fake_data --disc_start 1
 
