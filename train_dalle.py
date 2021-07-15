@@ -155,7 +155,7 @@ if __name__ == "__main__":
         ckpt_path = None
 
     if args.use_tpus:
-        tpus = 1
+        tpus = 8
         gpus = None
     else:
         tpus = None
@@ -163,19 +163,19 @@ if __name__ == "__main__":
 
     # model
     if args.vae == 'vqgan':
-        vae = VQGAN.load_from_checkpoint(args.vae_path, strict=False)
+        vae = VQGAN.load_from_checkpoint(args.vae_path)
     elif args.vae == 'evqgan':
-        vae = EMAVQGAN.load_from_checkpoint(args.vae_path, strict=False)         
+        vae = EMAVQGAN.load_from_checkpoint(args.vae_path)         
     elif args.vae == 'gvqgan':
-        vae = GumbelVQGAN.load_from_checkpoint(args.vae_path, strict=False)       
+        vae = GumbelVQGAN.load_from_checkpoint(args.vae_path)       
     elif args.vae == 'vqvae':
-        vae = VQVAE.load_from_checkpoint(args.vae_path, strict=False)
+        vae = VQVAE.load_from_checkpoint(args.vae_path)
     elif args.vae == 'evqvae':
-        vae = EMAVQVAE.load_from_checkpoint(args.vae_path, strict=False)       
+        vae = EMAVQVAE.load_from_checkpoint(args.vae_path)       
     elif args.vae == 'gvqvae':
-        vae = GumbelVQVAE.load_from_checkpoint(args.vae_path, strict=False) 
+        vae = GumbelVQVAE.load_from_checkpoint(args.vae_path) 
     elif args.vae == 'vqvae2':
-        vae = VQVAE2.load_from_checkpoint(args.vae_path, strict=False) 
+        vae = VQVAE2.load_from_checkpoint(args.vae_path) 
     
     model = DALLE(args, args.batch_size, args.learning_rate, vae=vae)
 
