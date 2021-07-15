@@ -33,7 +33,7 @@ python3 -m torch_xla.core.xrt_run_server --port 51011 --restart
 sudo /opt/google-cloud-sdk/bin/gcloud components update
 
 export PROJECT_ID=lgai-vision-tpu
-export TPU_NAME=tpu-vm-pod-32
+export TPU_NAME=tpu-vm-pod-256
 export ZONE=europe-west4-a
 export RUNTIME_VERSION=v2-alpha
 

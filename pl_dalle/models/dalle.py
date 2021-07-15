@@ -183,9 +183,6 @@ class DALLE(pl.LightningModule):
         sparse_attn = args.sparse_attn
         loss_img_weight = args.loss_img_weight
 
-        f = vae.image_size / vae.args.attn_resolutions[0]
-        vae.num_layers = int(log(f)/log(2))
-        
         image_fmap_size = (image_size // (2 ** vae.num_layers))
         image_seq_len = image_fmap_size ** 2
 
