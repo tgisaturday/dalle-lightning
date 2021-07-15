@@ -79,7 +79,8 @@ if __name__ == "__main__":
 
     parser.add_argument('--test', action='store_true', default=False,
                     help='test run')                     
-
+    parser.add_argument('--debug', action='store_true', default=False,
+                    help='debug run') 
     #model configuration
     parser.add_argument('--model', type=str, default='vqgan')
     parser.add_argument('--embed_dim', type=int, default=256,
@@ -141,8 +142,6 @@ if __name__ == "__main__":
     #random seed fix
     seed_everything(args.seed)   
 
-    #data = ImageDataModule(args.train_dir, args.val_dir, args.batch_size, args.num_workers, args.img_size, args.fake_data)
-    
     transform_train = T.Compose([
                             T.Lambda(lambda img: img.convert('RGB') if img.mode != 'RGB' else img),
                             T.RandomResizedCrop(args.img_size,
@@ -203,17 +202,24 @@ if __name__ == "__main__":
     else:
         tpus = None
         gpus = args.gpus
-
+    if args.debug:
+        limit_train_batches = 10
+        limit_test_batches = 10
+    else:
+        limit_train_batches = 1.0
+        limit_test_batches = 1.0       
     if args.use_tpus:
         trainer = Trainer(tpu_cores=tpus, gpus= gpus, default_root_dir=default_root_dir,
                           max_epochs=args.epochs, progress_bar_refresh_rate=args.refresh_rate,precision=args.precision,
                           num_sanity_val_steps=args.num_sanity_val_steps,
+                          limit_train_batches=limit_train_batches,limit_test_batches=limit_test_batches,
                           resume_from_checkpoint = ckpt_path)
     else:
         trainer = Trainer(tpu_cores=tpus, gpus= gpus, default_root_dir=default_root_dir,
                           max_epochs=args.epochs, progress_bar_refresh_rate=args.refresh_rate,precision=args.precision,
                           accelerator='ddp',
                           num_sanity_val_steps=args.num_sanity_val_steps,
+                          limit_train_batches=limit_train_batches,limit_test_batches=limit_test_batches,                          
                           resume_from_checkpoint = ckpt_path)
     
     print("Setting batch size: {} learning rate: {:.2e}".format(model.hparams.batch_size, model.hparams.learning_rate))
