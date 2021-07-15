@@ -20,6 +20,8 @@ class VQGAN(pl.LightningModule):
         self.image_size = args.resolution
         self.num_tokens = args.codebook_dim
         
+        f = self.image_size / self.args.attn_resolutions[0]
+        self.num_layers = int(math.log(f)/math.log(2))
         self.encoder = Encoder(hidden_dim=args.hidden_dim, in_channels=args.in_channels, ch_mult= args.ch_mult,
                                 num_res_blocks=args.num_res_blocks, 
                                 attn_resolutions=args.attn_resolutions,
@@ -67,6 +69,7 @@ class VQGAN(pl.LightningModule):
     def training_step(self, batch, batch_idx, optimizer_idx):     
         x, _ = batch
         xrec, qloss = self(x)
+        
         if optimizer_idx == 0:
             # autoencode
             aeloss = self.loss(qloss, x, xrec, optimizer_idx, self.global_step,
