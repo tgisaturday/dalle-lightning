@@ -144,6 +144,9 @@ if __name__ == "__main__":
     seed_everything(args.seed)   
 
     # tokenizer
+    if exists(args.bpe_path):
+        klass = HugTokenizer if args.hug else YttmTokenizer
+        tokenizer = klass(args.bpe_path)  
 
     default_root_dir = args.log_dir
     if args.resume:
