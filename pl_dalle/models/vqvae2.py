@@ -97,7 +97,7 @@ class VQVAE2(pl.LightningModule):
     def get_codebook_indices(self, img):
         b = img.shape[0]
         img = (2 * img) - 1
-        _, _, _, id_t, id_b = self.model.encode(img)
+        _, _, _, id_t, id_b = self.encode(img)
         #id_t = rearrange(id_t, 'b h w -> b (h w)', b=b)
         id_t = id_t.view(b,-1)
         #id_b = rearrange(id_b, 'b h w -> b (h w)', b=b)
