@@ -206,10 +206,6 @@ class DALLE(pl.LightningModule):
         self.total_seq_len = seq_len
 
         self.vae = vae
-        del self.vae.training_step
-        del self.vae.validation_step
-        del self.vae.configure_optimizers
-        
         set_requires_grad(self.vae, False) # freeze VAE from being trained
 
         self.transformer = Transformer(
