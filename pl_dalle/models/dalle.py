@@ -164,7 +164,7 @@ class DALLE(pl.LightningModule):
         args, batch_size, learning_rate,
         vae):
         super().__init__()
-        self.save_hyperparameters()
+        self.save_hyperparameters('args','batch_size','learning_rate')
         self.args = args
 
         image_size = vae.image_size
