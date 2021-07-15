@@ -82,7 +82,7 @@ if __name__ == "__main__":
     parser.add_argument('--debug', action='store_true', default=False,
                     help='debug run') 
     #model configuration
-    parser.add_argument('--model', type=str, default='vqgan')
+    parser.add_argument('--model', type=str, default='vqvae')
     parser.add_argument('--embed_dim', type=int, default=256,
                     help='number of embedding dimension for codebook')       
     parser.add_argument('--codebook_dim', type=int, default=1024,

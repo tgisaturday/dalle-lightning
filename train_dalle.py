@@ -43,20 +43,20 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='DALL-E Training for Pytorch TPU')
 
     #path configuration
-    parser.add_argument('--train_dir', type=str, default='ataset/train/',
+    parser.add_argument('--train_dir', type=str, default='dataset/train/',
                     help='path to train dataset')
     parser.add_argument('--val_dir', type=str, default='dataset/val/',
                     help='path to val dataset')                    
     parser.add_argument('--log_dir', type=str, default='results/',
                     help='path to save logs')
 
-    parser.add_argument('--vae_path', type=str,
+    parser.add_argument('--vae_path', type=str, default='pl_dalle/data/vqvae_fake.ckpt',
                    help='path to your trained VAE')
 
     parser.add_argument('--ckpt_path', type=str,default='results/checkpoints/last.ckpt',
                     help='path to previous checkpoint')
 
-    parser.add_argument('--bpe_path', type=str, default='data/',
+    parser.add_argument('--bpe_path', type=str, default='pl_dalle/data/bpe_simple_vocab_16e6.txt',
                     help='path to your BPE json file')
 
 
@@ -109,7 +109,7 @@ if __name__ == "__main__":
     parser.add_argument('--debug', action='store_true', default=False,
                     help='debug run')                                       
     #VAE configuration
-    parser.add_argument('--vae', type=str, default='vqgan')
+    parser.add_argument('--vae', type=str, default='vqvae')
 
     #Transformer configuration
     parser.add_argument('--attn_types', default = 'full', type = str, 
