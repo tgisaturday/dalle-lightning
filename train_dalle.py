@@ -173,7 +173,7 @@ if __name__ == "__main__":
         vae = GumbelVQVAE.load_from_checkpoint(args.vae_path) 
     elif args.vae == 'vqvae2':
         vae = VQVAE2.load_from_checkpoint(args.vae_path) 
-
+    
     model = DALLE(args, args.batch_size, args.learning_rate, vae=vae)
 
     datamodule = TextImageDataModule(args.train_dir, args.val_dir, 

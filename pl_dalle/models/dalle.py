@@ -206,7 +206,7 @@ class DALLE(pl.LightningModule):
         self.total_seq_len = seq_len
 
         self.vae = vae
-        set_requires_grad(self.vae, False) # freeze VAE from being trained
+        self.vae.freeze()
 
         self.transformer = Transformer(
             dim = dim,
@@ -454,7 +454,7 @@ class DALLE(pl.LightningModule):
 
     def configure_optimizers(self):
         lr = self.hparams.learning_rate
-        opt = Adam(get_trainable_params(self), lr=lr)    
+        opt = Adam(self.parameters(), lr=lr)    
         if self.args.lr_decay:
             scheduler = ReduceLROnPlateau(
             opt,
