@@ -4,6 +4,7 @@ from torch import nn, einsum
 import torch.nn.functional as F
 import numpy as np
 import pytorch_lightning as pl
+from math import sqrt, log
 
 from axial_positional_embedding import AxialPositionalEmbedding
 from einops import rearrange
@@ -167,7 +168,7 @@ class DALLE(pl.LightningModule):
         self.args = args
 
         image_size = vae.image_size
-        num_image_tokens = vae.num_tokens
+        num_image_tokens = vae.codebook_dim
         num_text_tokens = args.num_text_tokens
         text_seq_len = args.text_seq_len
         dim = args.hidden_dim
@@ -182,7 +183,9 @@ class DALLE(pl.LightningModule):
         sparse_attn = args.sparse_attn
         loss_img_weight = args.loss_img_weight
 
-        image_fmap_size = (image_size // (2 ** vae.num_layers))
+        f = self.vae.image_size / self.vae.attn_resolutions[0]
+        self.vae.num_layers = int(log(f)/log(2))
+        image_fmap_size = (image_size // (2 ** self.vae.num_layers))
         image_seq_len = image_fmap_size ** 2
 
         num_text_tokens = num_text_tokens + text_seq_len  # reserve unique padding tokens for each position (text seq len)
@@ -381,7 +384,7 @@ class DALLE(pl.LightningModule):
             is_raw_image = len(image.shape) == 4
 
             if is_raw_image:
-                image_size = self.vae.args.image_size
+                image_size = self.vae.image_size
                 assert tuple(image.shape[1:]) == (3, image_size, image_size), f'invalid image of dimensions {image.shape} passed in during training'
 
                 image = self.vae.get_codebook_indices(image)
