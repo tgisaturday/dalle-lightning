@@ -128,7 +128,8 @@ class TextImageDataModule(LightningDataModule):
         self.truncate_captions = truncate_captions
         self.tokenizer = tokenizer
         self.fake_data = fake_data
-
+        self.web_dataset = web_dataset
+        
         self.transform_train = T.Compose([
                             T.Lambda(lambda img: img.convert('RGB') if img.mode != 'RGB' else img),
                             T.RandomResizedCrop(img_size,
