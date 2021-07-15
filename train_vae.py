@@ -201,8 +201,8 @@ if __name__ == "__main__":
         tpus = None
         gpus = args.gpus
     if args.debug:
-        limit_train_batches = 10
-        limit_test_batches = 10
+        limit_train_batches = 100
+        limit_test_batches = 100
     else:
         limit_train_batches = 1.0
         limit_test_batches = 1.0       

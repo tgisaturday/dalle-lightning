@@ -226,8 +226,8 @@ if __name__ == "__main__":
         val_loader = DataLoader(val_dataset, batch_size=args.batch_size, num_workers=args.num_workers, drop_last=True)  
 
     if args.debug:
-        limit_train_batches = 10
-        limit_test_batches = 10
+        limit_train_batches = 100
+        limit_test_batches = 100
     else:
         limit_train_batches = 1.0
         limit_test_batches = 1.0   
