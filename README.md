@@ -41,6 +41,7 @@ python train_dalle.py --use_tpus --train_dir [training_set] --val_dir [val_set] 
 - [x] Debug DALL-E (Single TPU Node, TPU Pods, GPUs)
 - [x] Add WebDataset support
 - [ ] Debug WebDataset functionality
+- [ ] Add [RBGumbelQuantizer](https://arxiv.org/abs/2010.04838)
 - [ ] Add [HiT](https://arxiv.org/abs/2106.07631)
 
 ## BibTeX
