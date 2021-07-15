@@ -162,7 +162,7 @@ class FakeTextImageData(VisionDataset):
         if self.transform is not None:
             img = self.transform(img)
 
-        return img, target
+        return img, target.item
 
     def __len__(self) -> int:
         return self.size
