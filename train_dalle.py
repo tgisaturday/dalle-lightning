@@ -50,7 +50,7 @@ if __name__ == "__main__":
     parser.add_argument('--log_dir', type=str, default='results/',
                     help='path to save logs')
 
-    parser.add_argument('--vae_path', type=str, default='pl_dalle/data/vqvae_fake.ckpt',
+    parser.add_argument('--vae_path', type=str,
                    help='path to your trained VAE')
 
     parser.add_argument('--ckpt_path', type=str,default='results/checkpoints/last.ckpt',
