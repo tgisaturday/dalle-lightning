@@ -84,6 +84,8 @@ if __name__ == "__main__":
                     help='test run')                     
     parser.add_argument('--debug', action='store_true', default=False,
                     help='debug run') 
+    parser.add_argument('--xla_stat', action='store_true', default=False,
+                    help='print out tpu related stat')                     
     #model configuration
     parser.add_argument('--model', type=str, default='vqvae')
     parser.add_argument('--embed_dim', type=int, default=256,
@@ -188,7 +190,7 @@ if __name__ == "__main__":
                           num_sanity_val_steps=args.num_sanity_val_steps,
                           limit_train_batches=limit_train_batches,limit_test_batches=limit_test_batches,
                           resume_from_checkpoint = ckpt_path)
-        if args.debug:
+        if args.xla_stat:
             trainer.callbacks.append(XLAStatsMonitor())
     else:
         trainer = Trainer(tpu_cores=tpus, gpus= gpus, default_root_dir=default_root_dir,

@@ -25,6 +25,7 @@ from io import BytesIO
 import pytorch_lightning as pl
 from pytorch_lightning import seed_everything
 from pytorch_lightning import Trainer
+from pytorch_lightning.callbacks import XLAStatsMonitor
 
 def exists(val):
     return val is not None
@@ -107,7 +108,10 @@ if __name__ == "__main__":
     parser.add_argument('--test', action='store_true', default=False,
                     help='test run')    
     parser.add_argument('--debug', action='store_true', default=False,
-                    help='debug run')                                       
+                    help='debug run') 
+    parser.add_argument('--xla_stat', action='store_true', default=False,
+                    help='print out tpu related stat')     
+
     #VAE configuration
     parser.add_argument('--vae', type=str, default='vqvae')
 
@@ -239,6 +243,8 @@ if __name__ == "__main__":
                           num_sanity_val_steps=args.num_sanity_val_steps,
                           limit_train_batches=limit_train_batches,limit_test_batches=limit_test_batches,                          
                           resume_from_checkpoint = ckpt_path)
+        if args.xla_stat:
+            trainer.callbacks.append(XLAStatsMonitor())                         
     else:
         trainer = Trainer(tpu_cores=tpus, gpus= gpus, default_root_dir=default_root_dir,
                           max_epochs=args.epochs, progress_bar_refresh_rate=args.refresh_rate,precision=args.precision,
