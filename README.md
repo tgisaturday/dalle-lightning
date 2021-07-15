@@ -28,7 +28,7 @@ python train_vae.py --use_tpus --train_dir [training_set] --val_dir [val_set] --
 
 ## Training DALL-E
 ```
-python train_dalle.py --use_tpus --train_dir [training_set] --val_dir [val_set] --log_dir [where to save results] --vae_path [pretrained vae] --bpe_path [pretrained bpe]
+python train_dalle.py --use_tpus --train_dir [training_set] --val_dir [val_set] --log_dir [where to save results] --vae_path [pretrained vae] --bpe_path [pretrained bpe(optional)]
 ```
 
 ## TODO
