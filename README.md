@@ -38,7 +38,7 @@ python train_dalle.py --use_tpus --train_dir [training_set] --val_dir [val_set] 
 - [x] Debug VAEs (Single TPU Node, TPU Pods, GPUs)
 - [x] Resolve SIGSEGV issue with large TPU Pods [pytorch-xla #3028](https://github.com/pytorch/xla/issues/3028)
 - [x] Add DALL-E
-- [ ] Debug DALL-E (Single TPU Node, TPU Pods, GPUs)
+- [x] Debug DALL-E (Single TPU Node, TPU Pods, GPUs)
 - [ ] Add [HiT](https://arxiv.org/abs/2106.07631)
 
 ## BibTeX
