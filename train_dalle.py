@@ -56,7 +56,7 @@ if __name__ == "__main__":
     parser.add_argument('--ckpt_path', type=str,default='results/checkpoints/last.ckpt',
                     help='path to previous checkpoint')
 
-    parser.add_argument('--bpe_path', type=str, default='pl_dalle/data/bpe_simple_vocab_16e6.txt',
+    parser.add_argument('--bpe_path', type=str, default='pl_dalle/modules/dalle/data/bpe_simple_vocab_16e6.txt',
                     help='path to your BPE json file')
 
 
