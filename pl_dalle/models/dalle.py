@@ -205,8 +205,8 @@ class DALLE(pl.LightningModule):
         self.total_tokens = total_tokens
         self.total_seq_len = seq_len
 
-        self.vae = vae
-        set_requires_grad(self.vae, False) # freeze VAE from being trained
+        self.vae = vae.freeze()
+        #set_requires_grad(self.vae, False) # freeze VAE from being trained
 
         self.transformer = Transformer(
             dim = dim,
