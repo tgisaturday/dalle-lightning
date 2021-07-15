@@ -155,7 +155,7 @@ if __name__ == "__main__":
         ckpt_path = None
 
     if args.use_tpus:
-        tpus = 8
+        tpus = 1
         gpus = None
     else:
         tpus = None
