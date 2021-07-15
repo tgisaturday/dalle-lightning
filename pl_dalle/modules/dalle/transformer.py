@@ -7,7 +7,8 @@ import torch.nn.functional as F
 from einops import rearrange
 
 from dalle_pytorch.reversible import ReversibleSequence, SequentialSequence
-from dalle_pytorch.attention import Attention, SparseAttention, SparseConvCausalAttention, SparseAxialCausalAttention
+from dalle_pytorch.attention import SparseAttention
+from pl_dalle.modules.dalle.attention import Attention, SparseConvCausalAttention, SparseAxialCausalAttention
 
 from g_mlp_pytorch import gMLPBlock
 

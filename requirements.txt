@@ -15,3 +15,4 @@ youtokentome
 WebDataset
 axial_positional_embedding
 pillow
+dalle_pytorch
