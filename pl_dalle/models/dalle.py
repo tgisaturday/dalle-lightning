@@ -168,7 +168,7 @@ class DALLE(pl.LightningModule):
         self.args = args
 
         image_size = vae.image_size
-        num_image_tokens = vae.codebook_dim
+        num_image_tokens = vae.args.codebook_dim
         num_text_tokens = args.num_text_tokens
         text_seq_len = args.text_seq_len
         dim = args.hidden_dim
