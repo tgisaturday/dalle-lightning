@@ -105,7 +105,9 @@ if __name__ == "__main__":
                     help='Use sparse attention')
 
     parser.add_argument('--test', action='store_true', default=False,
-                    help='test run')                      
+                    help='test run')    
+    parser.add_argument('--debug', action='store_true', default=False,
+                    help='debug run')                                       
     #VAE configuration
     parser.add_argument('--vae', type=str, default='vqgan')
 
@@ -223,12 +225,19 @@ if __name__ == "__main__":
         train_loader = DataLoader(train_dataset, batch_size=args.batch_size, num_workers=args.num_workers,shuffle=True, drop_last=True)      
         val_loader = DataLoader(val_dataset, batch_size=args.batch_size, num_workers=args.num_workers, drop_last=True)  
 
+    if args.debug:
+        limit_train_batches = 10
+        limit_test_batches = 10
+    else:
+        limit_train_batches = 1.0
+        limit_test_batches = 1.0   
 
     if args.use_tpus:
         trainer = Trainer(tpu_cores=tpus, gpus= gpus, default_root_dir=default_root_dir,
                           max_epochs=args.epochs, progress_bar_refresh_rate=args.refresh_rate,precision=args.precision,
                           gradient_clip_val=args.clip_grad_norm, accumulate_grad_batches=args.ga_steps,
                           num_sanity_val_steps=args.num_sanity_val_steps,
+                          limit_train_batches=limit_train_batches,limit_test_batches=limit_test_batches,                          
                           resume_from_checkpoint = ckpt_path)
     else:
         trainer = Trainer(tpu_cores=tpus, gpus= gpus, default_root_dir=default_root_dir,
@@ -236,6 +245,7 @@ if __name__ == "__main__":
                           accelerator='ddp', accumulate_grad_batches=args.ga_steps,
                           gradient_clip_val=args.clip_grad_norm,
                           num_sanity_val_steps=args.num_sanity_val_steps,
+                          limit_train_batches=limit_train_batches,limit_test_batches=limit_test_batches,                          
                           resume_from_checkpoint = ckpt_path)
     
     print("Setting batch size: {} learning rate: {:.2e}".format(model.hparams.batch_size, model.hparams.learning_rate))

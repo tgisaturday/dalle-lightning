@@ -107,7 +107,7 @@ if __name__ == "__main__":
                     help='model settings')  
     parser.add_argument('--dropout', type=float, default=0.0,
                     help='model settings') 
-    parser.add_argument('--quant_beta', type=float, default=0.5,
+    parser.add_argument('--quant_beta', type=float, default=0.25,
                     help='quantizer beta')                     
     parser.add_argument('--quant_ema_decay', type=float, default=0.99,
                     help='quantizer ema decay')
@@ -117,8 +117,6 @@ if __name__ == "__main__":
     #vqvae2 specialized options
     parser.add_argument('--num_res_ch', type=int, default=32,
                     help='model settings')                                        
-    parser.add_argument('--latent_weight', type=float, default=0.25,
-                    help='model settings')
 
     #loss configuration
     parser.add_argument('--smooth_l1_loss', dest = 'smooth_l1_loss', action = 'store_true')

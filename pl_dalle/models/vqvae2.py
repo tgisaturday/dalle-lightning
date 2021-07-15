@@ -34,7 +34,7 @@ class VQVAE2(pl.LightningModule):
         self.save_hyperparameters()
         self.args = args  
         self.recon_loss = nn.MSELoss()
-        self.latent_loss_weight = args.latent_weight
+        self.latent_loss_weight = args.quant_beta
         self.log_images=log_images       
         self.image_size = args.resolution
         self.num_tokens = args.codebook_dim * 2 #two codebooks
