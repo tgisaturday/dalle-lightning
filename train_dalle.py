@@ -9,8 +9,8 @@ import datetime
 import torch
 from torch.utils.data import DataLoader
 
-from pl_dalle.models.vqgan import VQGAN, GumbelVQGAN
-from pl_dalle.models.vqvae import VQVAE, GumbelVQVAE
+from pl_dalle.models.vqgan import VQGAN, EMAVQGAN, GumbelVQGAN
+from pl_dalle.models.vqvae import VQVAE, EMAVQVAE, GumbelVQVAE
 from pl_dalle.models.vqvae2 import VQVAE2
 from pl_dalle.models.dalle import DALLE
 
@@ -108,40 +108,6 @@ if __name__ == "__main__":
                     help='test run')                      
     #VAE configuration
     parser.add_argument('--vae', type=str, default='vqgan')
-    '''
-    parser.add_argument('--embed_dim', type=int, default=256,
-                    help='number of embedding dimension for codebook')       
-    parser.add_argument('--codebook_dim', type=int, default=1024,
-                    help='codebook size')        
-    parser.add_argument('--double_z', type=bool, default=False,
-                    help='double z for encoder')
-    parser.add_argument('--z_channels', type=int, default=256,
-                    help='image latent feature dimension')
-    parser.add_argument('--resolution', type=int, default=256,
-                    help='image resolution')
-    parser.add_argument('--in_channels', type=int, default=3,
-                    help='input image channel')
-    parser.add_argument('--out_channels', type=int, default=3,
-                    help='output image channel')    
-    parser.add_argument('--hidden_dim', type=int, default=128,
-                    help='hidden dimension init size')  
-    parser.add_argument('--ch_mult', type=list, default=[1,1,2,2,4],
-                    help='resnet channel multiplier')  
-    parser.add_argument('--num_res_blocks', type=int, default=2,
-                    help='number of resnet blocks')                     
-    parser.add_argument('--attn_resolutions', type=list, default=[16],
-                    help='model settings')  
-    parser.add_argument('--dropout', type=float, default=0.0,
-                    help='model settings')  
-
-    #vqvae2. to-be merged
-    parser.add_argument('--num_res_ch', type=int, default=32,
-                    help='model settings')  
-    parser.add_argument('--decay', type=float, default=0.99,
-                    help='model settings')                                      
-    parser.add_argument('--latent_weight', type=float, default=0.25,
-                    help='model settings')
-    '''
 
     #Transformer configuration
     parser.add_argument('--attn_types', default = 'full', type = str, 
@@ -189,14 +155,18 @@ if __name__ == "__main__":
     # model
     if args.vae == 'vqgan':
         vae = VQGAN.load_from_checkpoint(args.vae_path)
-    elif args.vae == 'gvqgan':
-        vae = GumbelVQGAN.load_from_checkpoint(args.vae_path)        
-    elif args.vae == 'vqvae':
-        vae = VQVAE.load_from_checkpoint(args.vae_path)
-    elif args.vae == 'gvqvae':
-        vae = GumbelVQVAE.load_from_checkpoint(args.vae_path) 
-    elif args.vae == 'vqvae2':
-        vae = VQVAE2.load_from_checkpoint(args.vae_path)
+    elif args.model == 'evqgan':
+        model = EMAVQGAN.load_from_checkpoint(args.vae_path)         
+    elif args.model == 'gvqgan':
+        model = GumbelVQGAN.load_from_checkpoint(args.vae_path)       
+    elif args.model == 'vqvae':
+        model = VQVAE.load_from_checkpoint(args.vae_path)
+    elif args.model == 'evqvae':
+        model = EMAVQVAE.load_from_checkpoint(args.vae_path)       
+    elif args.model == 'gvqvae':
+        model = GumbelVQVAE.load_from_checkpoint(args.vae_path) 
+    elif args.model == 'vqvae2':
+        model = VQVAE2.load_from_checkpoint(args.vae_path) 
 
     model = DALLE(args, args.batch_size, args.learning_rate, vae=vae)
 

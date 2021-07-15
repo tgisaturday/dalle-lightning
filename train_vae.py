@@ -127,7 +127,7 @@ if __name__ == "__main__":
                     help='lossconfig')      
     parser.add_argument('--disc_in_channels', type=int, default=3,
                     help='lossconfig') 
-    parser.add_argument('--disc_start', type=int, default=250001,
+    parser.add_argument('--disc_start', type=int, default=10001,
                     help='lossconfig') 
     parser.add_argument('--disc_weight', type=float, default=0.8,
                     help='lossconfig') 
