@@ -163,19 +163,19 @@ if __name__ == "__main__":
 
     # model
     if args.vae == 'vqgan':
-        vae = VQGAN.load_from_checkpoint(args.vae_path)
+        vae = VQGAN.load_from_checkpoint(args.vae_path, strict=False)
     elif args.vae == 'evqgan':
-        vae = EMAVQGAN.load_from_checkpoint(args.vae_path)         
+        vae = EMAVQGAN.load_from_checkpoint(args.vae_path, strict=False)         
     elif args.vae == 'gvqgan':
-        vae = GumbelVQGAN.load_from_checkpoint(args.vae_path)       
+        vae = GumbelVQGAN.load_from_checkpoint(args.vae_path, strict=False)       
     elif args.vae == 'vqvae':
-        vae = VQVAE.load_from_checkpoint(args.vae_path)
+        vae = VQVAE.load_from_checkpoint(args.vae_path, strict=False)
     elif args.vae == 'evqvae':
-        vae = EMAVQVAE.load_from_checkpoint(args.vae_path)       
+        vae = EMAVQVAE.load_from_checkpoint(args.vae_path, strict=False)       
     elif args.vae == 'gvqvae':
-        vae = GumbelVQVAE.load_from_checkpoint(args.vae_path) 
+        vae = GumbelVQVAE.load_from_checkpoint(args.vae_path, strict=False) 
     elif args.vae == 'vqvae2':
-        vae = VQVAE2.load_from_checkpoint(args.vae_path) 
+        vae = VQVAE2.load_from_checkpoint(args.vae_path, strict=False) 
     
     model = DALLE(args, args.batch_size, args.learning_rate, vae=vae)
 
