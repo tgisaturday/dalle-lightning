@@ -154,7 +154,7 @@ class FakeTextImageData(VisionDataset):
         rng_state = torch.get_rng_state()
         torch.manual_seed(index + self.random_offset)
         img = torch.randn(*self.image_size)
-        text = torch.zeros(self.text_len)
+        text = torch.randint(10000,(self.text_len,))
         torch.set_rng_state(rng_state)
 
         # convert to PIL Image

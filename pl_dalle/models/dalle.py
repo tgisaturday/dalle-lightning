@@ -435,11 +435,11 @@ class DALLE(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         text, images = batch
         loss, loss_text, loss_img = self(text, images, return_loss=True)
-        #self.log("train/total_loss", loss, prog_bar=True, logger=True) 
-        #self.log("train/text_loss", loss_text, prog_bar=True, logger=True) 
-        #self.log("train/img_loss", loss_img, prog_bar=True, logger=True)         
+        self.log("train/total_loss", loss, prog_bar=True, logger=True) 
+        self.log("train/text_loss", loss_text, prog_bar=True, logger=True) 
+        self.log("train/img_loss", loss_img, prog_bar=True, logger=True)         
 
-        #return loss
+        return loss
     
     
     def validation_step(self, batch, batch_idx):   
