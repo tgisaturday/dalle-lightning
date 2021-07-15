@@ -161,11 +161,11 @@ if __name__ == "__main__":
         train_loader = xu.SampleGenerator(
                         data=(torch.zeros(args.batch_size, 3, args.img_size , args.img_size ),
                         torch.zeros(args.batch_size, dtype=torch.int64)),
-                        sample_count=1200000 // args.batch_size // xm.xrt_world_size())
+                        sample_count=10000 // args.batch_size // xm.xrt_world_size())
         val_loader = xu.SampleGenerator(
                         data=(torch.zeros(args.batch_size, 3, args.img_size , args.img_size ),
                         torch.zeros(args.batch_size, dtype=torch.int64)),
-                        sample_count=50000 // args.batch_size // xm.xrt_world_size())                           
+                        sample_count=5000 // args.batch_size // xm.xrt_world_size())                           
     else:
         train_dataset = ImageFolder(args.train_dir, transform_train)
         val_dataset = ImageFolder(args.val_dir, transform_val)          
