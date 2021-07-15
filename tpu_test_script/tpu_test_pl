@@ -99,6 +99,8 @@ gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
 
 python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-32 --restart-tpuvm-pod-server -- python3 dalle-lightning/train_vae.py --use_tpus --model vqvae --fake_data 
 
+python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-64 --restart-tpuvm-pod-server -- python3 dalle-lightning/train_vae.py --use_tpus --model vqgan --fake_data --debug --xla_stat 
+
 python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-256 --restart-tpuvm-pod-server -- python3 dalle-lightning/train_vae.py --use_tpus --fake_data --model vqvae
 
 python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-128 --restart-tpuvm-pod-server -- python3 dalle-lightning/main.py --use_tpus --refresh_rate 1 --fake_data --disc_start 1

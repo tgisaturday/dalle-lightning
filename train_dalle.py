@@ -111,7 +111,8 @@ if __name__ == "__main__":
                     help='debug run') 
     parser.add_argument('--xla_stat', action='store_true', default=False,
                     help='print out tpu related stat')     
-
+    parser.add_argument('--web_dataset',action='store_true', default=False,
+                    help='enable web_dataset')   
     #VAE configuration
     parser.add_argument('--vae', type=str, default='vqvae')
 
@@ -179,12 +180,13 @@ if __name__ == "__main__":
     
     model = DALLE(args, args.batch_size, args.learning_rate, vae=vae)
 
+
     datamodule = TextImageDataModule(args.train_dir, args.val_dir, 
                                 args.batch_size, args.num_workers, 
                                 args.img_size, args.text_seq_len, 
                                 args.resize_ratio,args.truncate_captions, 
                                 tokenizer,
-                                args.fake_data)
+                                args.fake_data, args.web_dataset)
 
 
     if args.debug:

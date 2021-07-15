@@ -10,10 +10,33 @@ from pytorch_lightning import LightningDataModule
 import torch
 from typing import Any, Callable, Optional, Tuple
 from torchvision import transforms
+import webdataset as wds
+
+def web_dataset_helper(path):
+    if Path(path).is_dir():
+        DATASET = [str(p) for p in Path(path).glob("**/*") if ".tar" in str(p).lower()] # .name
+        assert len(DATASET) > 0, 'The directory ({}) does not contain any WebDataset/.tar files.'.format(path)
+        print('Found {} WebDataset .tar(.gz) file(s) under given path {}!'.format(len(DATASET), path))
+    elif ('http://' in path.lower()) | ('https://' in path.lower()):
+        DATASET = f"pipe:curl -L -s {path} || true"
+        print('Found {} http(s) link under given path!'.format(len(DATASET), path))
+    elif 'gs://' in path.lower():
+        DATASET = f"pipe:gsutil cat {path} || true"
+        print('Found {} GCS link under given path!'.format(len(DATASET), path))
+    elif '.tar' in path:
+        DATASET = path
+        print('Found WebDataset .tar(.gz) file under given path {}!'.format(path))
+    else:
+        raise Exception('No folder, no .tar(.gz) and no url pointing to tar files provided under {}.'.format(args.image_text_folder))
+    return DATASET
+
+def identity(x):
+    return x
+
 
 class ImageDataModule(LightningDataModule):
 
-    def __init__(self, train_dir, val_dir, batch_size, num_workers, img_size, resize_ratio=0.75, fake_data=False):
+    def __init__(self, train_dir, val_dir, batch_size, num_workers, img_size, resize_ratio=0.75, fake_data=False, web_dataset=False):
         super().__init__()
         self.train_dir = train_dir
         self.val_dir = val_dir
@@ -21,6 +44,7 @@ class ImageDataModule(LightningDataModule):
         self.num_workers = num_workers
         self.fake_data = fake_data
         self.img_size = img_size
+        self.web_dataset = web_dataset
 
         self.transform_train = T.Compose([
                             T.Lambda(lambda img: img.convert('RGB') if img.mode != 'RGB' else img),
@@ -42,24 +66,57 @@ class ImageDataModule(LightningDataModule):
             self.train_dataset = FakeData(1200000, (3, self.img_size, self.img_size), 1000, self.transform_train)
             self.val_dataset = FakeData(50000, (3, self.img_size, self.img_size), 1000, self.transform_train)
         else:
-            self.train_dataset = ImageFolder(self.train_dir, self.transform)
-            self.val_dataset = ImageFolder(self.val_dir, self.transform)
+            if self.web_dataset:
+                DATASET_TRAIN = web_dataset_helper(self.train_dir)
+                DATASET_VAL = web_dataset_helper(self.val_dir)
+                DATASET_SIZE = int(1e9)
+                BATCH_SIZE = self.batch_size
+                
+                num_batches = DATASET_SIZE // BATCH_SIZE
+
+                self.train_dataset = (
+                    wds.WebDataset(DATASET_TRAIN, length=num_batches)
+                    # .shuffle(is_shuffle) # Commented out for WebDataset as the behaviour cannot be predicted yet
+                    .decode("pil")
+                    .to_tuple("jpg;png;jpeg cls")
+                    .map_tuple(self.transform_train, identity)
+                    .batched(BATCH_SIZE, partial=False) # It is good to avoid partial batches when using Distributed training
+                    )  
+                self.val_dataset = (
+                    wds.WebDataset(DATASET_VAL,length=num_batches)
+                    # .shuffle(is_shuffle) # Commented out for WebDataset as the behaviour cannot be predicted yet
+                    .decode("pil")
+                    .to_tuple("jpg;png;jpeg cls")
+                    .map_tuple(self.transform_val, identity)
+                    .batched(BATCH_SIZE, partial=False) # It is good to avoid partial batches when using Distributed training
+                    )                                     
+            else:
+                self.train_dataset = ImageFolder(self.train_dir, self.transform)
+                self.val_dataset = ImageFolder(self.val_dir, self.transform)
   
 
     def train_dataloader(self):
-        return DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=self.num_workers,shuffle=True)
+        if self.web_dataset:
+            return wds.WebLoader(self.train_dataset, batch_size=self.batch_size, num_workers=self.num_workers,shuffle=True)
+        else:
+            return DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=self.num_workers,shuffle=True)
 
     def val_dataloader(self):
-        return DataLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers)
+        if self.web_dataset:
+            return wds.WebLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers)
+        else:
+            return DataLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers)
 
-    def test_dataloader(self):
-        return DataLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers)
-
+    def val_dataloader(self):
+        if self.web_dataset:
+            return wds.WebLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers)
+        else:
+            return DataLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers)
 
 class TextImageDataModule(LightningDataModule):
 
     def __init__(self, train_dir, val_dir, batch_size, num_workers, img_size, text_seq_len,
-                resize_ratio=0.75, truncate_captions=False, tokenizer=None, fake_data=False):
+                resize_ratio=0.75, truncate_captions=False, tokenizer=None, fake_data=False, web_dataset=False):
         super().__init__()
         self.train_dir = train_dir
         self.val_dir = val_dir
@@ -92,35 +149,84 @@ class TextImageDataModule(LightningDataModule):
             self.train_dataset = FakeTextImageData(1200000, (3, self.img_size, self.img_size), self.text_seq_len, self.transform_train)
             self.val_dataset = FakeTextImageData(50000, (3, self.img_size, self.img_size), self.text_seq_len, self.transform_train)
         else:
-            self.train_dataset = TextImageDataset(
-                                    self.train_dir,
-                                    text_len=self.text_seq_len,
-                                    image_size=self.img_size,
-                                    resize_ratio=self.resize_ratio,
-                                    truncate_captions=self.truncate_captions,
-                                    tokenizer=self.tokenizer,
-                                    transform=self.transform_train,
-                                    shuffle=True,
-                                    )
-            self.val_dataset = TextImageDataset(
-                                    self.val_dir,
-                                    text_len=self.text_seq_len,
-                                    image_size=self.img_size,
-                                    resize_ratio=self.resize_ratio,
-                                    truncate_captions=self.truncate_captions,
-                                    tokenizer=self.tokenizer,
-                                    transform=self.transform_val,
-                                    shuffle=False,
-                                    )
+            if self.web_dataset:
+                DATASET_TRAIN = web_dataset_helper(self.train_dir)
+                DATASET_VAL = web_dataset_helper(self.val_dir)
+                DATASET_SIZE = int(1e9)
+                BATCH_SIZE = self.batch_size
+                
+                myimg, mycap = ("image","text")
+                train_image_text_mapping = {
+                                myimg: self.transform_train,
+                                mycap: self.tokenizer
+                            }
+                train_image_mapping = {
+                                myimg: self.transform_train
+                            }
+                val_image_text_mapping = {
+                                myimg: self.transform_val,
+                                mycap: self.tokenizer
+                            }
+                val_image_mapping = {
+                                myimg: self.transform_val
+                            }
 
+                num_batches = DATASET_SIZE // BATCH_SIZE
+
+                self.train_dataset = (
+                    wds.WebDataset(DATASET_TRAIN, length=num_batches)
+                    # .shuffle(is_shuffle) # Commented out for WebDataset as the behaviour cannot be predicted yet
+                    .map_dict(**train_image_text_mapping)     
+                    .map_dict(**train_image_mapping)
+                    .to_tuple(mycap, myimg)
+                    .batched(BATCH_SIZE, partial=False) # It is good to avoid partial batches when using Distributed training                   
+                    )   
+                self.val_dataset = (
+                    wds.WebDataset(DATASET_VAL, length=num_batches)
+                    # .shuffle(is_shuffle) # Commented out for WebDataset as the behaviour cannot be predicted yet
+                    .map_dict(**val_image_text_mapping)     
+                    .map_dict(**val_image_mapping)
+                    .to_tuple(mycap, myimg)
+                    .batched(BATCH_SIZE, partial=False) # It is good to avoid partial batches when using Distributed training                   
+                    )                    
+            else:   
+                self.train_dataset = TextImageDataset(
+                                        self.train_dir,
+                                        text_len=self.text_seq_len,
+                                        image_size=self.img_size,
+                                        resize_ratio=self.resize_ratio,
+                                        truncate_captions=self.truncate_captions,
+                                        tokenizer=self.tokenizer,
+                                        transform=self.transform_train,
+                                        shuffle=True,
+                                        )
+                self.val_dataset = TextImageDataset(
+                                        self.val_dir,
+                                        text_len=self.text_seq_len,
+                                        image_size=self.img_size,
+                                        resize_ratio=self.resize_ratio,
+                                        truncate_captions=self.truncate_captions,
+                                        tokenizer=self.tokenizer,
+                                        transform=self.transform_val,
+                                        shuffle=False,
+                                        )
     def train_dataloader(self):
-        return DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=self.num_workers,shuffle=True)
+        if self.web_dataset:
+            return wds.WebLoader(self.train_dataset, batch_size=self.batch_size, num_workers=self.num_workers,shuffle=True)
+        else:
+            return DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=self.num_workers,shuffle=True)
 
     def val_dataloader(self):
-        return DataLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers)
+        if self.web_dataset:
+            return wds.WebLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers)
+        else:
+            return DataLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers)
 
-    def test_dataloader(self):
-        return DataLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers)
+    def val_dataloader(self):
+        if self.web_dataset:
+            return wds.WebLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers)
+        else:
+            return DataLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers)
 
 
 class FakeTextImageData(VisionDataset):
