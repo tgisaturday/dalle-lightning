@@ -79,7 +79,7 @@ if __name__ == "__main__":
     parser.add_argument('--num_sanity_val_steps', type=int, default=0,
                     help='num_sanity_val_steps') 
 
-    parser.add_argument('--batch_size', type=int, default=8,
+    parser.add_argument('--batch_size', type=int, default=1,
                     help='training settings')  
     parser.add_argument('--epochs', type=int, default=20,
                     help='training settings')  
@@ -125,7 +125,7 @@ if __name__ == "__main__":
                     help = 'Text sequence length')
     parser.add_argument('--num_text_tokens', default = 10000, type = int, 
                     help = 'Number of text tokens')                    
-    parser.add_argument('--depth', default = 2, type = int, 
+    parser.add_argument('--depth', default = 64, type = int, 
                     help = 'Model depth')
     parser.add_argument('--heads', default = 8, type = int, 
                     help = 'Model number of heads')
