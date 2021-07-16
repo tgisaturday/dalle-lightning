@@ -64,7 +64,7 @@ class ImageDataModule(LightningDataModule):
     def setup(self, stage=None):
         if self.fake_data:
             self.train_dataset = FakeData(1200000, (3, self.img_size, self.img_size), 1000, self.transform_train)
-            self.val_dataset = FakeData(50000, (3, self.img_size, self.img_size), 1000, self.transform_train)
+            self.val_dataset = FakeData(50000, (3, self.img_size, self.img_size), 1000, self.transform_val)
         else:
             if self.web_dataset:
                 DATASET_TRAIN = web_dataset_helper(self.train_dir)
@@ -91,8 +91,8 @@ class ImageDataModule(LightningDataModule):
                     .batched(BATCH_SIZE, partial=False) # It is good to avoid partial batches when using Distributed training
                     )                                     
             else:
-                self.train_dataset = ImageFolder(self.train_dir, self.transform)
-                self.val_dataset = ImageFolder(self.val_dir, self.transform)
+                self.train_dataset = ImageFolder(self.train_dir, self.transform_train)
+                self.val_dataset = ImageFolder(self.val_dir, self.transform_val)
   
 
     def train_dataloader(self):
