@@ -424,8 +424,8 @@ class DALLE(pl.LightningModule):
         offsetted_image = image + self.num_text_tokens
         labels = torch.cat((text[:, 1:], offsetted_image), dim = 1)
 
-        #logits = rearrange(logits, 'b n c -> b c n')
-        logits = logits.permute(0,2,1)
+        logits = rearrange(logits, 'b n c -> b c n')
+        #logits = logits.permute(0,2,1)
         loss_text = F.cross_entropy(logits[:, :, :self.text_seq_len], labels[:, :self.text_seq_len])
         loss_img = F.cross_entropy(logits[:, :, self.text_seq_len:], labels[:, self.text_seq_len:])
 
