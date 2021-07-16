@@ -9,6 +9,7 @@ import datetime
 import torch
 from torch.utils.data import DataLoader
 
+from dalle_pytorch import OpenAIDiscreteVAE, VQGanVAE, DiscreteVAE
 from pl_dalle.models.vqgan import VQGAN, EMAVQGAN, GumbelVQGAN
 from pl_dalle.models.vqvae import VQVAE, EMAVQVAE, GumbelVQVAE
 from pl_dalle.models.vqvae2 import VQVAE2
@@ -16,7 +17,6 @@ from pl_dalle.models.dalle import DALLE
 
 from pl_dalle.loader import TextImageDataModule
 from pl_dalle.modules.dalle.tokenizer import tokenizer, HugTokenizer, YttmTokenizer
-
 
 from torchvision import transforms as T
 from PIL import Image
@@ -177,6 +177,9 @@ if __name__ == "__main__":
         vae = GumbelVQVAE.load_from_checkpoint(args.vae_path) 
     elif args.vae == 'vqvae2':
         vae = VQVAE2.load_from_checkpoint(args.vae_path) 
+    #popular pretrained vaes(may exist some slowdown on TPUs)  
+    elif args.vae == 'openaivae':
+        vae = OpenAIDiscreteVAE()  
     
     model = DALLE(args, args.batch_size, args.learning_rate, vae=vae)
 
