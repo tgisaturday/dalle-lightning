@@ -206,7 +206,7 @@ class DALLE(pl.LightningModule):
         self.total_seq_len = seq_len
 
         self.vae = vae
-        self.vae.freeze()
+        set_requires_grad(self.vae, False)
 
         self.transformer = Transformer(
             dim = dim,
