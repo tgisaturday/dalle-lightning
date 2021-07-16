@@ -23,7 +23,7 @@ export TF_CPP_VMODULE=tensor=5,computation_client=5,xrt_computation_client=5,ate
 #TPU Pods
 
 export PROJECT_ID=lgai-vision-tpu
-export TPU_NAME=tpu-vm-pod-32a
+export TPU_NAME=tpu-pod-32a
 export ZONE=europe-west4-a
 export RUNTIME_VERSION=v2-alpha
 
@@ -71,20 +71,7 @@ python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-256 --restart-tpuvm-p
 
 python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-256 --restart-tpuvm-pod-server -- python3 dalle-lightning/train_dalle.py --use_tpus --fake_data --debug --xla_stat 
 
-python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-128 --restart-tpuvm-pod-server -- python3 dalle-lightning/main.py --use_tpus --refresh_rate 1 --fake_data --disc_start 1
 
-python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-128 --restart-tpuvm-pod-server -- python3 minGPT/benchmark.py --n_layer 14 --n_head 16 --n_embd 3072 --precision 16 --limit_train_batches 120
-
-python3 -m torch_xla.distributed.xla_dist --tpu=vae-test -- python3 dalle-lightning/main.py --use_tpus --refresh_rate 1 --disc_start 1
-
-python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod --restart-tpuvm-pod-server -- python3 dalle-lightning/train_vae.py --use_tpus --refresh_rate 1 --train_dir /datasets/coco_train/ --val_dir /datasets/coco_val/ --disc_start 1
-
-python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-64 --restart-tpuvm-pod-server -- python3 dalle-lightning/train_vae.py--use_tpus --refresh_rate 1 --train_dir /datasets/coco_train/ --val_dir /datasets/coco_val/ --disc_start 1
-
-python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-128 --restart-tpuvm-pod-server -- python3 dalle-lightning/train_vae.py --use_tpus --refresh_rate 1 --train_dir /datasets/coco_train/ --val_dir /datasets/coco_val/ --disc_start 1
-
-
-python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-256 --restart-tpuvm-pod-server -- python3 /home/taehoon.kim/taming-transformers-tpu/main.py --use_tpus --refresh_rate 1 --train_dir /datasets/coco_train/ --val_dir /datasets/coco_val/ --disc_start 1
 
 gcloud compute --project=lgai-vision-tpu instances create pod-ctrl-32\
   --zone=europe-west4-a  \
@@ -137,27 +124,5 @@ chmod -R 777 /home/taehoon.kim/taming-transformers/
 chmod -R 777 /home/taehoon.kim/coco
 chmod -R 777 /home/taehoon.kim/temp
 EOF'
-
-
-export VM_NAME=pod-ctrl-256
-export ZONE=europe-west4-a
-
-
-
-gcloud compute --project=lgai-vision-tpu instances create pod-ctrl-256 \
-  --zone=europe-west4-a  \
-  --machine-type=n1-standard-1  \
-  --image-family=torch-xla \
-  --image-project=ml-images  \
-  --boot-disk-size=200GB \
-  --scopes=https://www.googleapis.com/auth/cloud-platform
-
-gcloud compute ssh pod-ctrl-256 --zone=europe-west4-a
-
-gcloud compute config-ssh
-
-conda activate torch-xla-1.8.1
-
-python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-256 --restart-tpuvm-pod --env LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libtcmalloc.so.4  -- python3 /home/taehoon.kim/taming-transformers/main.py --base /home/taehoon.kim/taming-transformers/configs/coco_vqgan.yaml -t True --num_sanity_val_steps=0 --tpu_cores=8 --precision=16 --checkpoint_callback=False
 
 
