@@ -16,7 +16,7 @@ class VectorQuantizer(nn.Module):
     def forward(self, z):
         # reshape z -> (batch, height, width, channel) and flatten
         #z, 'b c h w -> b h w c'
-        z = z.permute(0, 2, 3, 1)
+        z = z.permute(0, 2, 3, 1).contiguous()
         z_flattened = z.view(-1, self.embedding_dim)
         # distances from z to embeddings e_j (z - e)^2 = z^2 + e^2 - 2 e * z
 
@@ -62,7 +62,7 @@ class EMAVectorQuantizer(nn.Module):
     def forward(self, z):
         # reshape z -> (batch, height, width, channel) and flatten
         #z, 'b c h w -> b h w c'
-        z = z.permute(0, 2, 3, 1)
+        z = z.permute(0, 2, 3, 1).contiguous()
         z_flattened = z.view(-1, self.embedding_dim)
         # distances from z to embeddings e_j (z - e)^2 = z^2 + e^2 - 2 e * z
 
