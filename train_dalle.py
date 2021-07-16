@@ -114,7 +114,7 @@ if __name__ == "__main__":
     parser.add_argument('--web_dataset',action='store_true', default=False,
                     help='enable web_dataset')   
     #VAE configuration
-    parser.add_argument('--vae', type=str, default='vqvae')
+    parser.add_argument('--vae', type=str, default='openaivae')
 
     #Transformer configuration
     parser.add_argument('--attn_types', default = 'full', type = str, 
