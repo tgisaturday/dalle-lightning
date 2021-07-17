@@ -115,7 +115,7 @@ class GumbelQuantizer(nn.Module):
         self.temperature = temp_init
         self.kl_weight = kl_weight
 
-        self.embed = nn.Embedding(codebook_dim, embedding_dim)
+        self.embedding = nn.Embedding(codebook_dim, embedding_dim)
         self.embedding.weight.data.uniform_(-1.0 / self.codebook_dim, 1.0 / self.codebook_dim)
 
         self.use_vqinterface = use_vqinterface
@@ -127,7 +127,7 @@ class GumbelQuantizer(nn.Module):
 
 
         soft_one_hot = F.gumbel_softmax(z, tau=temp, dim=1, hard=hard)
-        z_q = torch.einsum('b n h w, n d -> b d h w', soft_one_hot, self.embed.weight)
+        z_q = torch.einsum('b n h w, n d -> b d h w', soft_one_hot, self.embedding.weight)
 
         # + kl divergence to the prior loss
         qy = F.softmax(z, dim=1)
