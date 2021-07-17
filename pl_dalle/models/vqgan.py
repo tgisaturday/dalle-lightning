@@ -179,6 +179,7 @@ class GumbelVQGAN(VQGAN):
             
             return discloss
 
+
     def validation_step(self, batch, batch_idx):
         x, _ = batch
         self.quantize.temperature = 1.0        
