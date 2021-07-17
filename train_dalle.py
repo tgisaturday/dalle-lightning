@@ -79,7 +79,7 @@ if __name__ == "__main__":
     parser.add_argument('--num_sanity_val_steps', type=int, default=0,
                     help='num_sanity_val_steps') 
 
-    parser.add_argument('--batch_size', type=int, default=1,
+    parser.add_argument('--batch_size', type=int, default=8,
                     help='training settings')  
     parser.add_argument('--epochs', type=int, default=20,
                     help='training settings')  
@@ -119,7 +119,7 @@ if __name__ == "__main__":
     #Transformer configuration
     parser.add_argument('--attn_types', default = 'full', type = str, 
                     help = 'comma separated list of attention types. attention type can be: full or sparse or axial_row or axial_col or conv_like.')
-    parser.add_argument('--hidden_dim', default = 1024, type = int, 
+    parser.add_argument('--hidden_dim', default = 512, type = int, 
                     help = 'Model dimension')
     parser.add_argument('--text_seq_len', default = 256, type = int, 
                     help = 'Text sequence length')
@@ -127,7 +127,7 @@ if __name__ == "__main__":
                     help = 'Number of text tokens')                    
     parser.add_argument('--depth', default = 64, type = int, 
                     help = 'Model depth')
-    parser.add_argument('--heads', default = 16, type = int, 
+    parser.add_argument('--heads', default = 8, type = int, 
                     help = 'Model number of heads')
     parser.add_argument('--dim_head', default = 64, type = int, 
                     help = 'Model head dimension')
