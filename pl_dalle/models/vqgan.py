@@ -10,13 +10,12 @@ from pl_dalle.modules.losses.vqperceptual import VQLPIPSWithDiscriminator
 
 class VQGAN(pl.LightningModule):
     def __init__(self,
-                 args,batch_size, learning_rate, log_images=False,
+                 args,batch_size, learning_rate,
                  ignore_keys=[]
                  ):
         super().__init__()
         self.save_hyperparameters()
         self.args = args     
-        self.log_images =log_images
         self.image_size = args.resolution
         self.num_tokens = args.codebook_dim
         
@@ -78,12 +77,6 @@ class VQGAN(pl.LightningModule):
 
             self.log("train/rec_loss", aeloss, prog_bar=True, logger=True)
             self.log("train/embed_loss", qloss, prog_bar=True, logger=True)            
- 
-            if self.log_images:      
-                log_dict = dict()           
-                log_dict["train/inputs"] = x
-                log_dict["train/reconstructions"] = xrec 
-                self.log_dict(log_dict, prog_bar=False, logger=True)
             
             return aeloss
 
@@ -109,12 +102,7 @@ class VQGAN(pl.LightningModule):
         self.log("val/rec_loss", aeloss, prog_bar=True, logger=True)
         self.log("val/disc_loss", discloss, prog_bar=True, logger=True)
         self.log("val/embed_loss", qloss, prog_bar=True, logger=True)        
- 
-        if self.log_images:   
-            log_dict = dict()           
-            log_dict["val/inputs"] = x
-            log_dict["val/reconstructions"] = xrec 
-            self.log_dict(log_dict, prog_bar=False, logger=True)
+
         return aeloss, discloss
 
 
@@ -135,10 +123,10 @@ class VQGAN(pl.LightningModule):
         
 class EMAVQGAN(VQGAN):
     def __init__(self,
-                 args, batch_size, learning_rate, log_images=False,
+                 args, batch_size, learning_rate,
                  ignore_keys=[]
                  ):
-        super().__init__(args, batch_size, learning_rate, log_images,
+        super().__init__(args, batch_size, learning_rate,
                          ignore_keys=ignore_keys
                          )
      
@@ -150,10 +138,10 @@ class EMAVQGAN(VQGAN):
 
 class GumbelVQGAN(VQGAN):
     def __init__(self,
-                 args, batch_size, learning_rate,log_images=False,
+                 args, batch_size, learning_rate,
                  ignore_keys=[]
                  ): 
-        super().__init__(args, batch_size, learning_rate, log_images,
+        super().__init__(args, batch_size, learning_rate, 
                          ignore_keys=ignore_keys
                          )
         self.temperature = args.starting_temp
@@ -180,12 +168,6 @@ class GumbelVQGAN(VQGAN):
 
             self.log("train/rec_loss", aeloss, prog_bar=True, logger=True)
             self.log("train/embed_loss", qloss, prog_bar=True, logger=True)            
- 
-            if self.log_images:      
-                log_dict = dict()               
-                log_dict["train/inputs"] = x
-                log_dict["train/reconstructions"] = xrec 
-                self.log_dict(log_dict, prog_bar=False, logger=True)
             
             return aeloss
 
@@ -210,10 +192,5 @@ class GumbelVQGAN(VQGAN):
         self.log("val/rec_loss", aeloss, prog_bar=True, logger=True)
         self.log("val/disc_loss", discloss, prog_bar=True, logger=True)
         self.log("val/embed_loss", qloss, prog_bar=True, logger=True)        
- 
-        if self.log_images:   
-            log_dict = dict()           
-            log_dict["val/inputs"] = x
-            log_dict["val/reconstructions"] = xrec 
-            self.log_dict(log_dict, prog_bar=False, logger=True)
+
         return aeloss, discloss

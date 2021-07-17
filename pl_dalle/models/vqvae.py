@@ -11,13 +11,12 @@ from pl_dalle.modules.vqvae.quantize import VectorQuantizer, EMAVectorQuantizer,
 
 class VQVAE(pl.LightningModule):
     def __init__(self,
-                 args,batch_size, learning_rate,log_images=False,
+                 args,batch_size, learning_rate,
                  ignore_keys=[]
                  ):
         super().__init__()
         self.save_hyperparameters()
         self.args = args     
-        self.log_images=log_images
         self.image_size = args.resolution
         self.num_tokens = args.codebook_dim
         
@@ -80,12 +79,6 @@ class VQVAE(pl.LightningModule):
         self.log("train/rec_loss", aeloss, prog_bar=True, logger=True)
         self.log("train/embed_loss", qloss, prog_bar=True, logger=True)
         self.log("train/total_loss", loss, prog_bar=True, logger=True)                
-       
-        if self.log_images:            
-            log_dict = dict() 
-            log_dict["train/inputs"] = x
-            log_dict["train/reconstructions"] = xrec 
-            self.log_dict(log_dict, prog_bar=False, logger=True)
         
         return loss
 
@@ -100,11 +93,7 @@ class VQVAE(pl.LightningModule):
         self.log("val/rec_loss", aeloss, prog_bar=True, logger=True)
         self.log("val/embed_loss", qloss, prog_bar=True, logger=True)
         self.log("val/total_loss", loss, prog_bar=True, logger=True)     
-        if self.log_images:    
-            log_dict = dict()               
-            log_dict["val/inputs"] = x
-            log_dict["val/reconstructions"] = xrec 
-            self.log_dict(log_dict, prog_bar=False, logger=True)
+
         return loss
 
     def configure_optimizers(self):
@@ -118,10 +107,10 @@ class VQVAE(pl.LightningModule):
 
 class EMAVQVAE(VQVAE):
     def __init__(self,
-                 args, batch_size, learning_rate, log_images=False,
+                 args, batch_size, learning_rate, 
                  ignore_keys=[]
                  ):  
-        super().__init__(args, batch_size, learning_rate, log_images,
+        super().__init__(args, batch_size, learning_rate,
                          ignore_keys=ignore_keys
                          )
         self.quantize = EMAVectorQuantizer(codebook_dim=args.codebook_dim,
@@ -130,10 +119,10 @@ class EMAVQVAE(VQVAE):
 
 class GumbelVQVAE(VQVAE):
     def __init__(self,
-                 args, batch_size, learning_rate, log_images=False,
+                 args, batch_size, learning_rate,
                  ignore_keys=[]
                  ):  
-        super().__init__(args, batch_size, learning_rate, log_images,
+        super().__init__(args, batch_size, learning_rate, 
                          ignore_keys=ignore_keys
                          )
         self.temperature = args.starting_temp
@@ -159,12 +148,6 @@ class GumbelVQVAE(VQVAE):
         self.log("train/rec_loss", aeloss, prog_bar=True, logger=True)
         self.log("train/embed_loss", qloss, prog_bar=True, logger=True)
         self.log("train/total_loss", loss, prog_bar=True, logger=True)                
-       
-        if self.log_images:            
-            log_dict = dict() 
-            log_dict["train/inputs"] = x
-            log_dict["train/reconstructions"] = xrec 
-            self.log_dict(log_dict, prog_bar=False, logger=True)
         
         return loss
 
@@ -181,9 +164,5 @@ class GumbelVQVAE(VQVAE):
         self.log("val/rec_loss", aeloss, prog_bar=True, logger=True)
         self.log("val/embed_loss", qloss, prog_bar=True, logger=True)
         self.log("val/total_loss", loss, prog_bar=True, logger=True)     
-        if self.log_images:    
-            log_dict = dict()               
-            log_dict["val/inputs"] = x
-            log_dict["val/reconstructions"] = xrec 
-            self.log_dict(log_dict, prog_bar=False, logger=True)
+
         return loss

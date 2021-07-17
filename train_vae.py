@@ -19,7 +19,7 @@ import pytorch_lightning as pl
 from pytorch_lightning import seed_everything
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import XLAStatsMonitor
-
+from pl_bolts.callbacks import TensorboardGenerativeModelImageSampler
 
 
 
@@ -154,19 +154,19 @@ if __name__ == "__main__":
    
     # model
     if args.model == 'vqgan':
-        model = VQGAN(args, args.batch_size, args.learning_rate, args.log_images)
+        model = VQGAN(args, args.batch_size, args.learning_rate)
     elif args.model == 'evqgan':
-        model = EMAVQGAN(args, args.batch_size, args.learning_rate, args.log_images)          
+        model = EMAVQGAN(args, args.batch_size, args.learning_rate)          
     elif args.model == 'gvqgan':
-        model = GumbelVQGAN(args, args.batch_size, args.learning_rate, args.log_images)        
+        model = GumbelVQGAN(args, args.batch_size, args.learning_rate)        
     elif args.model == 'vqvae':
-        model = VQVAE(args, args.batch_size, args.learning_rate, args.log_images)
+        model = VQVAE(args, args.batch_size, args.learning_rate)
     elif args.model == 'evqvae':
-        model = EMAVQVAE(args, args.batch_size, args.learning_rate, args.log_images)        
+        model = EMAVQVAE(args, args.batch_size, args.learning_rate)        
     elif args.model == 'gvqvae':
-        model = GumbelVQVAE(args, args.batch_size, args.learning_rate, args.log_images) 
+        model = GumbelVQVAE(args, args.batch_size, args.learning_rate) 
     elif args.model == 'vqvae2':
-        model = VQVAE2(args, args.batch_size, args.learning_rate, args.log_images) 
+        model = VQVAE2(args, args.batch_size, args.learning_rate) 
 
     default_root_dir = args.log_dir
     if args.resume:
@@ -194,6 +194,7 @@ if __name__ == "__main__":
                           resume_from_checkpoint = ckpt_path)
         if args.xla_stat:
             trainer.callbacks.append(XLAStatsMonitor())
+
     else:
         trainer = Trainer(tpu_cores=tpus, gpus= gpus, default_root_dir=default_root_dir,
                           max_epochs=args.epochs, progress_bar_refresh_rate=args.refresh_rate,precision=args.precision,
@@ -201,7 +202,8 @@ if __name__ == "__main__":
                           num_sanity_val_steps=args.num_sanity_val_steps,
                           limit_train_batches=limit_train_batches,limit_test_batches=limit_test_batches,                          
                           resume_from_checkpoint = ckpt_path)
-    
+    if args.log_images:
+        trainer.callbacks.append(TensorboardGenerativeModelImageSampler())  
     print("Setting batch size: {} learning rate: {:.2e}".format(model.hparams.batch_size, model.hparams.learning_rate))
     
     if not args.test:    
