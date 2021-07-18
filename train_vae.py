@@ -19,7 +19,7 @@ import pytorch_lightning as pl
 from pytorch_lightning import seed_everything
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import XLAStatsMonitor
-from pl_bolts.callbacks import TensorboardGenerativeModelImageSampler
+#from pl_bolts.callbacks import TensorboardGenerativeModelImageSampler
 
 
 
@@ -202,8 +202,8 @@ if __name__ == "__main__":
                           num_sanity_val_steps=args.num_sanity_val_steps,
                           limit_train_batches=limit_train_batches,limit_test_batches=limit_test_batches,                          
                           resume_from_checkpoint = ckpt_path)
-    if args.log_images:
-        trainer.callbacks.append(TensorboardGenerativeModelImageSampler())  
+    #if args.log_images:
+    #    trainer.callbacks.append(TensorboardGenerativeModelImageSampler())  
     print("Setting batch size: {} learning rate: {:.2e}".format(model.hparams.batch_size, model.hparams.learning_rate))
     
     if not args.test:    

@@ -13,9 +13,9 @@ export XRT_TPU_CONFIG="localservice;0;localhost:51011"
 
 python3 -m torch_xla.core.xrt_run_server --port 51011 --restart
 
-python3 dalle-lightning/train_vae.py --use_tpus --model vqvae --fake_data
+python3 dalle-lightning/train_vae.py --use_tpus --model evqvae --fake_data
 
-python3 dalle-lightning/train_dalle.py --use_tpus --vae vqvae --fake_data
+python3 dalle-lightning/train_dalle.py --use_tpus --train_dir /datasets/lgaivision-sbu-eu/ --val_dir /datasets/lgaivision-sbu-eu/ --debug --xla_stat 
 
 export TF_CPP_VMODULE=tensor=5,computation_client=5,xrt_computation_client=5,aten_xla_type=1 && export TF_CPP_MIN_LOG_LEVEL=0
 
@@ -23,32 +23,37 @@ export TF_CPP_VMODULE=tensor=5,computation_client=5,xrt_computation_client=5,ate
 #TPU Pods
 
 export PROJECT_ID=lgai-vision-tpu
-export TPU_NAME=tpu-pod-32a
+export TPU_NAME=tpu-pod-256-vae2
 export ZONE=europe-west4-a
 export RUNTIME_VERSION=v2-alpha
 
 gcloud alpha compute tpus tpu-vm create ${TPU_NAME} \
---zone ${ZONE} --project ${PROJECT_ID} --accelerator-type v3-512 \
+--zone ${ZONE} --project ${PROJECT_ID} --accelerator-type v3-256 \
 --version ${RUNTIME_VERSION}  --reserved 
 
 gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
 --zone ${ZONE} --project ${PROJECT_ID}
 
+#In TPU VM
 gcloud compute config-ssh
 
+#Exit back to local
 gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
 --zone ${ZONE} --project ${PROJECT_ID} --worker=all \
   --command "git clone https://github.com/tgisaturday/dalle-lightning.git"
 
-
+#(Optional)
 gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
 --zone ${ZONE} --project ${PROJECT_ID} --worker=all \
   --command "cd dalle-lightning && git pull"
 
+
+
 gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
 --zone ${ZONE} --project ${PROJECT_ID} --worker=all \
   --command "pip3 install -r dalle-lightning/requirements.txt"
-  
+
+#Attach Filestore instance  (optional)
 gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
 --zone ${ZONE} --project ${PROJECT_ID} --worker=all \
   --command "sudo apt-get -y update && sudo apt-get -y install nfs-common"
@@ -56,20 +61,18 @@ gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
 
 gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
 --zone ${ZONE} --project ${PROJECT_ID} --worker=all \
-  --command "sudo mkdir -p /datasets && sudo mount 10.46.147.34:/hyperdata /datasets"
+  --command "sudo mkdir -p /datasets && sudo mount 10.6.112.122:/hyperdata /datasets"
 
 
-python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-32a --restart-tpuvm-pod-server -- python3 dalle-lightning/train_vae.py --use_tpus --model vqvae --fake_data 
+#Run training (Move to TPU VM First)
 
-python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-32b --restart-tpuvm-pod-server -- python3 dalle-lightning/train_vae.py --use_tpus --model vqvae --fake_data 
+python3 -m torch_xla.distributed.xla_dist --tpu=tpu-pod-256-vae --restart-tpuvm-pod-server -- python3 dalle-lightning/train_vae.py --use_tpus --train_dir /datasets/lgaivision-imagenet21k-eu/imagenet21k_train/ --val_dir /datasets/lgaivision-imagenet21k-eu/imagenet21k_val/ --model gvqvae --xla_stat 
 
-python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-64 --restart-tpuvm-pod-server -- python3 dalle-lightning/train_vae.py --use_tpus --model vqvae --fake_data --debug --xla_stat 
+python3 -m torch_xla.distributed.xla_dist --tpu=tpu-pod-256-vae2 --restart-tpuvm-pod-server -- python3 dalle-lightning/train_vae.py --use_tpus --train_dir /datasets/lgaivision-imagenet21k-eu/imagenet21k_train/ --val_dir /datasets/lgaivision-imagenet21k-eu/imagenet21k_val/ --model evqvae --xla_stat 
 
-python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-512 --restart-tpuvm-pod-server -- python3 dalle-lightning/train_vae.py --use_tpus --fake_data --model vqvae --debug --xla_stat 
 
-python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-256 --restart-tpuvm-pod-server -- python3 dalle-lightning/train_vae.py --use_tpus --fake_data --model vqvae --debug --xla_stat 
+python3 -m torch_xla.distributed.xla_dist --tpu=tpu-pod-256-dalle --restart-tpuvm-pod-server -- python3 dalle-lightning/train_dalle.py --use_tpus --train_dir /datasets/lgaivision-cc3m-eu/training/ --val_dir /datasets/lgaivision-cc3m-eu/validation/ --xla_stat --precision 32
 
-python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-256 --restart-tpuvm-pod-server -- python3 dalle-lightning/train_dalle.py --use_tpus --fake_data --debug --xla_stat 
 
 
 

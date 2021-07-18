@@ -33,12 +33,12 @@ python3 -m torch_xla.core.xrt_run_server --port 51011 --restart
 sudo /opt/google-cloud-sdk/bin/gcloud components update
 
 export PROJECT_ID=lgai-vision-tpu
-export TPU_NAME=tpu-vm-pod-64
+export TPU_NAME=tpu-pod-256
 export ZONE=europe-west4-a
 export RUNTIME_VERSION=v2-alpha
 
 gcloud alpha compute tpus tpu-vm create ${TPU_NAME} \
---zone ${ZONE} --project ${PROJECT_ID} --accelerator-type v3-32 \
+--zone ${ZONE} --project ${PROJECT_ID} --accelerator-type v3-512 \
 --version ${RUNTIME_VERSION}  --reserved 
 
 gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
@@ -101,7 +101,11 @@ python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-32 --restart-tpuvm-po
 
 python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-64 --restart-tpuvm-pod-server -- python3 dalle-lightning/train_vae.py --use_tpus --model vqgan --fake_data --debug --xla_stat 
 
-python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-256 --restart-tpuvm-pod-server -- python3 dalle-lightning/train_vae.py --use_tpus --fake_data --model vqvae
+python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-512 --restart-tpuvm-pod-server -- python3 dalle-lightning/train_vae.py --use_tpus --fake_data --model vqvae --debug --xla_stat 
+
+python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-256 --restart-tpuvm-pod-server -- python3 dalle-lightning/train_vae.py --use_tpus --fake_data --model vqvae --debug --xla_stat 
+
+python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-256 --restart-tpuvm-pod-server -- python3 dalle-lightning/train_dalle.py --use_tpus --fake_data --debug --xla_stat 
 
 python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-128 --restart-tpuvm-pod-server -- python3 dalle-lightning/main.py --use_tpus --refresh_rate 1 --fake_data --disc_start 1
 
