@@ -170,7 +170,7 @@ if __name__ == "__main__":
         backup_callback = ModelCheckpoint(
                                     dirpath=args.backup_dir,
                                     every_n_train_steps = args.backup_steps,
-                                    filename='last.ckpt'
+                                    filename='last'
                                     )
         
         if os.path.exists(os.path.join(args.backup_dir,'last.ckpt')):
@@ -196,6 +196,7 @@ if __name__ == "__main__":
     else:
         limit_train_batches = 1.0
         limit_test_batches = 1.0   
+
     # model
     if args.vae == 'vqgan':
         vae = VQGAN.load_from_checkpoint(args.vae_path)

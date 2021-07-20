@@ -82,19 +82,22 @@ class VAEImageSampler(Callback):
     ) -> None:
         """Called when the train batch ends."""
         if trainer.global_step % self.every_n_steps == 0:
+            '''
             x, _ = batch
             x = x.to(pl_module.device)
             with torch.no_grad():
                 pl_module.eval()
                 xrec, _ = pl_module(x)
                 pl_module.train()   
-
+            '''
+            x = outputs['input']
+            xrec = outputs['reconstruction']
             x_grid = torchvision.utils.make_grid(
                 tensor=x,
                 nrow=self.nrow,
                 padding=self.padding,
                 normalize=self.normalize,
-                range=self.norm_range,
+                value_range=self.norm_range,
                 scale_each=self.scale_each,
                 pad_value=self.pad_value,
             )           
@@ -103,7 +106,7 @@ class VAEImageSampler(Callback):
                 nrow=self.nrow,
                 padding=self.padding,
                 normalize=self.normalize,
-                range=self.norm_range,
+                value_range=self.norm_range,
                 scale_each=self.scale_each,
                 pad_value=self.pad_value,
             )    
@@ -124,19 +127,23 @@ class VAEImageSampler(Callback):
     ) -> None:
         """Called when the validation batch ends."""
         if trainer.global_step % self.every_n_steps == 0:
+            '''
             x, _ = batch
             x = x.to(pl_module.device)
             with torch.no_grad():
                 pl_module.eval()
                 xrec, _ = pl_module(x)
                 pl_module.train()   
+            '''
+            x = outputs['input']
+            xrec = outputs['reconstruction']
 
             x_grid = torchvision.utils.make_grid(
                 tensor=x,
                 nrow=self.nrow,
                 padding=self.padding,
                 normalize=self.normalize,
-                range=self.norm_range,
+                value_range=self.norm_range,
                 scale_each=self.scale_each,
                 pad_value=self.pad_value,
             )           
@@ -145,7 +152,7 @@ class VAEImageSampler(Callback):
                 nrow=self.nrow,
                 padding=self.padding,
                 normalize=self.normalize,
-                range=self.norm_range,
+                value_range=self.norm_range,
                 scale_each=self.scale_each,
                 pad_value=self.pad_value,
             )    

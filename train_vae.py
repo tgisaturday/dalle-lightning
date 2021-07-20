@@ -206,7 +206,7 @@ if __name__ == "__main__":
         backup_callback = ModelCheckpoint(
                                     dirpath=args.backup_dir,
                                     every_n_train_steps = args.backup_steps,
-                                    filename='last.ckpt'
+                                    filename='last'
                                     )
         
         if os.path.exists(os.path.join(args.backup_dir,'last.ckpt')):
