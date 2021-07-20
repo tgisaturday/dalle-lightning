@@ -210,7 +210,7 @@ if __name__ == "__main__":
                                     )
         
         if glob.glob(os.path.join(args.backup_dir,'*.ckpt')):
-            ckpt_path = glob.glob(os.path.join(args.backup_dir,'*.ckpt'))[-1]
+            ckpt_path = sorted(glob.glob(os.path.join(args.backup_dir,'*.ckpt')))[-1]
             if args.resume:
                 print("Setting default ckpt to {}. If this is unexpected behavior, remove {}".format(ckpt_path, ckpt_path))
                 
