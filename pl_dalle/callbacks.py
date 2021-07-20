@@ -82,13 +82,17 @@ class VAEImageSampler(Callback):
     ) -> None:
         """Called when the train batch ends."""
         if trainer.global_step % self.every_n_steps == 0:
-            
+            '''
+
             x, _ = batch
             x = x.to(pl_module.device)
             with torch.no_grad():
                 pl_module.eval()
                 xrec, _ = pl_module(x)
                 pl_module.train()   
+            '''
+            x = outputs['input']
+            xrec = outputs['reconstruction']  
 
             x_grid = torchvision.utils.make_grid(
                 tensor=x,
@@ -125,13 +129,17 @@ class VAEImageSampler(Callback):
     ) -> None:
         """Called when the validation batch ends."""
         if trainer.global_step % self.every_n_steps == 0:
+            '''
+
             x, _ = batch
             x = x.to(pl_module.device)
             with torch.no_grad():
                 pl_module.eval()
                 xrec, _ = pl_module(x)
-                pl_module.train()  
-
+                pl_module.train()   
+            '''
+            x = outputs['input']
+            xrec = outputs['reconstruction']
             x_grid = torchvision.utils.make_grid(
                 tensor=x,
                 nrow=self.nrow,
