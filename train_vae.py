@@ -14,12 +14,13 @@ from pl_dalle.models.vqgan import VQGAN, EMAVQGAN, GumbelVQGAN
 from pl_dalle.models.vqvae import VQVAE, EMAVQVAE, GumbelVQVAE
 from pl_dalle.models.vqvae2 import VQVAE2
 from pl_dalle.loader import ImageDataModule
+from pl_dalle.callbacks import VAEImageSampler
 
 import pytorch_lightning as pl
 from pytorch_lightning import seed_everything
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import XLAStatsMonitor
-#from pl_bolts.callbacks import TensorboardGenerativeModelImageSampler
+from pytorch_lightning.callbacks.model_checkpoint import ModelCheckpoint
 
 
 
@@ -37,20 +38,30 @@ if __name__ == "__main__":
                     help='path to val dataset')                    
     parser.add_argument('--log_dir', type=str, default='results/',
                     help='path to save logs')
+    parser.add_argument('--backup_dir', type=str, default='backups/',
+                    help='path to save backups for sudden crash')                    
     parser.add_argument('--ckpt_path', type=str,default='results/checkpoints/last.ckpt',
-                    help='path to previous checkpoint')  
+                    help='path to previous checkpoint') 
+ 
 
     #training configuration
+    parser.add_argument('--backup', action='store_true', default=False,
+                    help='save backup and load from backup if restart happens')      
+    parser.add_argument('--backup_steps', type =int, default = 1000,
+                    help='saves backup every n training steps') 
+   
     parser.add_argument('--refresh_rate', type=int, default=1,
                     help='progress bar refresh rate')    
-    parser.add_argument('--precision', type=int, default=16,
+    parser.add_argument('--precision', type=int, default=32,
                     help='precision for training')                     
     parser.add_argument('--fake_data', action='store_true', default=False,
                     help='using fake_data for debugging') 
     parser.add_argument('--use_tpus', action='store_true', default=False,
                     help='using tpu')
     parser.add_argument('--log_images', action='store_true', default=False,
-                    help='log image outputs. not recommended for tpus')                                                                         
+                    help='log image outputs. not recommended for tpus')   
+    parser.add_argument('--image_log_steps', type=int, default=1000,
+                    help='log image outputs for every n step. not recommended for tpus')                                                                                           
     parser.add_argument('--resume', action='store_true', default=False,
                     help='whether to resume from checkpoint')                   
     parser.add_argument('--seed', type=int, default=42,
@@ -169,10 +180,27 @@ if __name__ == "__main__":
         model = VQVAE2(args, args.batch_size, args.learning_rate) 
 
     default_root_dir = args.log_dir
+
     if args.resume:
         ckpt_path = args.ckpt_path
     else:
         ckpt_path = None
+
+    if args.backup:
+        args.backup_dir = os.path.join(args.backup_dir, 'vae')
+        backup_callback = ModelCheckpoint(
+                                    dirpath=args.backup_dir,
+                                    every_n_train_steps = args.backup_steps,
+                                    filename='last.ckpt'
+                                    )
+        
+        if os.path.exists(os.path.join(args.backup_dir,'last.ckpt')):
+            ckpt_path = os.path.exists(os.path.join(args.backup_dir,'last.ckpt'))
+            if args.resume:
+                print("Setting default ckpt to {}. If this is unexpected behavior, remove {}".format(ckpt_path))
+            
+
+
 
     if args.use_tpus:
         tpus = 8
@@ -194,6 +222,7 @@ if __name__ == "__main__":
                           resume_from_checkpoint = ckpt_path)
         if args.xla_stat:
             trainer.callbacks.append(XLAStatsMonitor())
+        
 
     else:
         trainer = Trainer(tpu_cores=tpus, gpus= gpus, default_root_dir=default_root_dir,
@@ -202,8 +231,12 @@ if __name__ == "__main__":
                           num_sanity_val_steps=args.num_sanity_val_steps,
                           limit_train_batches=limit_train_batches,limit_test_batches=limit_test_batches,                          
                           resume_from_checkpoint = ckpt_path)
-    #if args.log_images:
-    #    trainer.callbacks.append(TensorboardGenerativeModelImageSampler())  
+
+    if args.backup:
+        trainer.callbacks.append(backup_callback)                                 
+    if args.log_images:
+        trainer.callbacks.append(VAEImageSampler(every_n_steps=args.image_log_steps))  
+        
     print("Setting batch size: {} learning rate: {:.2e}".format(model.hparams.batch_size, model.hparams.learning_rate))
     
     if not args.test:    

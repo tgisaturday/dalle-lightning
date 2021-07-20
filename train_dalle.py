@@ -26,6 +26,7 @@ import pytorch_lightning as pl
 from pytorch_lightning import seed_everything
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import XLAStatsMonitor
+from pytorch_lightning.callbacks.model_checkpoint import ModelCheckpoint
 
 def exists(val):
     return val is not None
@@ -54,17 +55,25 @@ if __name__ == "__main__":
     parser.add_argument('--vae_path', type=str,
                    help='path to your trained VAE')
 
-    parser.add_argument('--ckpt_path', type=str,default='results/checkpoints/last.ckpt',
-                    help='path to previous checkpoint')
-
     parser.add_argument('--bpe_path', type=str, 
                     help='path to your BPE json file')
 
+    parser.add_argument('--backup_dir', type=str, default='backups/',
+                    help='path to save backups for sudden crash') 
+
+    parser.add_argument('--ckpt_path', type=str,default='results/checkpoints/last.ckpt',
+                    help='path to previous checkpoint') 
+ 
 
     #training configuration
+    parser.add_argument('--backup', action='store_true', default=False,
+                    help='save backup and load from backup if restart happens')      
+    parser.add_argument('--backup_steps', type =int, default = 1000,
+                    help='saves backup every n training steps') 
+
     parser.add_argument('--refresh_rate', type=int, default=1,
                     help='progress bar refresh rate')    
-    parser.add_argument('--precision', type=int, default=16,
+    parser.add_argument('--precision', type=int, default=32,
                     help='precision for training')                     
     parser.add_argument('--fake_data', action='store_true', default=False,
                     help='using fake_data for debugging') 
@@ -150,10 +159,26 @@ if __name__ == "__main__":
         tokenizer = klass(args.bpe_path)  
 
     default_root_dir = args.log_dir
+
     if args.resume:
         ckpt_path = args.ckpt_path
     else:
         ckpt_path = None
+
+    if args.backup:
+        args.backup_dir = os.path.join(args.backup_dir, 'dalle')        
+        backup_callback = ModelCheckpoint(
+                                    dirpath=args.backup_dir,
+                                    every_n_train_steps = args.backup_steps,
+                                    filename='last.ckpt'
+                                    )
+        
+        if os.path.exists(os.path.join(args.backup_dir,'last.ckpt')):
+            ckpt_path = os.path.exists(os.path.join(args.backup_dir,'last.ckpt'))
+            if args.resume:
+                print("Setting default ckpt to {}. If this is unexpected behavior, remove {}".format(ckpt_path))
+            
+
 
     if args.use_tpus:
         tpus = 8
@@ -216,7 +241,10 @@ if __name__ == "__main__":
                           num_sanity_val_steps=args.num_sanity_val_steps,
                           limit_train_batches=limit_train_batches,limit_test_batches=limit_test_batches,                          
                           resume_from_checkpoint = ckpt_path)
-    
+
+    if args.backup:
+        trainer.callbacks.append(backup_callback)      
+
     print("Setting batch size: {} learning rate: {:.2e}".format(model.hparams.batch_size, model.hparams.learning_rate))
     
     if not args.test:    
