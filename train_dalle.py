@@ -180,6 +180,7 @@ if __name__ == "__main__":
             
 
 
+
     if args.use_tpus:
         tpus = 8
         gpus = None
@@ -187,6 +188,14 @@ if __name__ == "__main__":
         tpus = None
         gpus = args.gpus
 
+    if args.debug:
+        limit_train_batches = 100
+        limit_test_batches = 100
+        args.backup_steps = 10
+
+    else:
+        limit_train_batches = 1.0
+        limit_test_batches = 1.0   
     # model
     if args.vae == 'vqgan':
         vae = VQGAN.load_from_checkpoint(args.vae_path)
@@ -216,13 +225,6 @@ if __name__ == "__main__":
                                 tokenizer,
                                 args.fake_data, args.web_dataset)
 
-
-    if args.debug:
-        limit_train_batches = 100
-        limit_test_batches = 100
-    else:
-        limit_train_batches = 1.0
-        limit_test_batches = 1.0   
 
     if args.use_tpus:
         trainer = Trainer(tpu_cores=tpus, gpus= gpus, default_root_dir=default_root_dir,

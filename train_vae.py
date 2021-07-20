@@ -180,6 +180,21 @@ if __name__ == "__main__":
         model = VQVAE2(args, args.batch_size, args.learning_rate) 
 
     default_root_dir = args.log_dir
+    
+    if args.use_tpus:
+        tpus = 8
+        gpus = None
+    else:
+        tpus = None
+        gpus = args.gpus
+    if args.debug:
+        limit_train_batches = 100
+        limit_test_batches = 100
+        args.backup_steps = 10
+        args.image_log_steps = 10
+    else:
+        limit_train_batches = 1.0
+        limit_test_batches = 1.0   
 
     if args.resume:
         ckpt_path = args.ckpt_path
@@ -198,22 +213,7 @@ if __name__ == "__main__":
             ckpt_path = os.path.exists(os.path.join(args.backup_dir,'last.ckpt'))
             if args.resume:
                 print("Setting default ckpt to {}. If this is unexpected behavior, remove {}".format(ckpt_path))
-            
-
-
-
-    if args.use_tpus:
-        tpus = 8
-        gpus = None
-    else:
-        tpus = None
-        gpus = args.gpus
-    if args.debug:
-        limit_train_batches = 100
-        limit_test_batches = 100
-    else:
-        limit_train_batches = 1.0
-        limit_test_batches = 1.0       
+                
     if args.use_tpus:
         trainer = Trainer(tpu_cores=tpus, gpus= gpus, default_root_dir=default_root_dir,
                           max_epochs=args.epochs, progress_bar_refresh_rate=args.refresh_rate,precision=args.precision,
