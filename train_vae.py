@@ -209,8 +209,8 @@ if __name__ == "__main__":
                                     filename='last'
                                     )
         
-        if os.path.exists(os.path.join(args.backup_dir,'last.ckpt')):
-            ckpt_path = os.path.exists(os.path.join(args.backup_dir,'last.ckpt'))
+        if glob.glob(os.path.join(args.backup_dir,'*.ckpt')):
+            ckpt_path = glob.glob(os.path.join(args.backup_dir,'*.ckpt'))[-1]
             if args.resume:
                 print("Setting default ckpt to {}. If this is unexpected behavior, remove {}".format(ckpt_path))
                 

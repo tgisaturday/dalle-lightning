@@ -166,18 +166,18 @@ if __name__ == "__main__":
         ckpt_path = None
 
     if args.backup:
-        args.backup_dir = os.path.join(args.backup_dir, 'dalle')        
+        args.backup_dir = os.path.join(args.backup_dir, 'vae')
         backup_callback = ModelCheckpoint(
                                     dirpath=args.backup_dir,
                                     every_n_train_steps = args.backup_steps,
-                                    filename='last'
+                                    filename='epoch={epoch}-step={step}'
                                     )
         
-        if os.path.exists(os.path.join(args.backup_dir,'last.ckpt')):
-            ckpt_path = os.path.exists(os.path.join(args.backup_dir,'last.ckpt'))
+        if glob.glob(os.path.join(args.backup_dir,'*.ckpt')):
+            ckpt_path = glob.glob(os.path.join(args.backup_dir,'*.ckpt'))[-1]
             if args.resume:
                 print("Setting default ckpt to {}. If this is unexpected behavior, remove {}".format(ckpt_path))
-            
+                
 
 
 
