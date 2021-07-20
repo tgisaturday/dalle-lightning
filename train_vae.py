@@ -206,7 +206,7 @@ if __name__ == "__main__":
         backup_callback = ModelCheckpoint(
                                     dirpath=args.backup_dir,
                                     every_n_train_steps = args.backup_steps,
-                                    filename='last'
+                                    filename='epoch={epoch}-step={step}'
                                     )
         
         if glob.glob(os.path.join(args.backup_dir,'*.ckpt')):
