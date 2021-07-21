@@ -151,19 +151,6 @@ class VQVAE2(pl.LightningModule):
         else:
             return [opt], []   
 
-    def log_images(self, batch, **kwargs):
-        log = dict()
-        x, _ = batch
-        x = x.to(self.device)
-        xrec, _ = self(x)
-        if x.shape[1] > 3:
-            # colorize with random projection
-            assert xrec.shape[1] > 3
-            x = self.to_rgb(x)
-            xrec = self.to_rgb(xrec)
-        log["inputs"] = x
-        log["reconstructions"] = xrec
-        return log
 
 class Quantize(nn.Module):
     def __init__(self, dim, codebook_dim, decay=0.99, eps=1e-5):

@@ -137,7 +137,7 @@ class VQGAN(pl.LightningModule):
             verbose=True,
             )    
             sched_ae = {'scheduler':scheduler_ae, 'monitor':'val/total_loss'}
-            sched_disc = {'scheduler':scheduler_disc, 'monitor':'val/total_loss'}
+            sched_disc = {'scheduler':scheduler_disc, 'monitor':'val/disc_loss'}
             return [opt_ae, opt_disc], [sched_ae, sched_disc]
         else:
             return [opt_ae, opt_disc], []                                       
