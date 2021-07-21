@@ -45,44 +45,49 @@ if __name__ == "__main__":
  
 
     #training configuration
+    parser.add_argument('--resume', action='store_true', default=False,
+                    help='whether to resume from checkpoint')      
     parser.add_argument('--backup', action='store_true', default=False,
                     help='save backup and load from backup if restart happens')      
     parser.add_argument('--backup_steps', type =int, default = 1000,
                     help='saves backup every n training steps') 
-   
+    parser.add_argument('--log_images', action='store_true', default=False,
+                    help='log image outputs. not recommended for tpus')   
+    parser.add_argument('--image_log_steps', type=int, default=1000,
+                    help='log image outputs for every n step. not recommended for tpus')   
     parser.add_argument('--refresh_rate', type=int, default=1,
                     help='progress bar refresh rate')    
     parser.add_argument('--precision', type=int, default=32,
-                    help='precision for training')                     
+                    help='precision for training')         
+
     parser.add_argument('--fake_data', action='store_true', default=False,
                     help='using fake_data for debugging') 
     parser.add_argument('--use_tpus', action='store_true', default=False,
                     help='using tpu')
-    parser.add_argument('--log_images', action='store_true', default=False,
-                    help='log image outputs. not recommended for tpus')   
-    parser.add_argument('--image_log_steps', type=int, default=1000,
-                    help='log image outputs for every n step. not recommended for tpus')                                                                                           
-    parser.add_argument('--resume', action='store_true', default=False,
-                    help='whether to resume from checkpoint')                   
+                                                                                        
+             
     parser.add_argument('--seed', type=int, default=42,
                     help='random seed')  
     parser.add_argument('--gpus', type=int, default=16,
                     help='number of gpus')                   
     parser.add_argument('--num_sanity_val_steps', type=int, default=0,
-                    help='num_sanity_val_steps')                     
+                    help='num_sanity_val_steps')  
+
     parser.add_argument('--learning_rate', default=4.5e-3, type=float,
                     help='base learning rate')
-    parser.add_argument('--lr_decay_rate', type = float, default = 0.98, 
-                    help = 'learning rate decay')
+    parser.add_argument('--lr_decay', action='store_true', default=False,
+                    help = 'use learning rate decay')
+
     parser.add_argument('--starting_temp', type = float, default = 1., 
                     help = 'starting temperature')
     parser.add_argument('--temp_min', type = float, default = 0.5, 
                     help = 'minimum temperature to anneal to')
     parser.add_argument('--anneal_rate', type = float, default = 1e-6, 
-                    help = 'temperature annealing rate')          
+                    help = 'temperature annealing rate')    
+
     parser.add_argument('--batch_size', type=int, default=16,
                     help='training settings')  
-    parser.add_argument('--epochs', type=int, default=30,
+    parser.add_argument('--epochs', type=int, default=100,
                     help='training settings')                                    
     parser.add_argument('--num_workers', type=int, default=8,
                     help='training settings')   
@@ -98,7 +103,8 @@ if __name__ == "__main__":
     parser.add_argument('--xla_stat', action='store_true', default=False,
                     help='print out tpu related stat')  
     parser.add_argument('--web_dataset',action='store_true', default=False,
-                    help='enable web_dataset')                   
+                    help='enable web_dataset')  
+                                     
     #model configuration
     parser.add_argument('--model', type=str, default='vqvae')
     parser.add_argument('--embed_dim', type=int, default=256,

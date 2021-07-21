@@ -7,6 +7,7 @@ import math
 from pl_dalle.modules.vqvae.vae import Encoder, Decoder
 from pl_dalle.modules.vqvae.quantize import VectorQuantizer, EMAVectorQuantizer, GumbelQuantizer
 from pl_dalle.modules.losses.vqperceptual import VQLPIPSWithDiscriminator
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 class VQGAN(pl.LightningModule):
     def __init__(self,
@@ -116,7 +117,29 @@ class VQGAN(pl.LightningModule):
                                   lr=lr, betas=(0.5, 0.9))
         opt_disc = torch.optim.Adam(self.loss.discriminator.parameters(),
                                     lr=lr, betas=(0.5, 0.9))
-        return [opt_ae, opt_disc],[]
+        if self.args.lr_decay:
+            sched_ae = ReduceLROnPlateau(
+            opt_ae,
+            mode="min",
+            factor=0.5,
+            patience=10,
+            cooldown=10,
+            min_lr=1e-6,
+            verbose=True,
+            )  
+            sched_disc = ReduceLROnPlateau(
+            opt_disc,
+            mode="min",
+            factor=0.5,
+            patience=10,
+            cooldown=10,
+            min_lr=1e-6,
+            verbose=True,
+            )    
+            return [opt_ae, opt_disc], [sched_ae, sched_disc]
+        else:
+            return [opt_ae, opt_disc], []                                       
+
 
     def get_last_layer(self):
         return self.decoder.conv_out.weight

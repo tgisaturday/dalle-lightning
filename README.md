@@ -41,13 +41,33 @@ python train_dalle.py --use_tpus --train_dir [training_set] --val_dir [val_set] 
 - [x] Debug DALL-E (Single TPU Node, TPU Pods, GPUs)
 - [x] Add WebDataset support
 - [ ] Debug WebDataset functionality
-- [x] Add Image Logger by modifying pl_bolts TensorboardGenerativeModelImageSampler()
+- [x] Add VAE Image Logger by modifying pl_bolts TensorboardGenerativeModelImageSampler()
+- [x] Add DALLE Image Logger by modifying pl_bolts TensorboardGenerativeModelImageSampler()
 - [x] Add automatic checkpoint saver and resume for sudden (which happens a lot) TPU restart
 - [ ] Add [RBGumbelQuantizer](https://arxiv.org/abs/2010.04838)
 - [ ] Add [HiT](https://arxiv.org/abs/2106.07631)
 
 ## BibTeX
-
+```
+@misc{oord2018neural,
+      title={Neural Discrete Representation Learning}, 
+      author={Aaron van den Oord and Oriol Vinyals and Koray Kavukcuoglu},
+      year={2018},
+      eprint={1711.00937},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG}
+}
+```
+```
+@misc{razavi2019generating,
+      title={Generating Diverse High-Fidelity Images with VQ-VAE-2}, 
+      author={Ali Razavi and Aaron van den Oord and Oriol Vinyals},
+      year={2019},
+      eprint={1906.00446},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG}
+}
+```
 ```
 @misc{esser2020taming,
       title={Taming Transformers for High-Resolution Image Synthesis}, 

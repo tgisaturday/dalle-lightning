@@ -6,7 +6,7 @@ import math
 
 from pl_dalle.modules.vqvae.vae import Encoder, Decoder
 from pl_dalle.modules.vqvae.quantize import VectorQuantizer, EMAVectorQuantizer, GumbelQuantizer
-
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 
 class VQVAE(pl.LightningModule):
@@ -99,8 +99,19 @@ class VQVAE(pl.LightningModule):
     def configure_optimizers(self):
         lr = self.hparams.learning_rate
         opt = torch.optim.Adam(self.parameters(),lr=lr, betas=(0.5, 0.9))
-        sched = torch.optim.lr_scheduler.ExponentialLR(optimizer = opt, gamma = self.args.lr_decay_rate)
-        return [opt], [sched]
+        if self.args.lr_decay:
+            sched = ReduceLROnPlateau(
+            opt,
+            mode="min",
+            factor=0.5,
+            patience=10,
+            cooldown=10,
+            min_lr=1e-6,
+            verbose=True,
+            )    
+            return [opt], [sched]
+        else:
+            return [opt], []   
 
     def get_last_layer(self):
         return self.decoder.conv_out.weight

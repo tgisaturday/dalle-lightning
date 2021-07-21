@@ -3,7 +3,7 @@ from torch import nn
 from torch.nn import functional as F
 import pytorch_lightning as pl
 from torch import distributed as dist
-
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 #from torch import distributed as dist
 # import vqvae.distributed as dist_fn
 
@@ -136,8 +136,19 @@ class VQVAE2(pl.LightningModule):
     def configure_optimizers(self):
         lr = self.hparams.learning_rate
         opt = torch.optim.Adam(self.parameters(),lr=lr, betas=(0.5, 0.9))
-        sched = torch.optim.lr_scheduler.ExponentialLR(optimizer = opt, gamma = self.args.lr_decay_rate)
-        return [opt], [sched]
+        if self.args.lr_decay:
+            sched = ReduceLROnPlateau(
+            opt,
+            mode="min",
+            factor=0.5,
+            patience=10,
+            cooldown=10,
+            min_lr=1e-6,
+            verbose=True,
+            )    
+            return [opt], [sched]
+        else:
+            return [opt], []   
 
     def log_images(self, batch, **kwargs):
         log = dict()
