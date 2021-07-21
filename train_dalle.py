@@ -84,7 +84,9 @@ if __name__ == "__main__":
     parser.add_argument('--seed', type=int, default=42,
                     help='random seed')  
     parser.add_argument('--gpus', type=int, default=16,
-                    help='number of gpus')                   
+                    help='number of gpus')    
+    parser.add_argument('--tpus', type=int, default=8,
+                    help='number of tpus')                                    
     parser.add_argument('--num_sanity_val_steps', type=int, default=0,
                     help='num_sanity_val_steps') 
 
@@ -180,7 +182,7 @@ if __name__ == "__main__":
 
 
     if args.use_tpus:
-        tpus = 8
+        tpus = args.tpus
         gpus = None
     else:
         tpus = None
