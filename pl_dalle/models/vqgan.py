@@ -70,16 +70,16 @@ class VQGAN(pl.LightningModule):
     def training_step(self, batch, batch_idx, optimizer_idx):     
         x, _ = batch
         xrec, qloss = self(x)
-        
+    
         if optimizer_idx == 0:
             # autoencode
             aeloss = self.loss(qloss, x, xrec, optimizer_idx, self.global_step,
                                             last_layer=self.get_last_layer(), split="train")
-
+            loss = aeloss + qloss
             self.log("train/rec_loss", aeloss, prog_bar=True, logger=True)
             self.log("train/embed_loss", qloss, prog_bar=True, logger=True)            
-            
-            return aeloss
+            self.log("train/total_loss", loss, prog_bar=True, logger=True) 
+            return loss
 
         if optimizer_idx == 1:
             # discriminator
@@ -99,12 +99,12 @@ class VQGAN(pl.LightningModule):
 
         discloss = self.loss(qloss, x, xrec, 1, self.global_step,
                                             last_layer=self.get_last_layer(), split="val")
-
+        loss = aeloss + qloss
         self.log("val/rec_loss", aeloss, prog_bar=True, logger=True)
         self.log("val/disc_loss", discloss, prog_bar=True, logger=True)
         self.log("val/embed_loss", qloss, prog_bar=True, logger=True)        
-
-        return aeloss
+        self.log("val/total_loss", loss, prog_bar=True, logger=True) 
+        return loss
 
 
     def configure_optimizers(self):
@@ -118,7 +118,7 @@ class VQGAN(pl.LightningModule):
         opt_disc = torch.optim.Adam(self.loss.discriminator.parameters(),
                                     lr=lr, betas=(0.5, 0.9))
         if self.args.lr_decay:
-            sched_ae = ReduceLROnPlateau(
+            scheduler_ae = ReduceLROnPlateau(
             opt_ae,
             mode="min",
             factor=0.5,
@@ -127,7 +127,7 @@ class VQGAN(pl.LightningModule):
             min_lr=1e-6,
             verbose=True,
             )  
-            sched_disc = ReduceLROnPlateau(
+            scheduler_disc = ReduceLROnPlateau(
             opt_disc,
             mode="min",
             factor=0.5,
@@ -136,6 +136,8 @@ class VQGAN(pl.LightningModule):
             min_lr=1e-6,
             verbose=True,
             )    
+            sched_ae = {'scheduler':scheduler_ae, 'monitor':'val/total_loss'}
+            sched_disc = {'scheduler':scheduler_disc, 'monitor':'val/total_loss'}
             return [opt_ae, opt_disc], [sched_ae, sched_disc]
         else:
             return [opt_ae, opt_disc], []                                       
@@ -188,11 +190,11 @@ class GumbelVQGAN(VQGAN):
             # autoencode
             aeloss = self.loss(qloss, x, xrec, optimizer_idx, self.global_step,
                                             last_layer=self.get_last_layer(), split="train")
-
+            loss = aeloss + qloss
             self.log("train/rec_loss", aeloss, prog_bar=True, logger=True)
             self.log("train/embed_loss", qloss, prog_bar=True, logger=True)            
-            
-            return aeloss
+            self.log("train/total_loss", loss, prog_bar=True, logger=True) 
+            return loss
 
         if optimizer_idx == 1:
             # discriminator
@@ -212,9 +214,9 @@ class GumbelVQGAN(VQGAN):
 
         discloss = self.loss(qloss, x, xrec, 1, self.global_step,
                                             last_layer=self.get_last_layer(), split="val")
-
+        loss = aeloss + qloss
         self.log("val/rec_loss", aeloss, prog_bar=True, logger=True)
         self.log("val/disc_loss", discloss, prog_bar=True, logger=True)
         self.log("val/embed_loss", qloss, prog_bar=True, logger=True)        
-
-        return aeloss
+        self.log("val/total_loss", loss, prog_bar=True, logger=True) 
+        return loss

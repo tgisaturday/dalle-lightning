@@ -137,7 +137,7 @@ class VQVAE2(pl.LightningModule):
         lr = self.hparams.learning_rate
         opt = torch.optim.Adam(self.parameters(),lr=lr, betas=(0.5, 0.9))
         if self.args.lr_decay:
-            sched = ReduceLROnPlateau(
+            scheduler = ReduceLROnPlateau(
             opt,
             mode="min",
             factor=0.5,
@@ -146,6 +146,7 @@ class VQVAE2(pl.LightningModule):
             min_lr=1e-6,
             verbose=True,
             )    
+            sched = {'scheduler':scheduler, 'monitor':'val/total_loss'}                
             return [opt], [sched]
         else:
             return [opt], []   
