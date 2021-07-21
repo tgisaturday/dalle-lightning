@@ -94,9 +94,7 @@ if __name__ == "__main__":
                     help='training settings')  
     parser.add_argument('--learning_rate', default=3e-4, type=float,
                     help='base learning rate')
-    parser.add_argument('--lr_decay', action = 'store_true')
-    parser.add_argument('--lr_decay_rate', type = float, default = 0.98, 
-                    help = 'learning rate decay')                                          
+    parser.add_argument('--lr_decay', action = 'store_true')                                   
     parser.add_argument('--num_workers', type=int, default=8,
                     help='training settings')   
     parser.add_argument('--img_size', type=int, default=256,
@@ -166,7 +164,7 @@ if __name__ == "__main__":
         ckpt_path = None
 
     if args.backup:
-        args.backup_dir = os.path.join(args.backup_dir, 'vae')
+        args.backup_dir = os.path.join(args.backup_dir, f'dalle/{args.vae}')
         backup_callback = ModelCheckpoint(
                                     dirpath=args.backup_dir,
                                     every_n_train_steps = args.backup_steps,

@@ -104,7 +104,7 @@ if __name__ == "__main__":
                     help='print out tpu related stat')  
     parser.add_argument('--web_dataset',action='store_true', default=False,
                     help='enable web_dataset')  
-                                     
+
     #model configuration
     parser.add_argument('--model', type=str, default='vqvae')
     parser.add_argument('--embed_dim', type=int, default=256,
@@ -208,7 +208,7 @@ if __name__ == "__main__":
         ckpt_path = None
 
     if args.backup:
-        args.backup_dir = os.path.join(args.backup_dir, 'vae')
+        args.backup_dir = os.path.join(args.backup_dir, f'{args.model}/vae')
         backup_callback = ModelCheckpoint(
                                     dirpath=args.backup_dir,
                                     every_n_train_steps = args.backup_steps,
