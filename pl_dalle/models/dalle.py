@@ -465,7 +465,8 @@ class DALLE(pl.LightningModule):
             min_lr=1e-6,
             verbose=True,
             )    
-            return [opt], [scheduler]
+            sched = {'scheduler':scheduler, 'monitor':'val/total_loss'}            
+            return [opt], [sched]
         else:
             return [opt], []     
      

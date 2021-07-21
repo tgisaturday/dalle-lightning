@@ -208,7 +208,7 @@ if __name__ == "__main__":
         ckpt_path = None
 
     if args.backup:
-        args.backup_dir = os.path.join(args.backup_dir, f'{args.model}/vae')
+        args.backup_dir = os.path.join(args.backup_dir, f'vae/{args.model}')
         backup_callback = ModelCheckpoint(
                                     dirpath=args.backup_dir,
                                     every_n_train_steps = args.backup_steps,
