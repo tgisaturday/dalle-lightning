@@ -205,7 +205,7 @@ class DalleImageSampler(Callback):
             x = x.to(pl_module.device)       
             with torch.no_grad():
                 pl_module.eval()
-                out = pl_module(text, x, return_loss=False)[:, -1, :].long()
+                out = pl_module(text, x, return_loss=False).long()
                 print(out.shape)
                 text_seq = out[:, :self.text_seq_len]
                 img_seq = out[:, -self.image_seq_len:]                
@@ -253,7 +253,6 @@ class DalleImageSampler(Callback):
             with torch.no_grad():
                 pl_module.eval()
                 out = pl_module(text, x, return_loss=False)[:, -1, :].long()
-                print(out.shape)
                 text_seq = out[:, :self.text_seq_len]
                 img_seq = out[:, -self.image_seq_len:]                
                 xrec = pl_module.vae.decode(img_seq, feed_seq=True)
