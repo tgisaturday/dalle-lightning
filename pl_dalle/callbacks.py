@@ -198,19 +198,17 @@ class DalleImageSampler(Callback):
     ) -> None:
         """Called when the train batch ends."""
         if trainer.global_step % self.every_n_steps == 0:          
-            text, x = batch
-            sample_text = text[:1]
-            token_list = sample_text.masked_select(sample_text != 0).tolist()
-            decoded_text = self.tokenizer.decode(token_list)       
+            text, x = batch    
             text = text.to(pl_module.device)
             x = x.to(pl_module.device)       
             with torch.no_grad():
                 pl_module.eval()
+                print('fuck')
                 #generate sample with image provided
-                x_rec = pl_module.generate_images(text[:1], img = x[:1], filter_thres=0.9)  # topk sampling at 0.9
-
+                x_rec = pl_module.generate_images(text=text, img = x, filter_thres=0.9)  # topk sampling at 0.9
+                print('fuck')
                 #generate sample without image
-                x_gen = pl_module.generate_images(text[:1], filter_thres=0.9)  # topk sampling at 0.9
+                x_gen = pl_module.generate_images(text=text, filter_thres=0.9)  # topk sampling at 0.9
 
                 pl_module.train()  
 
@@ -242,8 +240,7 @@ class DalleImageSampler(Callback):
                 scale_each=self.scale_each,
                 pad_value=self.pad_value,
             )                
-            text_title = "train/text"
-            trainer.logger.experiment.add_text(text_title, decoded_text, global_step=trainer.global_step)
+
             x_title = "train/input"
             trainer.logger.experiment.add_image(x_title, x_grid, global_step=trainer.global_step)
             xrec_title = "train/reconstruction"
@@ -264,19 +261,14 @@ class DalleImageSampler(Callback):
         """Called when the validation batch ends."""
         if trainer.global_step % self.every_n_steps == 0:  
             text, x = batch
-            #sample_text = text[:1]
-            #token_list = sample_text.masked_select(sample_text != 0).tolist()
-            #decoded_text = self.tokenizer.decode(token_list)
             text = text.to(pl_module.device)
             x = x.to(pl_module.device)       
             with torch.no_grad():
                 pl_module.eval()
-                print('fuck')
                 #generate sample with image provided
-                x_rec = pl_module.generate_images(text[:1], img = x[:1], filter_thres=0.9)  # topk sampling at 0.9
-                print('fuck')
+                x_rec = pl_module.generate_images(text=text, img = x, filter_thres=0.9)  # topk sampling at 0.9
                 #generate sample without image
-                x_gen = pl_module.generate_images(text[:1], filter_thres=0.9)  # topk sampling at 0.9
+                x_gen = pl_module.generate_images(text=text, filter_thres=0.9)  # topk sampling at 0.9
 
                 pl_module.train()  
 
@@ -308,8 +300,6 @@ class DalleImageSampler(Callback):
                 scale_each=self.scale_each,
                 pad_value=self.pad_value,
             )                
-            #text_title = "val/text"
-            #trainer.logger.experiment.add_text(text_title, decoded_text, global_step=trainer.global_step)
             x_title = "val/input"
             trainer.logger.experiment.add_image(x_title, x_grid, global_step=trainer.global_step)
             xrec_title = "val/reconstruction"
