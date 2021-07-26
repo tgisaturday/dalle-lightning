@@ -9,6 +9,7 @@ from pl_bolts.utils import _TORCHVISION_AVAILABLE
 from pl_bolts.utils.warnings import warn_missing_pkg
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from pytorch_lightning.utilities.distributed import rank_zero_only
+import torch.nn.functional as F
 
 if _TORCHVISION_AVAILABLE:
     import torchvision
@@ -380,8 +381,10 @@ class DalleSimpleImageSampler(Callback):
             with torch.no_grad():
                 pl_module.eval()
                 logits = pl_module(text, x)
-                img_seq = logits[:, -pl_module.image_seq_len:].long()
-                print(img_seq.shape)
+                img_logits = logits[:, -pl_module.image_seq_len:].long()
+                img_seq = torch.argmax(img_logits, dim = -1)
+                img_seq -= pl_module.num_text_tokens              
+                print(img_seq)
                 x_rec = pl_module.vae.decode(img_seq, feed_seq=True)                
 
                 pl_module.train()  
