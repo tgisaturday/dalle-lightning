@@ -149,6 +149,8 @@ class DalleImageSampler(Callback):
         self,
         num_samples: int = 3,
         every_n_steps: int = 1000,
+        text_seq_len = 128,
+        image_seq_len = 1024,
         nrow: int = 8,
         padding: int = 2,
         normalize: bool = True,
@@ -177,6 +179,8 @@ class DalleImageSampler(Callback):
         super().__init__()
         self.num_samples = num_samples
         self.every_n_steps = every_n_steps
+        self.text_seq_len = text_seq_len
+        self.image_seq_len = image_seq_len
         self.nrow = nrow
         self.padding = padding
         self.normalize = normalize
@@ -201,8 +205,10 @@ class DalleImageSampler(Callback):
             x = x.to(pl_module.device)       
             with torch.no_grad():
                 pl_module.eval()
-                logits = pl_module(text, x, return_loss=False).long()
-                xrec = pl_module.vae.decode(logits)
+                out = pl_module(text, x, return_loss=False).long()
+                text_seq = out[:, :self.text_seq_len]
+                img_seq = out[:, -self.image_seq_len:]                
+                xrec = pl_module.vae.decode(out)
                 pl_module.train()   
 
             x_grid = torchvision.utils.make_grid(
@@ -245,8 +251,10 @@ class DalleImageSampler(Callback):
             x = x.to(pl_module.device)       
             with torch.no_grad():
                 pl_module.eval()
-                logits = pl_module(text, x, return_loss=False).long()
-                xrec = pl_module.vae.decode(logits)
+                out = pl_module(text, x, return_loss=False).long()
+                text_seq = out[:, :self.text_seq_len]
+                img_seq = out[:, -self.image_seq_len:]                
+                xrec = pl_module.vae.decode(out)
                 pl_module.train() 
             x_grid = torchvision.utils.make_grid(
                 tensor=x,
