@@ -9,8 +9,7 @@ import datetime
 import torch
 from torch.utils.data import DataLoader
 
-from dalle_pytorch.dalle_pytorch import DiscreteVAE
-from dalle_pytorch.vae import OpenAIDiscreteVAE
+from pl_dalle.dalle import DiscreteVAE
 from pl_dalle.models.vqgan import VQGAN, EMAVQGAN, GumbelVQGAN
 from pl_dalle.models.vqvae import VQVAE, EMAVQVAE, GumbelVQVAE
 from pl_dalle.models.vqvae2 import VQVAE2
@@ -213,10 +212,8 @@ if __name__ == "__main__":
         vae = GumbelVQVAE.load_from_checkpoint(args.vae_path) 
     elif args.vae == 'vqvae2':
         vae = VQVAE2.load_from_checkpoint(args.vae_path) 
-    #popular pretrained vaes(may exist some slowdown on TPUs)  
-    elif args.vae == 'openaivae':
-        vae = OpenAIDiscreteVAE()  
-    elif args.vae == 'dpdvae':
+
+    elif args.vae == 'dvae':
         loaded_obj = torch.load(str(args.vae_path))
         vae_params, weights = loaded_obj['hparams'], loaded_obj['weights']
         vae = DiscreteVAE(**vae_params)
