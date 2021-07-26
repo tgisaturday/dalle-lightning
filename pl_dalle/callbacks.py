@@ -205,7 +205,8 @@ class DalleImageSampler(Callback):
             text, x = batch
             sample_text = text[:1]
             token_list = sample_text.masked_select(sample_text != 0).tolist()
-            decoded_text = self.tokenizer.decode(token_list)            
+            decoded_text = self.tokenizer.decode(token_list)   
+            print(decoded_text)         
             text = text.to(pl_module.device)
             x = x.to(pl_module.device)       
             with torch.no_grad():
@@ -214,10 +215,6 @@ class DalleImageSampler(Callback):
                 x_rec = pl_module.generate_images(text[:1], img = x[:1], filter_thres=0.9)  # topk sampling at 0.9
 
                 #generate sample without image
-                sample_text = text[:1]
-                token_list = sample_text.masked_select(sample_text != 0).tolist()
-                decoded_text = self.tokenizer.decode(token_list)
-
                 x_gen = pl_module.generate_images(text[:1], filter_thres=0.9)  # topk sampling at 0.9
 
                 pl_module.train()  
@@ -283,10 +280,6 @@ class DalleImageSampler(Callback):
                 x_rec = pl_module.generate_images(text[:1], img = x[:1], filter_thres=0.9)  # topk sampling at 0.9
 
                 #generate sample without image
-                sample_text = text[:1]
-                token_list = sample_text.masked_select(sample_text != 0).tolist()
-                decoded_text = self.tokenizer.decode(token_list)
-
                 x_gen = pl_module.generate_images(text[:1], filter_thres=0.9)  # topk sampling at 0.9
 
                 pl_module.train()  
