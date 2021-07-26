@@ -201,7 +201,7 @@ class DalleImageSampler(Callback):
             x = x.to(pl_module.device)       
             with torch.no_grad():
                 pl_module.eval()
-                logits = pl_module(text, x, return_loss=False)
+                logits = pl_module(text, x, return_loss=False).long()
                 xrec = pl_module.vae.decode(logits)
                 pl_module.train()   
 
@@ -245,7 +245,7 @@ class DalleImageSampler(Callback):
             x = x.to(pl_module.device)       
             with torch.no_grad():
                 pl_module.eval()
-                logits = pl_module(text, x, return_loss=False)
+                logits = pl_module(text, x, return_loss=False).long()
                 xrec = pl_module.vae.decode(logits)
                 pl_module.train() 
             x_grid = torchvision.utils.make_grid(
