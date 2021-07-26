@@ -158,9 +158,7 @@ class DiscreteVAE(nn.Module):
 
         # take care of normalization within class
         self.normalization = normalization
-
-        self._register_external_parameters()
-
+        
     def norm(self, images):
         if not exists(self.normalization):
             return images
