@@ -16,6 +16,7 @@ from pl_dalle.models.dalle import DiscreteVAE, DALLE
 
 from pl_dalle.loader import TextImageDataModule
 from pl_dalle.modules.dalle.tokenizer import tokenizer, HugTokenizer, YttmTokenizer
+from pl_dalle.callbacks import DalleImageSampler
 
 from torchvision import transforms as T
 from PIL import Image
@@ -69,7 +70,10 @@ if __name__ == "__main__":
                     help='save backup and load from backup if restart happens')      
     parser.add_argument('--backup_steps', type =int, default = 1000,
                     help='saves backup every n training steps') 
-
+    parser.add_argument('--log_images', action='store_true', default=False,
+                    help='log image outputs. not recommended for tpus')   
+    parser.add_argument('--image_log_steps', type=int, default=1000,
+                    help='log image outputs for every n step. not recommended for tpus')   
     parser.add_argument('--refresh_rate', type=int, default=1,
                     help='progress bar refresh rate')    
     parser.add_argument('--precision', type=int, default=32,
@@ -191,7 +195,7 @@ if __name__ == "__main__":
         limit_train_batches = 100
         limit_test_batches = 100
         args.backup_steps = 10
-
+        args.image_log_steps = 10
     else:
         limit_train_batches = 1.0
         limit_test_batches = 1.0   
@@ -248,7 +252,9 @@ if __name__ == "__main__":
 
     if args.backup:
         trainer.callbacks.append(backup_callback)      
-
+    if args.log_images:
+        trainer.callbacks.append(DalleImageSampler(every_n_steps=args.image_log_steps))  
+        
     print("Setting batch size: {} learning rate: {:.2e}".format(model.hparams.batch_size, model.hparams.learning_rate))
     
     if not args.test:    
