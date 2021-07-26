@@ -381,6 +381,7 @@ class DalleSimpleImageSampler(Callback):
                 pl_module.eval()
                 logits = pl_module(text, x)
                 img_seq = logits[:, -pl_module.image_seq_len:].long()
+                print(img_seq.shape)
                 x_rec = pl_module.vae.decode(img_seq, feed_seq=True)                
 
                 pl_module.train()  
