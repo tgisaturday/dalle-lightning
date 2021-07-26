@@ -486,7 +486,6 @@ class DALLE(pl.LightningModule):
             out = torch.cat((out, indices), dim = -1)
 
         for cur_len in range(out.shape[1], total_len):
-            print(cur_len)
             is_image = cur_len >= text_seq_len
 
             text, image = out[:, :text_seq_len], out[:, text_seq_len:]
