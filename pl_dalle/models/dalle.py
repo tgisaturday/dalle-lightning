@@ -366,6 +366,7 @@ class DALLE(pl.LightningModule):
         self.vae = vae
         set_requires_grad(self.vae, False)
 
+
         self.transformer = Transformer(
             dim = dim,
             causal = True,
