@@ -213,7 +213,7 @@ if __name__ == "__main__":
         vae = VQVAE2.load_from_checkpoint(args.vae_path) 
 
     elif args.vae == 'dvae':
-        loaded_obj = torch.load(str(args.vae_path))
+        loaded_obj = torch.load(str(args.vae_path),map_location=torch.device('cpu'))
         vae_params, weights = loaded_obj['hparams'], loaded_obj['weights']
         vae = DiscreteVAE(**vae_params)
     
