@@ -20,7 +20,6 @@ class VAEImageSampler(Callback):
     
     def __init__(
         self,
-        num_samples: int = 3,
         every_n_steps: int = 1000,
         nrow: int = 8,
         padding: int = 2,
@@ -48,7 +47,6 @@ class VAEImageSampler(Callback):
             raise ModuleNotFoundError("You want to use `torchvision` which is not installed yet.")
 
         super().__init__()
-        self.num_samples = num_samples
         self.every_n_steps = every_n_steps
         self.nrow = nrow
         self.padding = padding
@@ -147,7 +145,6 @@ class DalleImageSampler(Callback):
     
     def __init__(
         self,
-        num_samples: int = 3,
         every_n_steps: int = 1000,
         text_seq_len = 128,
         image_seq_len = 1024,
@@ -178,7 +175,6 @@ class DalleImageSampler(Callback):
             raise ModuleNotFoundError("You want to use `torchvision` which is not installed yet.")
 
         super().__init__()
-        self.num_samples = num_samples
         self.every_n_steps = every_n_steps
         self.text_seq_len = text_seq_len
         self.image_seq_len = image_seq_len
@@ -275,9 +271,10 @@ class DalleImageSampler(Callback):
             x = x.to(pl_module.device)       
             with torch.no_grad():
                 pl_module.eval()
+                print('fuck')
                 #generate sample with image provided
                 x_rec = pl_module.generate_images(text[:1], img = x[:1], filter_thres=0.9)  # topk sampling at 0.9
-
+                print('fuck')
                 #generate sample without image
                 x_gen = pl_module.generate_images(text[:1], filter_thres=0.9)  # topk sampling at 0.9
 
