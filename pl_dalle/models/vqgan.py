@@ -51,10 +51,10 @@ class VQGAN(pl.LightningModule):
     def decode(self, input, feed_seq=False):
         if feed_seq:
             img_seq = input
-            b, n = img_seq.shape
-            one_hot_indices = F.one_hot(img_seq, num_classes = self.num_tokens).float()
-            z = one_hot_indices @ self.model.quantize.embedding.weight 
-            z = rearrange(z, 'b (h w) c -> b c h w', h = int(math.sqrt(n)))
+            image_embeds = self.quantize.embedding(img_seq)
+            b, n, d = image_embeds.shape
+            h = w = int(math.sqrt(n))
+            z = rearrange(image_embeds, 'b (h w) d -> b d h w', h = h, w = w)
         else:
             z = input
 
