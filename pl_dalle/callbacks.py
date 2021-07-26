@@ -380,7 +380,7 @@ class DalleSimpleImageSampler(Callback):
             with torch.no_grad():
                 pl_module.eval()
                 logits = pl_module(text, x)
-                img_seq = logits[:, -pl_module.image_seq_len:]
+                img_seq = logits[:, -pl_module.image_seq_len:].long()
                 x_rec = pl_module.vae.decode(img_seq, feed_seq=True)                
 
                 pl_module.train()  
@@ -434,7 +434,7 @@ class DalleSimpleImageSampler(Callback):
             with torch.no_grad():
                 pl_module.eval()
                 logits = pl_module(text, x)
-                img_seq = logits[:, -pl_module.image_seq_len:]
+                img_seq = logits[:, -pl_module.image_seq_len:].long()
                 x_rec = pl_module.vae.decode(img_seq, feed_seq=True)                
 
                 pl_module.train()  
