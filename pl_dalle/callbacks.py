@@ -323,8 +323,6 @@ class DalleSimpleImageSampler(Callback):
     def __init__(
         self,
         every_n_steps: int = 1000,
-        text_seq_len = 128,
-        image_seq_len = 1024,
         nrow: int = 8,
         padding: int = 2,
         normalize: bool = True,
@@ -353,8 +351,6 @@ class DalleSimpleImageSampler(Callback):
 
         super().__init__()
         self.every_n_steps = every_n_steps
-        self.text_seq_len = text_seq_len
-        self.image_seq_len = image_seq_len
         self.nrow = nrow
         self.padding = padding
         self.normalize = normalize
@@ -384,7 +380,7 @@ class DalleSimpleImageSampler(Callback):
             with torch.no_grad():
                 pl_module.eval()
                 logits = pl_module(text, x)
-                img_seq = logits[:, -self.image_seq_len:]
+                img_seq = logits[:, -pl_module.image_seq_len:]
                 x_rec = pl_module.vae.decode(img_seq, feed_seq=True)                
 
                 pl_module.train()  
@@ -438,7 +434,7 @@ class DalleSimpleImageSampler(Callback):
             with torch.no_grad():
                 pl_module.eval()
                 logits = pl_module(text, x)
-                img_seq = logits[:, -self.image_seq_len:]
+                img_seq = logits[:, -pl_module.image_seq_len:]
                 x_rec = pl_module.vae.decode(img_seq, feed_seq=True)                
 
                 pl_module.train()  
