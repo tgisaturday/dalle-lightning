@@ -490,11 +490,9 @@ class DALLE(pl.LightningModule):
             is_image = cur_len >= text_seq_len
 
             text, image = out[:, :text_seq_len], out[:, text_seq_len:]
-            print(text.device)
-            print(image.device)
+
 
             logits = self(text, image, mask = mask)[:, -1, :]
-
             filtered_logits = top_k(logits, thres = filter_thres)
             probs = F.softmax(filtered_logits / temperature, dim = -1)
             sample = torch.multinomial(probs, 1)
