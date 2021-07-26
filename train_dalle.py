@@ -221,7 +221,7 @@ if __name__ == "__main__":
         vae = DiscreteVAE(**vae_params)
     
     args.image_seq_len = vae.num_tokens
-    
+    print(f'loaded VAE with codebook size (num_token): {args.image_seq_len}')
     model = DALLE(args, args.batch_size, args.learning_rate, vae=vae)
 
 
