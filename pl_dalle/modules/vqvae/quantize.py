@@ -4,20 +4,20 @@ import torch.nn.functional as F
 
 
 class VectorQuantizer(nn.Module):
-    def __init__(self, codebook_dim, embedding_dim, beta):
+    def __init__(self, num_tokens, codebook_dim, beta):
         super().__init__()
-        self.embedding_dim = embedding_dim
         self.codebook_dim = codebook_dim
+        self.num_tokens = num_tokens
         self.beta = beta
 
-        self.embedding = nn.Embedding(self.codebook_dim, self.embedding_dim)
-        self.embedding.weight.data.uniform_(-1.0 / self.codebook_dim, 1.0 / self.codebook_dim)
+        self.embedding = nn.Embedding(self.num_tokens, self.codebook_dim)
+        self.embedding.weight.data.uniform_(-1.0 / self.num_tokens, 1.0 / self.num_tokens)
 
     def forward(self, z):
         # reshape z -> (batch, height, width, channel) and flatten
         #z, 'b c h w -> b h w c'
         z = z.permute(0, 2, 3, 1).contiguous()
-        z_flattened = z.view(-1, self.embedding_dim)
+        z_flattened = z.view(-1, self.codebook_dim)
         # distances from z to embeddings e_j (z - e)^2 = z^2 + e^2 - 2 e * z
 
         d = torch.sum(z_flattened ** 2, dim=1, keepdim=True) + \
@@ -43,19 +43,19 @@ class VectorQuantizer(nn.Module):
 
 
 class EMAVectorQuantizer(nn.Module):
-    def __init__(self, codebook_dim, embedding_dim, beta, decay=0.99, eps=1e-5):
+    def __init__(self, num_tokens, codebook_dim, beta, decay=0.99, eps=1e-5):
         super().__init__()
-        self.embedding_dim = embedding_dim
         self.codebook_dim = codebook_dim
+        self.num_tokens = num_tokens
         self.beta = beta
 
-        self.embedding = nn.Embedding(self.codebook_dim, self.embedding_dim)
-        self.embedding.weight.data.uniform_(-1.0 / self.codebook_dim, 1.0 / self.codebook_dim)
+        self.embedding = nn.Embedding(self.num_tokens, self.codebook_dim)
+        self.embedding.weight.data.uniform_(-1.0 / self.num_tokens, 1.0 / self.num_tokens)
 
-        self.embedding.weight.data.uniform_(-1.0 / self.codebook_dim, 1.0 / self.codebook_dim)
-        self.register_buffer('cluster_size', torch.zeros(self.codebook_dim))
-        self.ema_w = nn.Parameter(torch.Tensor(self.codebook_dim, self.embedding_dim))
-        self.ema_w.data.uniform_(-1.0 / self.codebook_dim, 1.0 / self.codebook_dim)
+        self.embedding.weight.data.uniform_(-1.0 / self.num_tokens, 1.0 / self.num_tokens)
+        self.register_buffer('cluster_size', torch.zeros(self.num_tokens))
+        self.ema_w = nn.Parameter(torch.Tensor(self.num_tokens, self.codebook_dim))
+        self.ema_w.data.uniform_(-1.0 / self.num_tokens, 1.0 / self.num_tokens)
         self.decay = decay
         self.eps = eps
 
@@ -63,7 +63,7 @@ class EMAVectorQuantizer(nn.Module):
         # reshape z -> (batch, height, width, channel) and flatten
         #z, 'b c h w -> b h w c'
         z = z.permute(0, 2, 3, 1).contiguous()
-        z_flattened = z.view(-1, self.embedding_dim)
+        z_flattened = z.view(-1, self.codebook_dim)
         # distances from z to embeddings e_j (z - e)^2 = z^2 + e^2 - 2 e * z
 
         d = torch.sum(z_flattened ** 2, dim=1, keepdim=True) + \
@@ -77,7 +77,7 @@ class EMAVectorQuantizer(nn.Module):
         # Use EMA to update the embedding vectors
         if self.training:
             encoding_indices = min_encoding_indices.unsqueeze(1)
-            encodings = torch.zeros(encoding_indices.shape[0], self.codebook_dim, device=z.device)
+            encodings = torch.zeros(encoding_indices.shape[0], self.num_tokens, device=z.device)
             encodings.scatter_(1, encoding_indices, 1)
             self.cluster_size = self.cluster_size * self.decay + \
                                      (1 - self.decay) * torch.sum(encodings, 0)
@@ -86,7 +86,7 @@ class EMAVectorQuantizer(nn.Module):
             n = torch.sum(self.cluster_size.data)
             self.cluster_size = (
                 (self.cluster_size + self.eps)
-                / (n + self.codebook_dim * self.eps) * n)
+                / (n + self.num_tokens * self.eps) * n)
             
             dw = torch.matmul(encodings.t(), z_flattened)
             self.ema_w = nn.Parameter(self.ema_w * self.decay + (1 - self.decay) * dw)
@@ -104,19 +104,19 @@ class EMAVectorQuantizer(nn.Module):
         return z_q, loss, (perplexity, min_encodings, min_encoding_indices)
 
 class GumbelQuantizer(nn.Module):
-    def __init__(self, codebook_dim, embedding_dim, straight_through=True,
+    def __init__(self, num_tokens, codebook_dim, straight_through=True,
                  kl_weight=5e-4, temp_init=1.0, use_vqinterface=True):
         super().__init__()
 
-        self.embedding_dim = embedding_dim
         self.codebook_dim = codebook_dim
+        self.num_tokens = num_tokens
 
         self.straight_through = straight_through
         self.temperature = temp_init
         self.kl_weight = kl_weight
 
-        self.embedding = nn.Embedding(codebook_dim, embedding_dim)
-        self.embedding.weight.data.uniform_(-1.0 / self.codebook_dim, 1.0 / self.codebook_dim)
+        self.embedding = nn.Embedding(num_tokens, codebook_dim)
+        self.embedding.weight.data.uniform_(-1.0 / self.num_tokens, 1.0 / self.num_tokens)
 
         self.use_vqinterface = use_vqinterface
 
@@ -131,7 +131,7 @@ class GumbelQuantizer(nn.Module):
 
         # + kl divergence to the prior loss
         qy = F.softmax(z, dim=1)
-        diff = self.kl_weight * torch.sum(qy * torch.log(qy * self.codebook_dim + 1e-10), dim=1).mean()
+        diff = self.kl_weight * torch.sum(qy * torch.log(qy * self.num_tokens + 1e-10), dim=1).mean()
 
         ind = soft_one_hot.argmax(dim=1)
         if self.use_vqinterface:

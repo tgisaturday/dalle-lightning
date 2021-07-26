@@ -221,6 +221,8 @@ if __name__ == "__main__":
         vae_params, weights = loaded_obj['hparams'], loaded_obj['weights']
         vae = DiscreteVAE(**vae_params)
     
+    args.image_seq_len = vae.num_tokens
+    
     model = DALLE(args, args.batch_size, args.learning_rate, vae=vae)
 
 
@@ -253,7 +255,7 @@ if __name__ == "__main__":
     if args.backup:
         trainer.callbacks.append(backup_callback)      
     if args.log_images:
-        trainer.callbacks.append(DalleImageSampler(every_n_steps=args.image_log_steps))  
+        trainer.callbacks.append(DalleImageSampler(every_n_steps=args.image_log_steps, text_seq_len=args.text_seq_len, image_seq_len=args.image_seq_len))  
         
     print("Setting batch size: {} learning rate: {:.2e}".format(model.hparams.batch_size, model.hparams.learning_rate))
     

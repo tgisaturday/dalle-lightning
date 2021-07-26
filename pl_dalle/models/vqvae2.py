@@ -4,6 +4,8 @@ from torch.nn import functional as F
 import pytorch_lightning as pl
 from torch import distributed as dist
 from torch.optim.lr_scheduler import ReduceLROnPlateau
+import math
+from einops import rearrange
 #from torch import distributed as dist
 # import vqvae.distributed as dist_fn
 
@@ -36,22 +38,22 @@ class VQVAE2(pl.LightningModule):
         self.recon_loss = nn.MSELoss()
         self.latent_loss_weight = args.quant_beta      
         self.image_size = args.resolution
-        self.num_tokens = args.codebook_dim * 2 #two codebooks
+        self.num_tokens = args.num_tokens * 2 #two codebooks
 
         self.enc_b = Encoder(args.in_channels, args.hidden_dim, args.num_res_blocks, args.num_res_ch, stride=4)
         self.enc_t = Encoder(args.hidden_dim, args.hidden_dim, args.num_res_blocks, args.num_res_ch, stride=2)
-        self.quantize_conv_t = nn.Conv2d(args.hidden_dim, args.embed_dim, 1)
-        self.quantize_t = Quantize(args.embed_dim, args.codebook_dim, args.quant_ema_decay)
+        self.quantize_conv_t = nn.Conv2d(args.hidden_dim, args.codebook_dim, 1)
+        self.quantize_t = Quantize(args.codebook_dim, args.num_tokens, args.quant_ema_decay)
         self.dec_t = Decoder(
-            args.embed_dim, args.embed_dim, args.hidden_dim, args.num_res_blocks, args.num_res_ch, stride=2
+            args.codebook_dim, args.codebook_dim, args.hidden_dim, args.num_res_blocks, args.num_res_ch, stride=2
         )
-        self.quantize_conv_b = nn.Conv2d(args.embed_dim + args.hidden_dim, args.embed_dim, 1)
-        self.quantize_b = Quantize(args.embed_dim, args.codebook_dim, args.quant_ema_decay)
+        self.quantize_conv_b = nn.Conv2d(args.codebook_dim + args.hidden_dim, args.codebook_dim, 1)
+        self.quantize_b = Quantize(args.codebook_dim, args.num_tokens, args.quant_ema_decay)
         self.upsample_t = nn.ConvTranspose2d(
-            args.embed_dim, args.embed_dim, 4, stride=2, padding=1
+            args.codebook_dim, args.codebook_dim, 4, stride=2, padding=1
         )
         self.dec = Decoder(
-            args.embed_dim + args.embed_dim,
+            args.codebook_dim + args.codebook_dim,
             args.in_channels,
             args.hidden_dim,
             args.num_res_blocks,
@@ -153,17 +155,17 @@ class VQVAE2(pl.LightningModule):
 
 
 class Quantize(nn.Module):
-    def __init__(self, dim, codebook_dim, decay=0.99, eps=1e-5):
+    def __init__(self, dim, num_tokens, decay=0.99, eps=1e-5):
         super().__init__()
 
         self.dim = dim
-        self.codebook_dim = codebook_dim
+        self.num_tokens = num_tokens
         self.decay = decay
         self.eps = eps
 
-        embed = torch.randn(dim, codebook_dim)
+        embed = torch.randn(dim, num_tokens)
         self.register_buffer("embed", embed)
-        self.register_buffer("cluster_size", torch.zeros(codebook_dim))
+        self.register_buffer("cluster_size", torch.zeros(num_tokens))
         self.register_buffer("embed_avg", embed.clone())
 
     def forward(self, input):
@@ -174,7 +176,7 @@ class Quantize(nn.Module):
             + self.embed.pow(2).sum(0, keepdim=True)
         )
         _, embed_ind = (-dist).max(1)
-        embed_onehot = F.one_hot(embed_ind, self.codebook_dim).type(flatten.dtype)
+        embed_onehot = F.one_hot(embed_ind, self.num_tokens).type(flatten.dtype)
         embed_ind = embed_ind.view(*input.shape[:-1])
         quantize = self.embed_code(embed_ind)
 
@@ -191,7 +193,7 @@ class Quantize(nn.Module):
             self.embed_avg.data.mul_(self.decay).add_(embed_sum, alpha=1 - self.decay)
             n = self.cluster_size.sum()
             cluster_size = (
-                (self.cluster_size + self.eps) / (n + self.codebook_dim * self.eps) * n
+                (self.cluster_size + self.eps) / (n + self.num_tokens * self.eps) * n
             )
             embed_normalized = self.embed_avg / cluster_size.unsqueeze(0)
             self.embed.data.copy_(embed_normalized)

@@ -7,7 +7,7 @@ import math
 from pl_dalle.modules.vqvae.vae import Encoder, Decoder
 from pl_dalle.modules.vqvae.quantize import VectorQuantizer, EMAVectorQuantizer, GumbelQuantizer
 from torch.optim.lr_scheduler import ReduceLROnPlateau
-
+from einops import rearrange
 
 class VQVAE(pl.LightningModule):
     def __init__(self,
@@ -18,7 +18,7 @@ class VQVAE(pl.LightningModule):
         self.save_hyperparameters()
         self.args = args     
         self.image_size = args.resolution
-        self.num_tokens = args.codebook_dim
+        self.num_tokens = args.num_tokens
         
         f = self.image_size / self.args.attn_resolutions[0]
         self.num_layers = int(math.log(f)/math.log(2))
@@ -38,9 +38,9 @@ class VQVAE(pl.LightningModule):
         
 
         self.smooth_l1_loss = args.smooth_l1_loss
-        self.quant_conv = torch.nn.Conv2d(args.z_channels, args.embed_dim, 1)        
-        self.quantize = VectorQuantizer(args.codebook_dim, args.embed_dim, beta=0.25)
-        self.post_quant_conv = torch.nn.Conv2d(args.embed_dim, args.z_channels, 1)
+        self.quant_conv = torch.nn.Conv2d(args.z_channels, args.codebook_dim, 1)        
+        self.quantize = VectorQuantizer(args.num_tokens, args.codebook_dim, beta=0.25)
+        self.post_quant_conv = torch.nn.Conv2d(args.codebook_dim, args.z_channels, 1)
 
     def encode(self, x):
         h = self.encoder(x)
@@ -48,8 +48,17 @@ class VQVAE(pl.LightningModule):
         quant, emb_loss, info = self.quantize(h)
         return quant, emb_loss, info
 
-    def decode(self, quant):
-        quant = self.post_quant_conv(quant)
+    def decode(self, input, feed_seq=False):
+        if feed_seq:
+            img_seq = input
+            b, n = img_seq.shape
+            one_hot_indices = F.one_hot(img_seq, num_classes = self.num_tokens).float()
+            z = one_hot_indices @ self.model.quantize.embedding.weight 
+            z = rearrange(z, 'b (h w) c -> b c h w', h = int(math.sqrt(n)))
+        else:
+            z = input
+
+        quant = self.post_quant_conv(z)
         dec = self.decoder(quant)
         return dec
 
@@ -125,8 +134,8 @@ class EMAVQVAE(VQVAE):
         super().__init__(args, batch_size, learning_rate,
                          ignore_keys=ignore_keys
                          )
-        self.quantize = EMAVectorQuantizer(codebook_dim=args.codebook_dim,
-                                       embedding_dim=args.embed_dim,
+        self.quantize = EMAVectorQuantizer(num_tokens=args.num_tokens,
+                                       codebook_dim=args.codebook_dim,
                                        beta=args.quant_beta, decay=args.quant_ema_decay, eps=args.quant_ema_eps)        
 
 class GumbelVQVAE(VQVAE):
@@ -141,9 +150,9 @@ class GumbelVQVAE(VQVAE):
         self.anneal_rate = args.anneal_rate
         self.temp_min = args.temp_min
         #quant conv channel should be different for gumbel
-        self.quant_conv = torch.nn.Conv2d(args.z_channels, args.codebook_dim, 1)           
-        self.quantize = GumbelQuantizer(codebook_dim=args.codebook_dim,
-                                       embedding_dim=args.embed_dim,
+        self.quant_conv = torch.nn.Conv2d(args.z_channels, args.num_tokens, 1)           
+        self.quantize = GumbelQuantizer(num_tokens=args.num_tokens,
+                                       codebook_dim=args.codebook_dim,
                                        kl_weight=args.kl_loss_weight, temp_init=args.starting_temp)
 
     def training_step(self, batch, batch_idx):

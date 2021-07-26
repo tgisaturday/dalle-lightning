@@ -109,9 +109,9 @@ if __name__ == "__main__":
 
     #model configuration
     parser.add_argument('--model', type=str, default='vqvae')
-    parser.add_argument('--embed_dim', type=int, default=256,
+    parser.add_argument('--codebook_dim', type=int, default=256,
                     help='number of embedding dimension for codebook')       
-    parser.add_argument('--codebook_dim', type=int, default=1024,
+    parser.add_argument('--num_tokens', type=int, default=1024,
                     help='codebook size')        
     parser.add_argument('--double_z', type=bool, default=False,
                     help='double z for encoder')

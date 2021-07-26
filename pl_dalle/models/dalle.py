@@ -178,7 +178,8 @@ class DiscreteVAE(nn.Module):
 
     def decode(
         self,
-        img_seq
+        img_seq,
+        feed_seq=True, # placeholder for vqvae support
     ):
         image_embeds = self.codebook(img_seq)
         b, n, d = image_embeds.shape
@@ -503,7 +504,7 @@ class DALLE(pl.LightningModule):
         text_seq = out[:, :text_seq_len]
 
         img_seq = out[:, -image_seq_len:]
-        images = vae.decode(img_seq)
+        images = vae.decode(img_seq, feed_seq=True)
 
         if exists(clip):
             scores = clip(text_seq, images, return_loss = False)
