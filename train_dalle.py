@@ -220,7 +220,7 @@ if __name__ == "__main__":
         vae_params, weights = loaded_obj['hparams'], loaded_obj['weights']
         vae = DiscreteVAE(**vae_params)
     
-    print(f'Loaded VAE with codebook size (num_token): {args.image_seq_len}')
+    print(f'Loaded VAE with codebook size (num_token): {vae.num_tokens}')
     model = DALLE(args, args.batch_size, args.learning_rate, vae=vae)
 
 
