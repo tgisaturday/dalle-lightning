@@ -207,10 +207,10 @@ class DalleImageSampler(Callback):
             with torch.no_grad():
                 pl_module.eval()
                 #generate sample with image provided
-                x_rec = pl_module.generate_images(text[:1], img = x[:1], filter_thres=0.9, num_init_img_tokens = 31*32)  # topk sampling at 0.9
+                x_rec = pl_module.generate_images(text[:1], img = x[:1], filter_thres=0.9, num_init_img_tokens = 32*32-1)  # topk sampling at 0.9
 
                 #generate sample without image
-                x_gen = pl_module.generate_images(text[:1], img = x[:1], filter_thres=0.9, num_init_img_tokens = 31*32)  # topk sampling at 0.9
+                x_gen = pl_module.generate_images(text[:1], img = x[:1], filter_thres=0.9, num_init_img_tokens = 32*32-1)  # topk sampling at 0.9
 
                 pl_module.train()  
 
