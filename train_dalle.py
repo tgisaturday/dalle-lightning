@@ -9,11 +9,10 @@ import datetime
 import torch
 from torch.utils.data import DataLoader
 
-from pl_dalle.dalle import DiscreteVAE
 from pl_dalle.models.vqgan import VQGAN, EMAVQGAN, GumbelVQGAN
 from pl_dalle.models.vqvae import VQVAE, EMAVQVAE, GumbelVQVAE
 from pl_dalle.models.vqvae2 import VQVAE2
-from pl_dalle.models.dalle import DALLE
+from pl_dalle.models.dalle import DiscreteVAE, DALLE
 
 from pl_dalle.loader import TextImageDataModule
 from pl_dalle.modules.dalle.tokenizer import tokenizer, HugTokenizer, YttmTokenizer
@@ -123,7 +122,7 @@ if __name__ == "__main__":
     parser.add_argument('--web_dataset',action='store_true', default=False,
                     help='enable web_dataset')   
     #VAE configuration
-    parser.add_argument('--vae', type=str, default='openaivae')
+    parser.add_argument('--vae', type=str, default='dvae')
 
     #Transformer configuration
     parser.add_argument('--attn_types', default = 'full', type = str, 
