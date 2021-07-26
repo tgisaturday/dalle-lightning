@@ -17,27 +17,14 @@ else:  # pragma: no cover
 
 
 class VAEImageSampler(Callback):
-    """
-    Generates images and logs to tensorboard.
-    Your model must implement the ``forward`` function for generation
-    Requirements::
-        # model must have img_dim arg
-        model.img_dim = (1, 28, 28)
-        # model forward must work for sampling
-        z = torch.rand(batch_size, latent_dim)
-        img_samples = your_model(z)
-    Example::
-        from pl_bolts.callbacks import TensorboardGenerativeModelImageSampler
-        trainer = Trainer(callbacks=[TensorboardGenerativeModelImageSampler()])
-    """
-
+    
     def __init__(
         self,
         num_samples: int = 3,
         every_n_steps: int = 1000,
         nrow: int = 8,
         padding: int = 2,
-        normalize: bool = False,
+        normalize: bool = True,
         norm_range: Optional[Tuple[int, int]] = None,
         scale_each: bool = False,
         pad_value: int = 0,
@@ -49,7 +36,7 @@ class VAEImageSampler(Callback):
                 The final grid size is ``(B / nrow, nrow)``. Default: ``8``.
             padding: Amount of padding. Default: ``2``.
             normalize: If ``True``, shift the image to the range (0, 1),
-                by the min and max values specified by :attr:`range`. Default: ``False``.
+                by the min and max values specified by :attr:`range`. Default: ``True``.
             norm_range: Tuple (min, max) where min and max are numbers,
                 then these numbers are used to normalize the image. By default, min and max
                 are computed from the tensor.
