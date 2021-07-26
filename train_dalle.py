@@ -90,7 +90,7 @@ if __name__ == "__main__":
     parser.add_argument('--num_sanity_val_steps', type=int, default=0,
                     help='num_sanity_val_steps') 
 
-    parser.add_argument('--batch_size', type=int, default=8,
+    parser.add_argument('--batch_size', type=int, default=1,
                     help='training settings')  
     parser.add_argument('--epochs', type=int, default=20,
                     help='training settings')  
@@ -130,7 +130,7 @@ if __name__ == "__main__":
                     help = 'comma separated list of attention types. attention type can be: full or sparse or axial_row or axial_col or conv_like.')
     parser.add_argument('--hidden_dim', default = 512, type = int, 
                     help = 'Model dimension')
-    parser.add_argument('--text_seq_len', default = 256, type = int, 
+    parser.add_argument('--text_seq_len', default = 128, type = int, 
                     help = 'Text sequence length')
     parser.add_argument('--num_text_tokens', default = 10000, type = int, 
                     help = 'Number of text tokens')                    
@@ -215,6 +215,10 @@ if __name__ == "__main__":
     #popular pretrained vaes(may exist some slowdown on TPUs)  
     elif args.vae == 'openaivae':
         vae = OpenAIDiscreteVAE()  
+    elif args.vae == 'dpdvae':
+        loaded_obj = torch.load(str(args.vae_path))
+        vae_params, weights = loaded_obj['hparams'], loaded_obj['weights']
+        vae = DiscreteVAE(**vae_params)
     
     model = DALLE(args, args.batch_size, args.learning_rate, vae=vae)
 

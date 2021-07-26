@@ -87,7 +87,7 @@ if __name__ == "__main__":
     parser.add_argument('--anneal_rate', type = float, default = 1e-6, 
                     help = 'temperature annealing rate')    
 
-    parser.add_argument('--batch_size', type=int, default=16,
+    parser.add_argument('--batch_size', type=int, default=8,
                     help='training settings')  
     parser.add_argument('--epochs', type=int, default=100,
                     help='training settings')                                    
