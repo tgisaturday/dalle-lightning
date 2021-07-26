@@ -158,7 +158,7 @@ class DiscreteVAE(nn.Module):
 
         # take care of normalization within class
         self.normalization = normalization
-        
+
     def norm(self, images):
         if not exists(self.normalization):
             return images
@@ -181,6 +181,7 @@ class DiscreteVAE(nn.Module):
         img_seq
     ):
         image_embeds = self.codebook(img_seq)
+        print(image_embeds.shape)
         b, n, d = image_embeds.shape
         h = w = int(sqrt(n))
 
