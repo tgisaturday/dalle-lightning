@@ -52,6 +52,7 @@ class VQVAE(pl.LightningModule):
         if feed_seq:
             img_seq = input
             b, n = img_seq.shape
+            print(self.num_tokens)
             one_hot_indices = F.one_hot(img_seq, num_classes = self.num_tokens).float()
             z = one_hot_indices @ self.model.quantize.embedding.weight 
             z = rearrange(z, 'b (h w) c -> b c h w', h = int(math.sqrt(n)))
