@@ -384,7 +384,6 @@ class DalleSimpleImageSampler(Callback):
                 img_logits = logits[:, -pl_module.image_seq_len:].long()
                 img_seq = torch.argmax(img_logits, dim = -1)
                 img_seq -= pl_module.num_text_tokens              
-                print(img_seq)
                 x_rec = pl_module.vae.decode(img_seq, feed_seq=True)                
 
                 pl_module.train()  
