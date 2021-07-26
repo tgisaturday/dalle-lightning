@@ -205,8 +205,7 @@ class DalleImageSampler(Callback):
             text, x = batch
             sample_text = text[:1]
             token_list = sample_text.masked_select(sample_text != 0).tolist()
-            decoded_text = self.tokenizer.decode(token_list)   
-            print(decoded_text)         
+            decoded_text = self.tokenizer.decode(token_list)       
             text = text.to(pl_module.device)
             x = x.to(pl_module.device)       
             with torch.no_grad():
