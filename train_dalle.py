@@ -9,7 +9,8 @@ import datetime
 import torch
 from torch.utils.data import DataLoader
 
-from dalle_pytorch import OpenAIDiscreteVAE, VQGanVAE, DiscreteVAE
+from dalle_pytorch.dalle_pytorch import DiscreteVAE
+from dalle_pytorch.vae import OpenAIDiscreteVAE
 from pl_dalle.models.vqgan import VQGAN, EMAVQGAN, GumbelVQGAN
 from pl_dalle.models.vqvae import VQVAE, EMAVQVAE, GumbelVQVAE
 from pl_dalle.models.vqvae2 import VQVAE2
