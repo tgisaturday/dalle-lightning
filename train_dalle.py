@@ -1,7 +1,7 @@
 import argparse
 from pathlib import Path
 import time
-from glob import glob
+import glob
 import os
 import shutil
 import datetime
