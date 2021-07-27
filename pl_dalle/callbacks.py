@@ -375,19 +375,15 @@ class DalleSimpleImageSampler(Callback):
             text, x = batch
             sample_text = text[:1]
             token_list = sample_text.masked_select(sample_text != 0).tolist()
-            decoded_text = self.tokenizer.decode(token_list)
-            print(decoded_text)       
+            decoded_text = self.tokenizer.decode(token_list)   
             text = text.to(pl_module.device)
             x = x.to(pl_module.device)       
             with torch.no_grad():
                 pl_module.eval()
-                print('fuck')
                 logits = pl_module(text, x)
-                print('fuck')
                 img_logits = logits[:, -pl_module.image_seq_len:].long()
                 img_seq = torch.argmax(img_logits, dim = -1)
-                img_seq -= pl_module.num_text_tokens  
-                print('fuck')           
+                img_seq -= pl_module.num_text_tokens           
                 x_rec = pl_module.vae.decode(img_seq, feed_seq=True)                
 
                 pl_module.train()  
