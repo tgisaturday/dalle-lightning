@@ -20,8 +20,8 @@ class VectorQuantizer(nn.Module):
         z_flattened = z.view(-1, self.codebook_dim)
         # distances from z to embeddings e_j (z - e)^2 = z^2 + e^2 - 2 e * z
 
-        d = torch.sum(z_flattened ** 2, dim=1, keepdim=True) + \
-            torch.sum(self.embedding.weight**2, dim=1) - 2 * \
+        d = torch.sum(z_flattened.pow(2), dim=1, keepdim=True) + \
+            torch.sum(self.embedding.weight.pow(2), dim=1) - 2 * \
             torch.einsum('bd,dn->bn', z_flattened, self.embedding.weight.permute(1,0)) # 'n d -> d n'
 
         min_encoding_indices = torch.argmin(d, dim=1)
@@ -63,8 +63,8 @@ class EMAVectorQuantizer(nn.Module):
         z_flattened = z.view(-1, self.codebook_dim)
         # distances from z to embeddings e_j (z - e)^2 = z^2 + e^2 - 2 e * z
 
-        d = torch.sum(z_flattened ** 2, dim=1, keepdim=True) + \
-            torch.sum(self.embedding.weight**2, dim=1) - 2 * \
+        d = torch.sum(z_flattened.pow(2), dim=1, keepdim=True) + \
+            torch.sum(self.embedding.weight.pow(2), dim=1) - 2 * \
             torch.einsum('bd,dn->bn', z_flattened, self.embedding.weight.permute(1,0)) # 'n d -> d n'
 
         min_encoding_indices = torch.argmin(d, dim=1)
@@ -74,7 +74,9 @@ class EMAVectorQuantizer(nn.Module):
 
         # Use EMA to update the embedding vectors
         if self.training:
-            encodings_onehot = F.one_hot(min_encoding_indices, self.num_tokens).type(z.dtype)
+            _, embed_ind = (-d).max(1)
+            print(embed_ind.shape)
+            encodings_onehot = F.one_hot(embed_ind, self.num_tokens).type(z_flattened.dtype)
             #EMA cluster size
             self.cluster_size.data.mul_(self.decay).add_(torch.sum(encodings_onehot, 0), alpha=1 - self.decay)
 
