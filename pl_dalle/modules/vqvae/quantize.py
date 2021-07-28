@@ -11,7 +11,7 @@ class VectorQuantizer(nn.Module):
         self.beta = beta
 
         self.embedding = nn.Embedding(self.num_tokens, self.codebook_dim)
-        self._embedding.weight.data.normal_()
+        self.embedding.weight.data.normal_()
 
     def forward(self, z):
         # reshape z -> (batch, height, width, channel) and flatten
