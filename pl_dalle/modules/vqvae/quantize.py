@@ -92,7 +92,7 @@ class EMAVectorQuantizer(nn.Module):
 
 
             #normalize embedding weight EMA and update current embedding weight
-            self.embedding.weight = nn.Parameter(self.ema_w / self.ema_cluster_size.unsqueeze(1))
+            self.embedding.weight = nn.Parameter(self.ema_w / self.cluster_size.unsqueeze(1))
         
         # compute loss for embedding
         loss = self.beta * F.mse_loss(z_q.detach(), z)
