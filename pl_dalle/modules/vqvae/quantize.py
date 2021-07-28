@@ -73,14 +73,14 @@ class EMAVectorQuantizer(nn.Module):
 
         z_q = self.embedding(encoding_indices).view(z.shape)
         perplexity = None
-        #Using F.one_hot causes num_class error
-        encodings = torch.zeros(encoding_indices.shape[0], self.num_tokens, device=z.device)
-        encodings.scatter_(1, encoding_indices.unsqueeze(1), 1)
+        
+        encodings = F.one_hot(encoding_indices, self.num_tokens).type(z.dtype)
 
         # Use EMA to update the embedding vectors
         if self.training:
             #EMA cluster size
-            self.cluster_size.data.mul_(self.decay).add_(torch.sum(encodings, 0), alpha=1 - self.decay)
+            encodings_sum = torch.sum(encodings)
+            self.cluster_size.data.mul_(self.decay).add_(encodings_sum, alpha=1 - self.decay)
             
             #EMA embedding weight
             embedding_sum = torch.matmul(encodings.t(), z_flattened)
