@@ -60,21 +60,6 @@ def top_k(logits, thres = 0.5):
     probs.scatter_(1, ind, val)
     return probs
 
-# discrete vae class
-
-class ResBlock(nn.Module):
-    def __init__(self, chan):
-        super().__init__()
-        self.net = nn.Sequential(
-            nn.Conv2d(chan, chan, 3, padding = 1),
-            nn.ReLU(),
-            nn.Conv2d(chan, chan, 3, padding = 1),
-            nn.ReLU(),
-            nn.Conv2d(chan, chan, 1)
-        )
-
-    def forward(self, x):
-        return self.net(x) + x
 
 
 # discrete vae class
@@ -364,8 +349,10 @@ class DALLE(pl.LightningModule):
         self.total_seq_len = seq_len
 
         self.vae = vae
-        set_requires_grad(self.vae, False)
-
+        try: #try to use lightning's freeze method
+            self.vae.freeze()
+        except: #workaround for third-party vae
+            set_requires_grad(self.vae, False)             
 
         self.transformer = Transformer(
             dim = dim,

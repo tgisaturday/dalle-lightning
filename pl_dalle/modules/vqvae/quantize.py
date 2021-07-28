@@ -9,9 +9,9 @@ class VectorQuantizer(nn.Module):
         self.codebook_dim = codebook_dim
         self.num_tokens = num_tokens
         self.beta = beta
-
+        embed_init = torch.randn(self.num_tokens, self.codebook_dim)
         self.embedding = nn.Embedding(self.num_tokens, self.codebook_dim)
-        self.embedding.weight.data.uniform_(-1.0 / self.num_tokens, 1.0 / self.num_tokens)
+        self.embedding.weight.data.copy_(embed_init.clone())
 
     def forward(self, z):
         # reshape z -> (batch, height, width, channel) and flatten
@@ -48,14 +48,11 @@ class EMAVectorQuantizer(nn.Module):
         self.codebook_dim = codebook_dim
         self.num_tokens = num_tokens
         self.beta = beta
-
+        embed_init = torch.randn(self.num_tokens, self.codebook_dim)
         self.embedding = nn.Embedding(self.num_tokens, self.codebook_dim)
-        self.embedding.weight.data.uniform_(-1.0 / self.num_tokens, 1.0 / self.num_tokens)
-
-        self.embedding.weight.data.uniform_(-1.0 / self.num_tokens, 1.0 / self.num_tokens)
-        self.register_buffer('cluster_size', torch.zeros(self.num_tokens))
-        self.ema_w = nn.Parameter(torch.Tensor(self.num_tokens, self.codebook_dim))
-        self.ema_w.data.uniform_(-1.0 / self.num_tokens, 1.0 / self.num_tokens)
+        self.embedding.weight.data.copy_(embed_init.clone())
+        self.cluster_size = nn.Parameter(torch.zeros(self.num_tokens))
+        self.ema_w = nn.Parameter(embed_init.clone())
         self.decay = decay
         self.eps = eps
 
@@ -74,24 +71,26 @@ class EMAVectorQuantizer(nn.Module):
         z_q = self.embedding(min_encoding_indices).view(z.shape)
         perplexity = None
         min_encodings = None
+
         # Use EMA to update the embedding vectors
         if self.training:
             encoding_indices = min_encoding_indices.unsqueeze(1)
             encodings = torch.zeros(encoding_indices.shape[0], self.num_tokens, device=z.device)
             encodings.scatter_(1, encoding_indices, 1)
-            self.cluster_size = self.cluster_size * self.decay + \
-                                     (1 - self.decay) * torch.sum(encodings, 0)
+            #EMA cluster size
+            new_cluster_size = torch.sum(encodings, 0)
+            self.cluster_size = self.cluster_size * self.decay + (1 - self.decay) * new_cluster_size
             
             # Laplace smoothing of the cluster size
-            n = torch.sum(self.cluster_size.data)
-            self.cluster_size = (
-                (self.cluster_size + self.eps)
-                / (n + self.num_tokens * self.eps) * n)
+            self.cluster_size = (self.cluster_size + self.eps) / (self.cluster_size.sum() + self.num_tokens * self.eps) 
             
-            dw = torch.matmul(encodings.t(), z_flattened)
-            self.ema_w = nn.Parameter(self.ema_w * self.decay + (1 - self.decay) * dw)
+            #EMA embedding weight
+            new_embedding_weight = torch.matmul(encodings.t(), z_flattened)
+            self.ema_w = self.ema_w * self.decay + (1 - self.decay) * new_embedding_weight
             
-            self.embedding.weight = nn.Parameter(self.ema_w / self.cluster_size.unsqueeze(1))
+            #normalize embedding weight EMA and update current embedding weight
+            self.embedding.weight.data.copy_(self.ema_w / self.cluster_size.unsqueeze(1))
+        
         # compute loss for embedding
         loss = self.beta * torch.mean((z_q.detach()-z)**2) + torch.mean((z_q - z.detach()) ** 2)
 
@@ -105,7 +104,7 @@ class EMAVectorQuantizer(nn.Module):
 
 class GumbelQuantizer(nn.Module):
     def __init__(self, num_tokens, codebook_dim, straight_through=True,
-                 kl_weight=5e-4, temp_init=1.0, use_vqinterface=True):
+                 kl_weight=5e-4, temp_init=1.0):
         super().__init__()
 
         self.codebook_dim = codebook_dim
@@ -116,27 +115,20 @@ class GumbelQuantizer(nn.Module):
         self.kl_weight = kl_weight
 
         self.embedding = nn.Embedding(num_tokens, codebook_dim)
-        self.embedding.weight.data.uniform_(-1.0 / self.num_tokens, 1.0 / self.num_tokens)
 
-        self.use_vqinterface = use_vqinterface
-
-    def forward(self, z, return_logits=False):
+    def forward(self, z):
         # force hard = True when we are in eval mode, as we must quantize. actually, always true seems to work
         hard = self.straight_through if self.training else True
         temp = self.temperature 
-
 
         soft_one_hot = F.gumbel_softmax(z, tau=temp, dim=1, hard=hard)
         z_q = torch.einsum('b n h w, n d -> b d h w', soft_one_hot, self.embedding.weight)
 
         # + kl divergence to the prior loss
         qy = F.softmax(z, dim=1)
-        diff = self.kl_weight * torch.sum(qy * torch.log(qy * self.num_tokens + 1e-10), dim=1).mean()
+        loss = self.kl_weight * torch.sum(qy * torch.log(qy * self.num_tokens + 1e-10), dim=1).mean()
 
-        ind = soft_one_hot.argmax(dim=1)
-        if self.use_vqinterface:
-            if return_logits:
-                return z_q, diff, (None, None, ind), z
-            return z_q, diff, (None, None, ind)
-        return z_q, diff, ind
+        min_encoding_indices = soft_one_hot.argmax(dim=1)
+
+        return z_q, loss, (None, None, min_encoding_indices)
 

@@ -88,15 +88,19 @@ class VQGAN(pl.LightningModule):
             self.log("train/rec_loss", aeloss, prog_bar=True, logger=True)
             self.log("train/embed_loss", qloss, prog_bar=True, logger=True)            
             self.log("train/total_loss", loss, prog_bar=True, logger=True) 
-            return loss
+
 
         if optimizer_idx == 1:
             # discriminator
             discloss= self.loss(qloss, x, xrec, optimizer_idx, self.global_step,
                                             last_layer=self.get_last_layer(), split="train")
             self.log("train/disc_loss", discloss, prog_bar=True,logger=True)
-            
-            return discloss
+            loss = discloss
+        
+        if self.args.log_image:
+            return {'loss': loss, 'xrec': xrec}
+        else:
+            return loss
 
             
 
@@ -113,7 +117,11 @@ class VQGAN(pl.LightningModule):
         self.log("val/disc_loss", discloss, prog_bar=True, logger=True)
         self.log("val/embed_loss", qloss, prog_bar=True, logger=True)        
         self.log("val/total_loss", loss, prog_bar=True, logger=True) 
-        return loss
+
+        if self.args.log_image:
+            return {'loss': loss, 'xrec': xrec}
+        else:
+            return loss
 
 
     def configure_optimizers(self):
@@ -203,15 +211,18 @@ class GumbelVQGAN(VQGAN):
             self.log("train/rec_loss", aeloss, prog_bar=True, logger=True)
             self.log("train/embed_loss", qloss, prog_bar=True, logger=True)            
             self.log("train/total_loss", loss, prog_bar=True, logger=True) 
-            return loss
 
         if optimizer_idx == 1:
             # discriminator
             discloss= self.loss(qloss, x, xrec, optimizer_idx, self.global_step,
                                             last_layer=self.get_last_layer(), split="train")
             self.log("train/disc_loss", discloss, prog_bar=True,logger=True)
-            
-            return discloss
+            loss = discloss
+
+        if self.args.log_image:
+            return {'loss': loss, 'xrec': xrec}
+        else:
+            return loss
 
 
     def validation_step(self, batch, batch_idx):
@@ -228,4 +239,8 @@ class GumbelVQGAN(VQGAN):
         self.log("val/disc_loss", discloss, prog_bar=True, logger=True)
         self.log("val/embed_loss", qloss, prog_bar=True, logger=True)        
         self.log("val/total_loss", loss, prog_bar=True, logger=True) 
-        return loss
+        
+        if self.args.log_image:
+            return {'loss': loss, 'xrec': xrec}
+        else:
+            return loss

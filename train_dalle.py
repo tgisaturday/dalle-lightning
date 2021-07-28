@@ -78,7 +78,7 @@ if __name__ == "__main__":
                     help='log image outputs for every n step. not recommended for tpus')   
     parser.add_argument('--refresh_rate', type=int, default=1,
                     help='progress bar refresh rate')    
-    parser.add_argument('--precision', type=int, default=32,
+    parser.add_argument('--precision', type=int, default=16,
                     help='precision for training')                     
     parser.add_argument('--fake_data', action='store_true', default=False,
                     help='using fake_data for debugging') 
