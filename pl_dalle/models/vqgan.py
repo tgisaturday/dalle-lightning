@@ -97,7 +97,7 @@ class VQGAN(pl.LightningModule):
             self.log("train/disc_loss", discloss, prog_bar=True,logger=True)
             loss = discloss
         
-        if self.args.log_image:
+        if self.args.log_images:
             return {'loss': loss, 'xrec': xrec}
         else:
             return loss
@@ -118,7 +118,7 @@ class VQGAN(pl.LightningModule):
         self.log("val/embed_loss", qloss, prog_bar=True, logger=True)        
         self.log("val/total_loss", loss, prog_bar=True, logger=True) 
 
-        if self.args.log_image:
+        if self.args.log_images:
             return {'loss': loss, 'xrec': xrec}
         else:
             return loss
@@ -219,7 +219,7 @@ class GumbelVQGAN(VQGAN):
             self.log("train/disc_loss", discloss, prog_bar=True,logger=True)
             loss = discloss
 
-        if self.args.log_image:
+        if self.args.log_images:
             return {'loss': loss, 'xrec': xrec}
         else:
             return loss
@@ -240,7 +240,7 @@ class GumbelVQGAN(VQGAN):
         self.log("val/embed_loss", qloss, prog_bar=True, logger=True)        
         self.log("val/total_loss", loss, prog_bar=True, logger=True) 
         
-        if self.args.log_image:
+        if self.args.log_images:
             return {'loss': loss, 'xrec': xrec}
         else:
             return loss

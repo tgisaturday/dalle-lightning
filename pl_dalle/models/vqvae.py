@@ -89,7 +89,7 @@ class VQVAE(pl.LightningModule):
         self.log("train/embed_loss", qloss, prog_bar=True, logger=True)
         self.log("train/total_loss", loss, prog_bar=True, logger=True)
 
-        if self.args.log_image:
+        if self.args.log_images:
             return {'loss': loss, 'xrec': xrec}
         else:
             return loss
@@ -106,7 +106,7 @@ class VQVAE(pl.LightningModule):
         self.log("val/embed_loss", qloss, prog_bar=True, logger=True)
         self.log("val/total_loss", loss, prog_bar=True, logger=True)     
 
-        if self.args.log_image:
+        if self.args.log_images:
             return {'loss': loss, 'xrec': xrec}
         else:
             return loss
@@ -176,7 +176,7 @@ class GumbelVQVAE(VQVAE):
         self.log("train/embed_loss", qloss, prog_bar=True, logger=True)
         self.log("train/total_loss", loss, prog_bar=True, logger=True)                
         
-        if self.args.log_image:
+        if self.args.log_images:
             return {'loss': loss, 'xrec': xrec}
         else:
             return loss
@@ -195,7 +195,7 @@ class GumbelVQVAE(VQVAE):
         self.log("val/embed_loss", qloss, prog_bar=True, logger=True)
         self.log("val/total_loss", loss, prog_bar=True, logger=True)     
 
-        if self.args.log_image:
+        if self.args.log_images:
             return {'loss': loss, 'xrec': xrec}
         else:
             return loss
