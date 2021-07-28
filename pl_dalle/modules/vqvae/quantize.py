@@ -84,7 +84,7 @@ class EMAVectorQuantizer(nn.Module):
 
             # Laplace smoothing of the cluster size
             #self.cluster_size = (self.cluster_size + self.eps) / (self.cluster_size.sum() + self.num_tokens * self.eps) 
-            self.cluster_size.data.add_(self.eps).div_(self.cluster_size.sum()+self.num_tokens * self.eps)
+            self.cluster_size.data.add_(self.eps).div_(torch.sum(self.cluster_size) + self.num_tokens * self.eps)
             #EMA embedding weight
             new_embedding_weight = torch.matmul(encodings.t(), z_flattened)
 
