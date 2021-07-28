@@ -31,7 +31,7 @@ class VectorQuantizer(nn.Module):
 
         # compute loss for embedding
 
-        loss = self.beta * torch.mean((z_q.detach()-z)**2) + torch.mean((z_q - z.detach()) ** 2)
+        loss = self.beta * F.mse_loss(z_q.detach()-z) + F.mse_loss(z_q - z.detach())
 
         # preserve gradients
         z_q = z + (z_q - z).detach()
@@ -92,7 +92,7 @@ class EMAVectorQuantizer(nn.Module):
             self.embedding.weight.data.copy_(embedding_normalized)
         
         # compute loss for embedding
-        loss = self.beta * torch.mean((z_q.detach()-z)**2)
+        loss = self.beta * F.mse_loss(z_q.detach(), z)
         # preserve gradients
         z_q = z + (z_q - z).detach()
 
