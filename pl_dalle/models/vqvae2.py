@@ -119,7 +119,7 @@ class VQVAE2(pl.LightningModule):
         self.log("train/total_loss", loss, prog_bar=True, logger=True)                
 
         if self.args.log_images:
-            return {'loss': loss, 'xrec': xrec}
+            return {'loss': loss, 'xrec': xrec.detach()}
         else:
             return loss
 
@@ -136,7 +136,7 @@ class VQVAE2(pl.LightningModule):
         self.log("val/total_loss", loss, prog_bar=True, logger=True)  
            
         if self.args.log_images:
-            return {'loss': loss, 'xrec': xrec}
+            return {'loss': loss, 'xrec': xrec.detach()}
         else:
             return loss
 
