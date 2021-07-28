@@ -79,7 +79,6 @@ class EMAVectorQuantizer(nn.Module):
             encodings.scatter_(1, encoding_indices, 1)
             #EMA cluster size
             new_cluster_size = torch.sum(encodings, 0)
-            self.cluster_size = self.cluster_size * self.decay + (1 - self.decay) * new_cluster_size
 
             self.cluster_size.data.mul_(self.decay).add_(new_cluster_size, alpha=1 - self.decay)
 
