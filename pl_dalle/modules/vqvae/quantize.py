@@ -74,28 +74,23 @@ class EMAVectorQuantizer(nn.Module):
 
         # Use EMA to update the embedding vectors
         if self.training:
-            encoding_indices = min_encoding_indices.unsqueeze(1)
-            encodings = torch.zeros(encoding_indices.shape[0], self.num_tokens, device=z.device)
-            encodings.scatter_(1, encoding_indices, 1)
+            encodings_onehot = F.one_hot(min_encoding_indices, self.num_tokens).type(z.dtype)
             #EMA cluster size
-            new_cluster_size = torch.sum(encodings, 0)
+            self.cluster_size.data.mul_(self.decay).add_(torch.sum(encodings_onehot, 0), alpha=1 - self.decay)
 
-            self.cluster_size.data.mul_(self.decay).add_(new_cluster_size, alpha=1 - self.decay)
+            embedding_sum = torch.matmul(encodings_onehot.t(), z_flattened)
+            #EMA embedding weight
+            self.ema_w.data.mul_(self.decay).add_(embedding_sum, alpha=1 - self.decay)   
 
             # Laplace smoothing of the cluster size
-            #self.cluster_size = (self.cluster_size + self.eps) / (self.cluster_size.sum() + self.num_tokens * self.eps) 
             self.cluster_size.data.add_(self.eps).div_(torch.sum(self.cluster_size) + self.num_tokens * self.eps)
-            #EMA embedding weight
-            new_embedding_weight = torch.matmul(encodings.t(), z_flattened)
 
-            self.ema_w.data.mul_(self.decay).add_(new_embedding_weight, alpha=1 - self.decay)            
-
+            embedding_normalized = self.ema_w / self.cluster_size.unsqueeze(1)
             #normalize embedding weight EMA and update current embedding weight
-            self.embedding.weight.data.copy_(self.ema_w / self.cluster_size.unsqueeze(1))
+            self.embedding.weight.data.copy_(embedding_normalized)
         
         # compute loss for embedding
-        loss = self.beta * torch.mean((z_q.detach()-z)**2) + torch.mean((z_q - z.detach()) ** 2)
-
+        loss = self.beta * torch.mean((z_q.detach()-z)**2)
         # preserve gradients
         z_q = z + (z_q - z).detach()
 
