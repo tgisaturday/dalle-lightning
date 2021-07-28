@@ -80,14 +80,17 @@ class EMAVectorQuantizer(nn.Module):
             #EMA cluster size
             new_cluster_size = torch.sum(encodings, 0)
             self.cluster_size = self.cluster_size * self.decay + (1 - self.decay) * new_cluster_size
-            
+
+            self.cluster_size.data.mul_(self.decay).add_(new_cluster_size, alpha=1 - self.decay)
+
             # Laplace smoothing of the cluster size
             self.cluster_size = (self.cluster_size + self.eps) / (self.cluster_size.sum() + self.num_tokens * self.eps) 
             
             #EMA embedding weight
             new_embedding_weight = torch.matmul(encodings.t(), z_flattened)
-            self.ema_w = self.ema_w * self.decay + (1 - self.decay) * new_embedding_weight
-            
+
+            self.ema_w.data.mul_(self.decay).add_(new_embedding_weight, alpha=1 - self.decay)            
+
             #normalize embedding weight EMA and update current embedding weight
             self.embedding.weight.data.copy_(self.ema_w / self.cluster_size.unsqueeze(1))
         
