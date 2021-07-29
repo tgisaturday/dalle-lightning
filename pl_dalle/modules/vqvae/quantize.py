@@ -72,7 +72,7 @@ class EMAVectorQuantizer(nn.Module):
         z_flattened = z.reshape(-1, self.codebook_dim)
         d = (
             z_flattened.pow(2).sum(1, keepdim=True)
-            - 2 * z_flattened @ self.embedding.weight
+            - 2 * z_flattened @ self.embedding.weight.permute(1,0)
             + self.embedding.weight.permute(1,0).pow(2).sum(0, keepdim=True)
         )
         _, encoding_indices = (-d).max(1)
