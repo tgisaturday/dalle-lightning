@@ -45,6 +45,7 @@ class VectorQuantizer(nn.Module):
 
 class EmbeddingEMA(nn.Module):
     def __init__(self, num_tokens, codebook_dim):
+        super().__init__()        
         weight = torch.randn(codebook_dim, num_tokens)
         self.register_buffer("weight", weight)
         self.register_buffer("cluster_size", torch.zeros(num_tokens))
