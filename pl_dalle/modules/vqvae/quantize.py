@@ -32,7 +32,7 @@ class VectorQuantizer(nn.Module):
 
         # compute loss for embedding
 
-        loss = self.beta * F.mse_loss(z_q.detach()-z) + F.mse_loss(z_q - z.detach())
+        loss = self.beta * F.mse_loss(z_q.detach(), z) + F.mse_loss(z_q, z.detach())
 
         # preserve gradients
         z_q = z + (z_q - z).detach()
@@ -82,15 +82,17 @@ class EMAVectorQuantizer(nn.Module):
         if self.training:
             encodings_sum = encodings.sum(0)
             embed_sum = z_flattened.transpose(0, 1) @ encodings
-
-            self.embedding.cluster_size.data.mul_(self.decay).add_(
-                encodings_sum, alpha=1 - self.decay
-            )
+            #EMA cluster size
+            self.embedding.cluster_size.data.mul_(self.decay).add_(encodings_sum, alpha=1 - self.decay)
+            #EMA embedding average
             self.embedding.embed_avg.data.mul_(self.decay).add_(embed_sum, alpha=1 - self.decay)
+
+            #cluster size Laplace smoothing 
             n = self.embedding.cluster_size.sum()
             cluster_size = (
                 (self.embedding.cluster_size + self.eps) / (n + self.num_tokens * self.eps) * n
             )
+            #normalize embedding average with smoothed cluster size
             embed_normalized = self.embedding.embed_avg / cluster_size.unsqueeze(0)
             self.embedding.weight.data.copy_(embed_normalized)
 
