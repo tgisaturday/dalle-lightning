@@ -42,8 +42,59 @@ class VectorQuantizer(nn.Module):
         z_q = z_q.permute(0, 3, 1, 2).contiguous()
         return z_q, loss, (perplexity, encodings, encoding_indices)
 
-
 class EMAVectorQuantizer(nn.Module):
+    def __init__(self, num_tokens, dim, beta, decay=0.99, eps=1e-5):
+        super().__init__()
+
+        self.dim = dim
+        self.num_tokens = num_tokens
+        self.decay = decay
+        self.eps = eps
+
+        embed = torch.randn(dim, num_tokens)
+        self.register_buffer("embed", embed)
+        self.register_buffer("cluster_size", torch.zeros(num_tokens))
+        self.register_buffer("embed_avg", embed.clone())
+
+    def forward(self, input):
+        flatten = input.reshape(-1, self.dim)
+        dist = (
+            flatten.pow(2).sum(1, keepdim=True)
+            - 2 * flatten @ self.embed
+            + self.embed.pow(2).sum(0, keepdim=True)
+        )
+        _, embed_ind = (-dist).max(1)
+        embed_onehot = F.one_hot(embed_ind, self.num_tokens).type(flatten.dtype)
+        embed_ind = embed_ind.view(*input.shape[:-1])
+        quantize = self.embed_code(embed_ind)
+
+        if self.training:
+            embed_onehot_sum = embed_onehot.sum(0)
+            embed_sum = flatten.transpose(0, 1) @ embed_onehot
+
+            #self.all_reduce(embed_onehot_sum)
+            #self.all_reduce(embed_sum)
+
+            self.cluster_size.data.mul_(self.decay).add_(
+                embed_onehot_sum, alpha=1 - self.decay
+            )
+            self.embed_avg.data.mul_(self.decay).add_(embed_sum, alpha=1 - self.decay)
+            n = self.cluster_size.sum()
+            cluster_size = (
+                (self.cluster_size + self.eps) / (n + self.num_tokens * self.eps) * n
+            )
+            embed_normalized = self.embed_avg / cluster_size.unsqueeze(0)
+            self.embed.data.copy_(embed_normalized)
+
+        diff = (quantize.detach() - input).pow(2).mean()
+        quantize = input + (quantize - input).detach()
+        quantize = quantize.permute(0, 3, 1, 2).contiguous()
+        return quantize, diff, (None, None, embed_ind)
+
+    def embedding(self, embed_id):
+        return F.embedding(embed_id, self.embed.transpose(0, 1))
+
+class EMAVectorQuantizer2(nn.Module):
     def __init__(self, num_tokens, codebook_dim, beta, decay=0.99, eps=1e-5):
         super().__init__()
         self.codebook_dim = codebook_dim
