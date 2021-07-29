@@ -57,6 +57,7 @@ class EMAVectorQuantizer(nn.Module):
         self.register_buffer("embed_avg", embed.clone())
 
     def forward(self, input):
+        input = input.permute(0, 2, 3, 1).contiguous()
         flatten = input.reshape(-1, self.dim)
         dist = (
             flatten.pow(2).sum(1, keepdim=True)
