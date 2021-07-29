@@ -26,7 +26,7 @@ class VectorQuantizer(nn.Module):
 
         encoding_indices = torch.argmin(d, dim=1)
         z_q = self.embedding(encoding_indices).view(z.shape)
-        encodings = F.one_hot(encoding_indices, self.num_tokens).type(z.dtype)
+        encodings = F.one_hot(encoding_indices, self.num_tokens).type(z.dtype)       
         avg_probs = torch.mean(encodings, dim=0)
         perplexity = torch.exp(-torch.sum(avg_probs * torch.log(avg_probs + 1e-10)))
 
@@ -42,57 +42,15 @@ class VectorQuantizer(nn.Module):
         z_q = z_q.permute(0, 3, 1, 2).contiguous()
         return z_q, loss, (perplexity, encodings, encoding_indices)
 
-class LegacyEMAVectorQuantizer(nn.Module):
-    def __init__(self, num_tokens, codebook_dim, beta, decay=0.99, eps=1e-5):
-        super().__init__()
-        dim = codebook_dim
-        self.dim = dim
-        self.num_tokens = num_tokens
-        self.decay = decay
-        self.eps = eps
 
-        embed = torch.randn(dim, num_tokens)
-        self.register_buffer("embed", embed)
+class EmbeddingEMA(nn.Module):
+    def __init__(self, num_tokens, codebook_dim):
+        weight = torch.randn(codebook_dim, num_tokens)
+        self.register_buffer("weight", weight)
         self.register_buffer("cluster_size", torch.zeros(num_tokens))
-        self.register_buffer("embed_avg", embed.clone())
+        self.register_buffer("embed_avg", weight.clone())
 
-    def forward(self, input):
-        input = input.permute(0, 2, 3, 1).contiguous()
-        flatten = input.reshape(-1, self.dim)
-        dist = (
-            flatten.pow(2).sum(1, keepdim=True)
-            - 2 * flatten @ self.embed
-            + self.embed.pow(2).sum(0, keepdim=True)
-        )
-        _, embed_ind = (-dist).max(1)
-        embed_onehot = F.one_hot(embed_ind, self.num_tokens).type(flatten.dtype)
-        embed_ind = embed_ind.view(*input.shape[:-1])
-        quantize = self.embedding(embed_ind)
-
-        if self.training:
-            embed_onehot_sum = embed_onehot.sum(0)
-            embed_sum = flatten.transpose(0, 1) @ embed_onehot
-
-            #self.all_reduce(embed_onehot_sum)
-            #self.all_reduce(embed_sum)
-
-            self.cluster_size.data.mul_(self.decay).add_(
-                embed_onehot_sum, alpha=1 - self.decay
-            )
-            self.embed_avg.data.mul_(self.decay).add_(embed_sum, alpha=1 - self.decay)
-            n = self.cluster_size.sum()
-            cluster_size = (
-                (self.cluster_size + self.eps) / (n + self.num_tokens * self.eps) * n
-            )
-            embed_normalized = self.embed_avg / cluster_size.unsqueeze(0)
-            self.embed.data.copy_(embed_normalized)
-
-        diff = (quantize.detach() - input).pow(2).mean()
-        quantize = input + (quantize - input).detach()
-        quantize = quantize.permute(0, 3, 1, 2).contiguous()
-        return quantize, diff, (None, None, embed_ind)
-
-    def embedding(self, embed_id):
+    def forward(self, embed_id):
         return F.embedding(embed_id, self.embed.transpose(0, 1))
 
 class EMAVectorQuantizer(nn.Module):
@@ -100,62 +58,47 @@ class EMAVectorQuantizer(nn.Module):
         super().__init__()
         self.codebook_dim = codebook_dim
         self.num_tokens = num_tokens
-        self.beta = beta
-
-        embed = torch.randn(num_tokens, codebook_dim)
-        self.register_buffer("embed", embed)
-        self.register_buffer("cluster_size", torch.zeros(num_tokens))
-        self.register_buffer("embed_avg", embed.clone())
         self.decay = decay
         self.eps = eps
-
-    def embedding(self, embed_id):
-        return F.embedding(embed_id, self.embed)
+        self.beta = beta
+        self.embedding = EmbeddingEMA(num_tokens,codebook_dim)
 
     def forward(self, z):
-        # reshape z -> (batch, height, width, channel) and flatten
-        #z, 'b c h w -> b h w c'
         z = z.permute(0, 2, 3, 1).contiguous()
-        z_flattened = z.view(-1, self.codebook_dim)
-        # distances from z to embeddings e_j (z - e)^2 = z^2 + e^2 - 2 e * z
-
-        d = torch.sum(z_flattened.pow(2), dim=1, keepdim=True) + \
-            torch.sum(self.embed.pow(2), dim=1) - 2 * \
-            torch.einsum('bd,dn->bn', z_flattened, self.embed.permute(1,0)) # 'n d -> d n'
-
-        encoding_indices = torch.argmin(d, dim=1)
-        z_q = self.embedding(encoding_indices).view(z.shape)
-        encodings = F.one_hot(encoding_indices, self.num_tokens).type(z.dtype)
+        z_flattened = z.reshape(-1, self.codebook_dim)
+        d = (
+            z_flattened.pow(2).sum(1, keepdim=True)
+            - 2 * z_flattened @ self.embedding.weight
+            + self.embedding.weight.pow(2).sum(0, keepdim=True)
+        )
+        _, encoding_indices = (-d).max(1)
+        encodings = F.one_hot(encoding_indices, self.num_tokens).type(z_flattened.dtype)
+        encoding_indices = encoding_indices.view(*z.shape[:-1])
+        z_q = self.embedding(encoding_indices)
         avg_probs = torch.mean(encodings, dim=0)
         perplexity = torch.exp(-torch.sum(avg_probs * torch.log(avg_probs + 1e-10)))
-        
 
-        # Use EMA to update the embedding vectors
         if self.training:
-            #EMA cluster size
-            new_cluster_size = torch.sum(encodings, 0)
-            self.cluster_size.data.mul_(self.decay).add_(new_cluster_size, alpha=1 - self.decay)
-            
-            # Laplace smoothing of the cluster size
-            cluster_size_sum = torch.sum(self.cluster_size.data)
-            self.cluster_size.data.add_(self.eps).div_(cluster_size_sum + self.num_tokens * self.eps)
+            encodings_sum = encodings.sum(0)
+            embed_sum = z_flattened.transpose(0, 1) @ encodings
 
-            #EMA embedding weight
-            new_ema_w = torch.matmul(encodings.t(), z_flattened)
-            self.embed_avg.data.mul_(self.decay).add_(new_ema_w, alpha=1 - self.decay)   
+            self.embedding.cluster_size.data.mul_(self.decay).add_(
+                encodings_sum, alpha=1 - self.decay
+            )
+            self.embedding.embed_avg.data.mul_(self.decay).add_(embed_sum, alpha=1 - self.decay)
+            n = self.embedding.cluster_size.sum()
+            cluster_size = (
+                (self.embedding.cluster_size + self.eps) / (n + self.num_tokens * self.eps) * n
+            )
+            embed_normalized = self.embedding.embed_avg / cluster_size.unsqueeze(0)
+            self.embedding.weight.data.copy_(embed_normalized)
 
-            #normalize embedding weight EMA and update current embedding weight
-            self.embed.data.copy_(self.embed_avg / self.cluster_size.unsqueeze(1))
-        
-        # compute loss for embedding
-        loss = self.beta * F.mse_loss(z_q.detach(), z)
-        # preserve gradients
+        loss = self.beta * (z_q.detach() - z).pow(2).mean()
         z_q = z + (z_q - z).detach()
-
-        # reshape back to match original input shape
-        #z_q, 'b h w c -> b c h w'
         z_q = z_q.permute(0, 3, 1, 2).contiguous()
         return z_q, loss, (perplexity, encodings, encoding_indices)
+
+
 
 class GumbelQuantizer(nn.Module):
     def __init__(self, num_tokens, codebook_dim, straight_through=True,
