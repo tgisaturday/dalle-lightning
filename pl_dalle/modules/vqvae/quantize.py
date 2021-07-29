@@ -61,11 +61,11 @@ class EMAVectorQuantizer(nn.Module):
         self.decay = decay
         self.eps = eps
         self.beta = beta
-        weight = torch.randn(codebook_dim, num_tokens)
+        embed_init = torch.randn(codebook_dim, num_tokens)
         self.embedding = nn.Embedding(self.num_tokens, self.codebook_dim)
-        self.embedding.weight = nn.Parameter(weight)
+        self.embedding.weight = nn.Parameter(embed_init)
         self.register_buffer("cluster_size", torch.zeros(num_tokens))
-        self.register_buffer("embed_avg", weight.permute(1,0).clone())
+        self.register_buffer("embed_avg", embed_init.clone().permute(1,0))
 
     def forward(self, z):
         z = z.permute(0, 2, 3, 1).contiguous()
