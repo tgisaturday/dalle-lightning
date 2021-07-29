@@ -42,7 +42,7 @@ class VectorQuantizer(nn.Module):
         z_q = z_q.permute(0, 3, 1, 2).contiguous()
         return z_q, loss, (perplexity, encodings, encoding_indices)
 
-class EMAVectorQuantizer(nn.Module):
+class LegacyEMAVectorQuantizer(nn.Module):
     def __init__(self, num_tokens, codebook_dim, beta, decay=0.99, eps=1e-5):
         super().__init__()
         dim = codebook_dim
@@ -95,21 +95,22 @@ class EMAVectorQuantizer(nn.Module):
     def embedding(self, embed_id):
         return F.embedding(embed_id, self.embed.transpose(0, 1))
 
-class EMAVectorQuantizer2(nn.Module):
+class EMAVectorQuantizer(nn.Module):
     def __init__(self, num_tokens, codebook_dim, beta, decay=0.99, eps=1e-5):
         super().__init__()
         self.codebook_dim = codebook_dim
         self.num_tokens = num_tokens
         self.beta = beta
 
-        self.embedding = nn.Embedding(self.num_tokens, self.codebook_dim)
-        self.embedding.weight.data.normal_()
+        embed = torch.randn(num_tokens, codebook_dim)
+        self.register_buffer("embed", embed)
         self.register_buffer("cluster_size", torch.zeros(num_tokens))
-        self.ema_w = nn.Parameter(torch.Tensor(self.num_tokens, self.codebook_dim))
-        self.ema_w.data.normal_()
+        self.register_buffer("embed_avg", embed.clone())
         self.decay = decay
         self.eps = eps
 
+    def embedding(self, embed_id):
+        return F.embedding(embed_id, self.embed)
 
     def forward(self, z):
         # reshape z -> (batch, height, width, channel) and flatten
@@ -119,8 +120,8 @@ class EMAVectorQuantizer2(nn.Module):
         # distances from z to embeddings e_j (z - e)^2 = z^2 + e^2 - 2 e * z
 
         d = torch.sum(z_flattened.pow(2), dim=1, keepdim=True) + \
-            torch.sum(self.embedding.weight.pow(2), dim=1) - 2 * \
-            torch.einsum('bd,dn->bn', z_flattened, self.embedding.weight.permute(1,0)) # 'n d -> d n'
+            torch.sum(self.embed.pow(2), dim=1) - 2 * \
+            torch.einsum('bd,dn->bn', z_flattened, self.embed.permute(1,0)) # 'n d -> d n'
 
         encoding_indices = torch.argmin(d, dim=1)
         z_q = self.embedding(encoding_indices).view(z.shape)
@@ -141,10 +142,10 @@ class EMAVectorQuantizer2(nn.Module):
 
             #EMA embedding weight
             new_ema_w = torch.matmul(encodings.t(), z_flattened)
-            self.ema_w.data.mul_(self.decay).add_(new_ema_w, alpha=1 - self.decay)   
+            self.embed_avg.data.mul_(self.decay).add_(new_ema_w, alpha=1 - self.decay)   
 
             #normalize embedding weight EMA and update current embedding weight
-            self.embedding.weight = nn.Parameter(self.ema_w / self.cluster_size.unsqueeze(1))
+            self.embed.data.copy_(self.embed_avg / self.cluster_size.unsqueeze(1))
         
         # compute loss for embedding
         loss = self.beta * F.mse_loss(z_q.detach(), z)
