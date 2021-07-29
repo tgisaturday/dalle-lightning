@@ -67,7 +67,7 @@ class EMAVectorQuantizer(nn.Module):
         _, embed_ind = (-dist).max(1)
         embed_onehot = F.one_hot(embed_ind, self.num_tokens).type(flatten.dtype)
         embed_ind = embed_ind.view(*input.shape[:-1])
-        quantize = self.embed_code(embed_ind)
+        quantize = self.embedding(embed_ind)
 
         if self.training:
             embed_onehot_sum = embed_onehot.sum(0)
