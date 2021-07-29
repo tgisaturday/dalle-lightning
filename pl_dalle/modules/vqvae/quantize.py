@@ -86,15 +86,15 @@ class EMAVectorQuantizer(nn.Module):
             encodings_sum = encodings.sum(0)
             embed_sum = z_flattened.transpose(0, 1) @ encodings
 
-            self.embedding.cluster_size.data.mul_(self.decay).add_(
+            self.cluster_size.data.mul_(self.decay).add_(
                 encodings_sum, alpha=1 - self.decay
             )
-            self.embedding.embed_avg.data.mul_(self.decay).add_(embed_sum, alpha=1 - self.decay)
-            n = self.embedding.cluster_size.sum()
+            self.embed_avg.data.mul_(self.decay).add_(embed_sum, alpha=1 - self.decay)
+            n = self.cluster_size.sum()
             cluster_size = (
-                (self.embedding.cluster_size + self.eps) / (n + self.num_tokens * self.eps) * n
+                (self.cluster_size + self.eps) / (n + self.num_tokens * self.eps) * n
             )
-            embed_normalized = self.embedding.embed_avg / cluster_size.unsqueeze(0)
+            embed_normalized = self.embed_avg / cluster_size.unsqueeze(0)
             self.embedding.weight = nn.Parameter(embed_normalized.permute(1,0))
 
         loss = self.beta * (z_q.detach() - z).pow(2).mean()
