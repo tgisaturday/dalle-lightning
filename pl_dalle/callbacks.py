@@ -382,6 +382,10 @@ class DalleSimpleImageSampler(Callback):
             sample_text = text[:1]
             token_list = sample_text.masked_select(sample_text != 0).tolist()
             decoded_text = self.tokenizer.decode(token_list)   
+            x, _ = batch
+            x = x[:1]
+            x_rec = outputs['xrec'][:1]
+            '''
             text = text.to(pl_module.device)
             x = x.to(pl_module.device)       
             with torch.no_grad():
@@ -393,7 +397,7 @@ class DalleSimpleImageSampler(Callback):
                 x_rec = pl_module.vae.decode(img_seq, feed_seq=True)                
 
                 pl_module.train()  
-
+            '''
 
             x_grid = torchvision.utils.make_grid(
                 tensor=x,
@@ -438,6 +442,10 @@ class DalleSimpleImageSampler(Callback):
             sample_text = text[:1]
             token_list = sample_text.masked_select(sample_text != 0).tolist()
             decoded_text = self.tokenizer.decode(token_list)       
+            x, _ = batch
+            x = x[:1]
+            x_rec = outputs['xrec'][:1]
+            '''
             text = text.to(pl_module.device)
             x = x.to(pl_module.device)       
             with torch.no_grad():
@@ -447,7 +455,7 @@ class DalleSimpleImageSampler(Callback):
                 img_seq = torch.argmax(img_logits, dim = -1)
                 img_seq -= pl_module.num_text_tokens              
                 x_rec = pl_module.vae.decode(img_seq, feed_seq=True)     
-
+            '''
 
             x_grid = torchvision.utils.make_grid(
                 tensor=x,

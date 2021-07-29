@@ -576,26 +576,44 @@ class DALLE(pl.LightningModule):
         loss_img = F.cross_entropy(logits[:, :, self.text_seq_len:], labels[:, self.text_seq_len:])
 
         loss = (loss_text + self.loss_img_weight * loss_img) / (self.loss_img_weight + 1)
-        return loss, loss_text, loss_img
+        if self.args.log_images:
+            img_logits = logits[:, -self.image_seq_len:].long()
+            img_seq = torch.argmax(img_logits, dim = -1)
+            img_seq -= self.num_text_tokens           
+            xrec = self.vae.decode(img_seq, feed_seq=True) 
+            return loss, loss_text, loss_img, xrec 
+        else:     
+            return loss, loss_text, loss_img
 
     def training_step(self, batch, batch_idx):
         text, images = batch
-        loss, loss_text, loss_img = self(text, images, return_loss=True)
+        if self.args.log_images:
+            loss, loss_text, loss_img, xrec = self(text, images, return_loss=True)
+        else:
+            loss, loss_text, loss_img = self(text, images, return_loss=True)
         self.log("train/total_loss", loss, prog_bar=True, logger=True) 
         self.log("train/text_loss", loss_text, prog_bar=True, logger=True) 
         self.log("train/img_loss", loss_img, prog_bar=True, logger=True)         
-
-        return loss
+        if self.args.log_images:
+          return {'loss': loss, 'xrec': xrec.detach()}
+        else:
+            return loss
     
     
     def validation_step(self, batch, batch_idx):   
         text, images = batch
-        loss, loss_text, loss_img = self(text, images, return_loss=True)
+        if self.args.log_images:
+            loss, loss_text, loss_img, xrec = self(text, images, return_loss=True)
+        else:
+            loss, loss_text, loss_img = self(text, images, return_loss=True)
         self.log("val/total_loss", loss, prog_bar=True, logger=True) 
         self.log("val/text_loss", loss_text, prog_bar=True, logger=True) 
         self.log("val/img_loss", loss_img, prog_bar=True, logger=True) 
 
-        return loss
+        if self.args.log_images:
+          return {'loss': loss, 'xrec': xrec.detach()}
+        else:
+            return loss
 
 
     def configure_optimizers(self):
