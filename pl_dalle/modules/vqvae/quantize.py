@@ -45,14 +45,13 @@ class VectorQuantizer(nn.Module):
 
 class EmbeddingEMA(nn.Module):
     def __init__(self, num_tokens, codebook_dim):
-        super().__init__()        
         weight = torch.randn(codebook_dim, num_tokens)
         self.register_buffer("weight", weight)
         self.register_buffer("cluster_size", torch.zeros(num_tokens))
         self.register_buffer("embed_avg", weight.clone())
 
     def forward(self, embed_id):
-        return F.embedding(embed_id, self.weight.transpose(0, 1))
+        return F.embedding(embed_id, self.embed.transpose(0, 1))
 
 class EMAVectorQuantizer(nn.Module):
     def __init__(self, num_tokens, codebook_dim, beta, decay=0.99, eps=1e-5):
@@ -62,7 +61,11 @@ class EMAVectorQuantizer(nn.Module):
         self.decay = decay
         self.eps = eps
         self.beta = beta
-        self.embedding = EmbeddingEMA(num_tokens,codebook_dim)
+        weight = torch.randn(codebook_dim, num_tokens)
+        self.embedding = nn.Embedding(self.num_tokens, self.codebook_dim)
+        self.embedding.weight = nn.Parameter(weight)
+        self.register_buffer("cluster_size", torch.zeros(num_tokens))
+        self.register_buffer("embed_avg", weight.permute(1,0).clone())
 
     def forward(self, z):
         z = z.permute(0, 2, 3, 1).contiguous()
@@ -70,7 +73,7 @@ class EMAVectorQuantizer(nn.Module):
         d = (
             z_flattened.pow(2).sum(1, keepdim=True)
             - 2 * z_flattened @ self.embedding.weight
-            + self.embedding.weight.pow(2).sum(0, keepdim=True)
+            + self.embedding.weight.permute(1,0).pow(2).sum(0, keepdim=True)
         )
         _, encoding_indices = (-d).max(1)
         encodings = F.one_hot(encoding_indices, self.num_tokens).type(z_flattened.dtype)
@@ -92,7 +95,7 @@ class EMAVectorQuantizer(nn.Module):
                 (self.embedding.cluster_size + self.eps) / (n + self.num_tokens * self.eps) * n
             )
             embed_normalized = self.embedding.embed_avg / cluster_size.unsqueeze(0)
-            self.embedding.weight.data.copy_(embed_normalized)
+            self.embedding.weight = nn.Parameter(embed_normalized.permute(1,0))
 
         loss = self.beta * (z_q.detach() - z).pow(2).mean()
         z_q = z + (z_q - z).detach()
