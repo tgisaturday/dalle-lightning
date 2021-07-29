@@ -52,7 +52,7 @@ class EmbeddingEMA(nn.Module):
         self.register_buffer("embed_avg", weight.clone())
 
     def forward(self, embed_id):
-        return F.embedding(embed_id, self.embed.transpose(0, 1))
+        return F.embedding(embed_id, self.weight.transpose(0, 1))
 
 class EMAVectorQuantizer(nn.Module):
     def __init__(self, num_tokens, codebook_dim, beta, decay=0.99, eps=1e-5):
