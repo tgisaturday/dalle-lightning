@@ -26,8 +26,9 @@ class VectorQuantizer(nn.Module):
 
         encoding_indices = torch.argmin(d, dim=1)
         z_q = self.embedding(encoding_indices).view(z.shape)
-        perplexity = None
-        encodings = None
+        encodings = F.one_hot(encoding_indices, self.num_tokens).type(z.dtype)
+        avg_probs = torch.mean(encodings, dim=0)
+        perplexity = torch.exp(-torch.sum(avg_probs * torch.log(avg_probs + 1e-10)))
 
         # compute loss for embedding
 
@@ -70,11 +71,11 @@ class EMAVectorQuantizer(nn.Module):
             torch.einsum('bd,dn->bn', z_flattened, self.embedding.weight.permute(1,0)) # 'n d -> d n'
 
         encoding_indices = torch.argmin(d, dim=1)
-
         z_q = self.embedding(encoding_indices).view(z.shape)
-        perplexity = None
-        
         encodings = F.one_hot(encoding_indices, self.num_tokens).type(z.dtype)
+        avg_probs = torch.mean(encodings, dim=0)
+        perplexity = torch.exp(-torch.sum(avg_probs * torch.log(avg_probs + 1e-10)))
+        
 
         # Use EMA to update the embedding vectors
         if self.training:
@@ -82,14 +83,13 @@ class EMAVectorQuantizer(nn.Module):
             new_cluster_size = torch.sum(encodings, 0)
             self.cluster_size.data.mul_(self.decay).add_(new_cluster_size, alpha=1 - self.decay)
             
-            #EMA embedding weight
-            new_ema_w = torch.matmul(encodings.t(), z_flattened)
-            self.ema_w.data.mul_(self.decay).add_(new_ema_w, alpha=1 - self.decay)   
-
             # Laplace smoothing of the cluster size
             cluster_size_sum = torch.sum(self.cluster_size.data)
             self.cluster_size.data.add_(self.eps).div_(cluster_size_sum + self.num_tokens * self.eps)
 
+            #EMA embedding weight
+            new_ema_w = torch.matmul(encodings.t(), z_flattened)
+            self.ema_w.data.mul_(self.decay).add_(new_ema_w, alpha=1 - self.decay)   
 
             #normalize embedding weight EMA and update current embedding weight
             self.embedding.weight = nn.Parameter(self.ema_w / self.cluster_size.unsqueeze(1))
@@ -131,6 +131,9 @@ class GumbelQuantizer(nn.Module):
         loss = self.kl_weight * torch.sum(qy * torch.log(qy * self.num_tokens + 1e-10), dim=1).mean()
 
         encoding_indices = soft_one_hot.argmax(dim=1)
+        encodings = F.one_hot(encoding_indices, self.num_tokens).type(z.dtype)
+        avg_probs = torch.mean(encodings, dim=0)
+        perplexity = torch.exp(-torch.sum(avg_probs * torch.log(avg_probs + 1e-10)))
 
-        return z_q, loss, (None, None, encoding_indices)
+        return z_q, loss, (perplexity, encodings, encoding_indices)
 

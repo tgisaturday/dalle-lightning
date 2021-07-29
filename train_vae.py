@@ -133,9 +133,9 @@ if __name__ == "__main__":
                     help='model settings')  
     parser.add_argument('--dropout', type=float, default=0.0,
                     help='model settings') 
-    parser.add_argument('--quant_beta', type=float, default=0.25,
+    parser.add_argument('--quant_beta', type=float, default=1.0,
                     help='quantizer beta')                     
-    parser.add_argument('--quant_ema_decay', type=float, default=0.99,
+    parser.add_argument('--quant_ema_decay', type=float, default=0.9,
                     help='quantizer ema decay')
     parser.add_argument('--quant_ema_eps', type=float, default=1e-5,
                     help='quantizer ema epsilon')  
