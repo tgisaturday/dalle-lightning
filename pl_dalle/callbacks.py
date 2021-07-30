@@ -78,7 +78,7 @@ class VAEImageSampler(Callback):
                 xrec, _ = pl_module(x)
                 pl_module.train()   
             '''
-            '''
+            
             x_grid = torchvision.utils.make_grid(
                 tensor=x,
                 nrow=self.nrow,
@@ -101,8 +101,8 @@ class VAEImageSampler(Callback):
             trainer.logger.experiment.add_image(x_title, x_grid, global_step=trainer.global_step)
             xrec_title = "train/reconstruction"
             trainer.logger.experiment.add_image(xrec_title, xrec_grid, global_step=trainer.global_step)
-            '''
             
+
     @rank_zero_only
     def on_validation_batch_end(
         self,
