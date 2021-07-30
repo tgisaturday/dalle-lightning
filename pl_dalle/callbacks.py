@@ -38,8 +38,8 @@ def make_image_grid(
 
 
 def vae_log_image(pl_module, x, xrec, stage, global_step, image_log_step):
-    x = x.detach()
-    xrec = xrec.detach()
+    x = x.clone().detach()
+    xrec = xrec.clone().detach()
     if global_step % image_log_step ==0:
         x_grid = make_image_grid(x)          
         xrec_grid = make_image_grid(xrec)
