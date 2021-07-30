@@ -91,7 +91,7 @@ class VQVAE(pl.LightningModule):
         self.log("train/embed_loss", qloss, prog_bar=True, logger=True)
         self.log("train/total_loss", loss, prog_bar=True, logger=True)
 
-        if self.args.log_images and self.global_step % self.every_n_steps == 0:
+        if self.args.log_images and self.global_step % self.args.every_n_steps == 0:
             x_grid = torchvision.utils.make_grid(
                 tensor=x,
                 nrow=self.nrow,
@@ -129,7 +129,7 @@ class VQVAE(pl.LightningModule):
         self.log("val/embed_loss", qloss, prog_bar=True, logger=True)
         self.log("val/total_loss", loss, prog_bar=True, logger=True)     
 
-        if self.args.log_images and self.global_step % self.every_n_steps == 0:
+        if self.args.log_images and self.global_step % self.args.every_n_steps == 0:
             x_grid = torchvision.utils.make_grid(
                 tensor=x,
                 nrow=self.nrow,
@@ -220,7 +220,7 @@ class GumbelVQVAE(VQVAE):
         self.log("train/embed_loss", qloss, prog_bar=True, logger=True)
         self.log("train/total_loss", loss, prog_bar=True, logger=True)                
         
-        if self.args.log_images and self.global_step % self.every_n_steps == 0:
+        if self.args.log_images and self.global_step % self.args.every_n_steps == 0:
             x_grid = torchvision.utils.make_grid(
                 tensor=x,
                 nrow=self.nrow,
@@ -260,7 +260,7 @@ class GumbelVQVAE(VQVAE):
         self.log("val/embed_loss", qloss, prog_bar=True, logger=True)
         self.log("val/total_loss", loss, prog_bar=True, logger=True)     
 
-        if self.args.log_images and self.global_step % self.every_n_steps == 0:
+        if self.args.log_images and self.global_step % self.args.every_n_steps == 0:
             x_grid = torchvision.utils.make_grid(
                 tensor=x,
                 nrow=self.nrow,
