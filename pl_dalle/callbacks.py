@@ -36,6 +36,17 @@ def make_image_grid(
         )             
     return x_grid
 
+@rank_zero_only
+def vae_log_image(pl_module, x, xrec, stage, global_step, image_log_step):
+    if global_step % image_log_step ==0:
+        x_grid = make_image_grid(x)          
+        xrec_grid = make_image_grid(xrec)
+        x_title = f"{stage}/input"
+        pl_module.logger.experiment.add_image(x_title, x_grid, global_step=pl_module.global_step)
+        xrec_title = f"{stage}/reconstruction"
+        pl_module.logger.experiment.add_image(xrec_title, xrec_grid, global_step=pl_module.global_step) 
+    return   
+
 class VAEImageSampler(Callback):
     
     def __init__(

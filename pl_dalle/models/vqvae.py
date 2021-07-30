@@ -8,7 +8,7 @@ from pl_dalle.modules.vqvae.vae import Encoder, Decoder
 from pl_dalle.modules.vqvae.quantize import VectorQuantizer, EMAVectorQuantizer, GumbelQuantizer
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from einops import rearrange
-from pl_dalle.callbacks import make_image_grid
+from pl_dalle.callbacks import vae_log_image
 
 class VQVAE(pl.LightningModule):
     def __init__(self,
@@ -90,15 +90,9 @@ class VQVAE(pl.LightningModule):
         self.log("train/embed_loss", qloss, prog_bar=True, logger=True)
         self.log("train/total_loss", loss, prog_bar=True, logger=True)
         
-        if self.args.log_images and self.global_step % self.args.image_log_steps == 0:
-            if self.global_rank == 0:
-                x_grid = make_image_grid(x)          
-                xrec_grid = make_image_grid(xrec)
-                x_title = "train/input"
-                self.logger.experiment.add_image(x_title, x_grid, global_step=self.global_step)
-                xrec_title = "train/reconstruction"
-                self.logger.experiment.add_image(xrec_title, xrec_grid, global_step=self.global_step)
-        
+        if self.args.log_images:
+            vae_log_image(self, x, xrec, 'train', self.global_step, self.args.image_log_steps)
+
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -113,14 +107,8 @@ class VQVAE(pl.LightningModule):
         self.log("val/embed_loss", qloss, prog_bar=True, logger=True)
         self.log("val/total_loss", loss, prog_bar=True, logger=True)     
 
-        if self.args.log_images and self.global_step % self.args.image_log_steps == 0:
-            if self.global_rank == 0:
-                x_grid = make_image_grid(x)          
-                xrec_grid = make_image_grid(xrec)
-                x_title = "val/input"
-                self.logger.experiment.add_image(x_title, x_grid, global_step=self.global_step)
-                xrec_title = "val/reconstruction"
-                self.logger.experiment.add_image(xrec_title, xrec_grid, global_step=self.global_step)
+        if self.args.log_images:
+            vae_log_image(self, x, xrec, 'val', self.global_step, self.args.image_log_steps)
         return loss
 
     def configure_optimizers(self):
@@ -188,14 +176,8 @@ class GumbelVQVAE(VQVAE):
         self.log("train/embed_loss", qloss, prog_bar=True, logger=True)
         self.log("train/total_loss", loss, prog_bar=True, logger=True)                
         
-        if self.args.log_images and self.global_step % self.args.image_log_steps == 0:
-            if self.global_rank == 0:
-                x_grid = make_image_grid(x)          
-                xrec_grid = make_image_grid(xrec)
-                x_title = "train/input"
-                self.logger.experiment.add_image(x_title, x_grid, global_step=self.global_step)
-                xrec_title = "train/reconstruction"
-                self.logger.experiment.add_image(xrec_title, xrec_grid, global_step=self.global_step)
+        if self.args.log_images:
+            vae_log_image(self, x, xrec, 'train', self.global_step, self.args.image_log_steps)
         return loss
 
 
@@ -212,12 +194,6 @@ class GumbelVQVAE(VQVAE):
         self.log("val/embed_loss", qloss, prog_bar=True, logger=True)
         self.log("val/total_loss", loss, prog_bar=True, logger=True)     
 
-        if self.args.log_images and self.global_step % self.args.image_log_steps == 0:
-            if self.global_rank == 0:
-                x_grid = make_image_grid(x)          
-                xrec_grid = make_image_grid(xrec)
-                x_title = "val/input"
-                self.logger.experiment.add_image(x_title, x_grid, global_step=self.global_step)
-                xrec_title = "val/reconstruction"
-                self.logger.experiment.add_image(xrec_title, xrec_grid, global_step=self.global_step)
+        if self.args.log_images:
+            vae_log_image(self, x, xrec, 'val', self.global_step, self.args.image_log_steps)
         return loss
