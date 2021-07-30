@@ -11,11 +11,30 @@ from pytorch_lightning.utilities.types import STEP_OUTPUT
 from pytorch_lightning.utilities.distributed import rank_zero_only
 import torch.nn.functional as F
 
-if _TORCHVISION_AVAILABLE:
-    import torchvision
-else:  # pragma: no cover
-    warn_missing_pkg("torchvision")
 
+import torchvision
+
+def make_image_grid(
+    x,
+    nrow: int = 8,
+    padding: int = 2,
+    normalize: bool = True,
+    norm_range: Optional[Tuple[int, int]] = None,
+    scale_each: bool = False,
+    pad_value: int = 0,   
+    ):
+
+
+    x_grid = torchvision.utils.make_grid(
+        tensor=x,
+        nrow=nrow,
+        padding=padding,
+        normalize=normalize,
+        value_range=norm_range,
+        scale_each=scale_each,
+        pad_value=pad_value,
+        )             
+    return x_grid
 
 class VAEImageSampler(Callback):
     

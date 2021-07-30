@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torchvision
+
 import pytorch_lightning as pl
 import math
 from einops import rearrange
@@ -9,7 +9,7 @@ from pl_dalle.modules.vqvae.vae import Encoder, Decoder
 from pl_dalle.modules.vqvae.quantize import VectorQuantizer, EMAVectorQuantizer, GumbelQuantizer
 from pl_dalle.modules.losses.vqperceptual import VQLPIPSWithDiscriminator
 from torch.optim.lr_scheduler import ReduceLROnPlateau
-
+from pl_dalle.callbacks import make_image_grid
 
 
 
@@ -102,24 +102,8 @@ class VQGAN(pl.LightningModule):
             loss = discloss
         
         if self.args.log_images and self.global_step % self.args.image_log_steps == 0:
-            x_grid = torchvision.utils.make_grid(
-                tensor=x,
-                nrow=self.nrow,
-                padding=self.padding,
-                normalize=self.normalize,
-                value_range=self.norm_range,
-                scale_each=self.scale_each,
-                pad_value=self.pad_value,
-            )           
-            xrec_grid = torchvision.utils.make_grid(
-                tensor=xrec,
-                nrow=self.nrow,
-                padding=self.padding,
-                normalize=self.normalize,
-                value_range=self.norm_range,
-                scale_each=self.scale_each,
-                pad_value=self.pad_value,
-            )    
+            x_grid = make_image_grid(x)          
+            xrec_grid = make_image_grid(xrec)
             x_title = "train/input"
             self.logger.experiment.add_image(x_title, x_grid, global_step=self.global_step)
             xrec_title = "train/reconstruction"
@@ -144,24 +128,8 @@ class VQGAN(pl.LightningModule):
         self.log("val/total_loss", loss, prog_bar=True, logger=True) 
 
         if self.args.log_images and self.global_step % self.args.image_log_steps == 0:
-            x_grid = torchvision.utils.make_grid(
-                tensor=x,
-                nrow=self.nrow,
-                padding=self.padding,
-                normalize=self.normalize,
-                value_range=self.norm_range,
-                scale_each=self.scale_each,
-                pad_value=self.pad_value,
-            )           
-            xrec_grid = torchvision.utils.make_grid(
-                tensor=xrec,
-                nrow=self.nrow,
-                padding=self.padding,
-                normalize=self.normalize,
-                value_range=self.norm_range,
-                scale_each=self.scale_each,
-                pad_value=self.pad_value,
-            )    
+            x_grid = make_image_grid(x)          
+            xrec_grid = make_image_grid(xrec) 
             x_title = "val/input"
             self.logger.experiment.add_image(x_title, x_grid, global_step=self.global_step)
             xrec_title = "val/reconstruction"
@@ -266,24 +234,8 @@ class GumbelVQGAN(VQGAN):
             loss = discloss
 
         if self.args.log_images and self.global_step % self.args.image_log_steps == 0:
-            x_grid = torchvision.utils.make_grid(
-                tensor=x,
-                nrow=self.nrow,
-                padding=self.padding,
-                normalize=self.normalize,
-                value_range=self.norm_range,
-                scale_each=self.scale_each,
-                pad_value=self.pad_value,
-            )           
-            xrec_grid = torchvision.utils.make_grid(
-                tensor=xrec,
-                nrow=self.nrow,
-                padding=self.padding,
-                normalize=self.normalize,
-                value_range=self.norm_range,
-                scale_each=self.scale_each,
-                pad_value=self.pad_value,
-            )    
+            x_grid = make_image_grid(x)          
+            xrec_grid = make_image_grid(xrec) 
             x_title = "train/input"
             self.logger.experiment.add_image(x_title, x_grid, global_step=self.global_step)
             xrec_title = "train/reconstruction"
@@ -308,24 +260,8 @@ class GumbelVQGAN(VQGAN):
         self.log("val/total_loss", loss, prog_bar=True, logger=True) 
         
         if self.args.log_images and self.global_step % self.args.image_log_steps == 0:
-            x_grid = torchvision.utils.make_grid(
-                tensor=x,
-                nrow=self.nrow,
-                padding=self.padding,
-                normalize=self.normalize,
-                value_range=self.norm_range,
-                scale_each=self.scale_each,
-                pad_value=self.pad_value,
-            )           
-            xrec_grid = torchvision.utils.make_grid(
-                tensor=xrec,
-                nrow=self.nrow,
-                padding=self.padding,
-                normalize=self.normalize,
-                value_range=self.norm_range,
-                scale_each=self.scale_each,
-                pad_value=self.pad_value,
-            )    
+            x_grid = make_image_grid(x)          
+            xrec_grid = make_image_grid(xrec)  
             x_title = "val/input"
             self.logger.experiment.add_image(x_title, x_grid, global_step=self.global_step)
             xrec_title = "val/reconstruction"
