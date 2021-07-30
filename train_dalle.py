@@ -257,7 +257,7 @@ if __name__ == "__main__":
  
     if args.log_generations:
          trainer.callbacks.append(DalleGenerativeImageSampler(every_n_steps=args.image_log_steps, tokenizer = tokenizer))
-    elif args.log_images:
+    if args.log_images:
         trainer.callbacks.append(DalleSimpleImageSampler(every_n_steps=args.image_log_steps, tokenizer = tokenizer))         
         
     print("Setting batch size: {} learning rate: {:.2e}".format(model.hparams.batch_size, model.hparams.learning_rate))
