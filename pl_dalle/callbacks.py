@@ -69,15 +69,6 @@ class VAEImageSampler(Callback):
         if trainer.global_step % self.every_n_steps == 0:
             x = outputs['x']
             xrec = outputs['xrec']
-            '''
-            x, _ = batch
-
-            x = x.to(pl_module.device)
-            with torch.no_grad():
-                pl_module.eval()
-                xrec, _ = pl_module(x)
-                pl_module.train()   
-            '''
             x_grid = torchvision.utils.make_grid(
                 tensor=x,
                 nrow=self.nrow,
@@ -115,16 +106,6 @@ class VAEImageSampler(Callback):
         if trainer.global_step % self.every_n_steps == 0:
             x = outputs['x']
             xrec = outputs['xrec']
-            '''
-            x, _ = batch
-            
-            x = x.to(pl_module.device)
-            with torch.no_grad():
-                pl_module.eval()
-                xrec, _ = pl_module(x)
-                pl_module.train()   
-            '''
-            
             x_grid = torchvision.utils.make_grid(
                 tensor=x,
                 nrow=self.nrow,
@@ -379,26 +360,14 @@ class DalleSimpleImageSampler(Callback):
     ) -> None:
         """Called when the train batch ends."""
         if trainer.global_step % self.every_n_steps == 0:          
-            text, x = batch
-            sample_text = text[:1]
+            sample_text = outputs['text'][:1]
             token_list = sample_text.masked_select(sample_text != 0).tolist()
             decoded_text = self.tokenizer.decode(token_list)   
-            x, _ = batch
 
-            text = text.to(pl_module.device)
-            x = x.to(pl_module.device)       
-            with torch.no_grad():
-                pl_module.eval()
-                logits = pl_module(text, x)
-                img_logits = logits[:, -pl_module.image_seq_len:].long()
-                img_seq = torch.argmax(img_logits, dim = -1)
-                img_seq -= pl_module.num_text_tokens           
-                x_rec = pl_module.vae.decode(img_seq, feed_seq=True)                
-
-                pl_module.train()  
-
+            x = outputs['x'][:1]
+            xrec = outputs['xrec'][:1] 
             x_grid = torchvision.utils.make_grid(
-                tensor=x[:1],
+                tensor=x,
                 nrow=self.nrow,
                 padding=self.padding,
                 normalize=self.normalize,
@@ -407,7 +376,7 @@ class DalleSimpleImageSampler(Callback):
                 pad_value=self.pad_value,
             )           
             xrec_grid = torchvision.utils.make_grid(
-                tensor=x_rec[:1],
+                tensor=xrec,
                 nrow=self.nrow,
                 padding=self.padding,
                 normalize=self.normalize,
@@ -436,25 +405,15 @@ class DalleSimpleImageSampler(Callback):
     ) -> None:
         """Called when the validation batch ends."""
         if trainer.global_step % self.every_n_steps == 0:          
-            text, x = batch
-            sample_text = text[:1]
+            sample_text = outputs['text'][:1]
             token_list = sample_text.masked_select(sample_text != 0).tolist()
-            decoded_text = self.tokenizer.decode(token_list)       
-            x, _ = batch
+            decoded_text = self.tokenizer.decode(token_list)   
 
-            text = text.to(pl_module.device)
-            x = x.to(pl_module.device)       
-            with torch.no_grad():
-                pl_module.eval()
-                logits = pl_module(text, x)
-                img_logits = logits[:, -pl_module.image_seq_len:].long()
-                img_seq = torch.argmax(img_logits, dim = -1)
-                img_seq -= pl_module.num_text_tokens              
-                x_rec = pl_module.vae.decode(img_seq, feed_seq=True)     
-            
+            x = outputs['x'][:1]
+            xrec = outputs['xrec'][:1] 
 
             x_grid = torchvision.utils.make_grid(
-                tensor=x[:1],
+                tensor=x,
                 nrow=self.nrow,
                 padding=self.padding,
                 normalize=self.normalize,
@@ -463,7 +422,7 @@ class DalleSimpleImageSampler(Callback):
                 pad_value=self.pad_value,
             )           
             xrec_grid = torchvision.utils.make_grid(
-                tensor=x_rec[:1],
+                tensor=xrec,
                 nrow=self.nrow,
                 padding=self.padding,
                 normalize=self.normalize,

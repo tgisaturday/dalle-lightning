@@ -595,7 +595,7 @@ class DALLE(pl.LightningModule):
         self.log("train/text_loss", loss_text, prog_bar=True, logger=True) 
         self.log("train/img_loss", loss_img, prog_bar=True, logger=True)         
         if self.args.log_images:
-          return {'loss': loss, 'xrec': xrec.detach()}
+          return {'loss': loss, 'x': images.detach(), 'text': text.detach(), 'xrec': xrec.detach()}
         else:
             return loss
     
@@ -611,7 +611,7 @@ class DALLE(pl.LightningModule):
         self.log("val/img_loss", loss_img, prog_bar=True, logger=True) 
 
         if self.args.log_images:
-          return {'loss': loss, 'xrec': xrec.detach()}
+          return {'loss': loss, 'x': images.detach(), 'text': text.detach(), 'xrec': xrec.detach()}
         else:
             return loss
 
