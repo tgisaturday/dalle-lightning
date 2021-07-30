@@ -38,7 +38,9 @@ def make_image_grid(
 
 
 def vae_log_image(pl_module, x, xrec, stage, global_step, image_log_step):
-    if global_step % image_log_step ==0 and pl_module.local_rank == 0:
+    x = x.detach()
+    xrec = xrec.detach()
+    if global_step % image_log_step ==0:
         x_grid = make_image_grid(x)          
         xrec_grid = make_image_grid(xrec)
         x_title = f"{stage}/input"
