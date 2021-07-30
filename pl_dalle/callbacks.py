@@ -56,7 +56,6 @@ class VAEImageSampler(Callback):
         self.scale_each = scale_each
         self.pad_value = pad_value
 
-    @rank_zero_only
     def on_train_batch_end(
         self,
         trainer: 'pl.Trainer',
@@ -69,15 +68,8 @@ class VAEImageSampler(Callback):
         """Called when the train batch ends."""
         if trainer.global_step % self.every_n_steps == 0:
             
-            x, _ = batch
+            x = outputs['x']
             xrec = outputs['xrec']
-            '''
-            x = x.to(pl_module.device)
-            with torch.no_grad():
-                pl_module.eval()
-                xrec, _ = pl_module(x)
-                pl_module.train()   
-            '''
             
             x_grid = torchvision.utils.make_grid(
                 tensor=x,
@@ -103,7 +95,6 @@ class VAEImageSampler(Callback):
             trainer.logger.experiment.add_image(xrec_title, xrec_grid, global_step=trainer.global_step)
             
 
-    @rank_zero_only
     def on_validation_batch_end(
         self,
         trainer: 'pl.Trainer',
@@ -115,16 +106,9 @@ class VAEImageSampler(Callback):
     ) -> None:
         """Called when the validation batch ends."""
         if trainer.global_step % self.every_n_steps == 0:
-            x, _ = batch
+            x = outputs['x']
             xrec = outputs['xrec']
-            '''
-            x = x.to(pl_module.device)
-            with torch.no_grad():
-                pl_module.eval()
-                xrec, _ = pl_module(x)
-                pl_module.train()   
-            '''
-            
+
             x_grid = torchvision.utils.make_grid(
                 tensor=x,
                 nrow=self.nrow,
@@ -194,7 +178,6 @@ class DalleGenerativeImageSampler(Callback):
         self.pad_value = pad_value
         self.tokenizer = tokenizer
 
-    @rank_zero_only
     def on_train_batch_end(
         self,
         trainer: 'pl.Trainer',
@@ -259,7 +242,6 @@ class DalleGenerativeImageSampler(Callback):
             xgen_title = "train/generation"
             trainer.logger.experiment.add_image(xgen_title, xgen_grid, global_step=trainer.global_step)
 
-    @rank_zero_only
     def on_validation_batch_end(
         self,
         trainer: 'pl.Trainer',
@@ -367,7 +349,6 @@ class DalleSimpleImageSampler(Callback):
         self.pad_value = pad_value
         self.tokenizer = tokenizer
 
-    @rank_zero_only
     def on_train_batch_end(
         self,
         trainer: 'pl.Trainer',
@@ -386,19 +367,6 @@ class DalleSimpleImageSampler(Callback):
             x, _ = batch
             x = x[:1]
             x_rec = outputs['xrec'][:1]
-            '''
-            text = text.to(pl_module.device)
-            x = x.to(pl_module.device)       
-            with torch.no_grad():
-                pl_module.eval()
-                logits = pl_module(text, x)
-                img_logits = logits[:, -pl_module.image_seq_len:].long()
-                img_seq = torch.argmax(img_logits, dim = -1)
-                img_seq -= pl_module.num_text_tokens           
-                x_rec = pl_module.vae.decode(img_seq, feed_seq=True)                
-
-                pl_module.train()  
-            '''
 
             x_grid = torchvision.utils.make_grid(
                 tensor=x,
@@ -427,7 +395,6 @@ class DalleSimpleImageSampler(Callback):
             trainer.logger.experiment.add_image(xrec_title, xrec_grid, global_step=trainer.global_step)
 
 
-    @rank_zero_only
     def on_validation_batch_end(
         self,
         trainer: 'pl.Trainer',
@@ -446,17 +413,6 @@ class DalleSimpleImageSampler(Callback):
             x, _ = batch
             x = x[:1]
             x_rec = outputs['xrec'][:1]
-            '''
-            text = text.to(pl_module.device)
-            x = x.to(pl_module.device)       
-            with torch.no_grad():
-                pl_module.eval()
-                logits = pl_module(text, x)
-                img_logits = logits[:, -pl_module.image_seq_len:].long()
-                img_seq = torch.argmax(img_logits, dim = -1)
-                img_seq -= pl_module.num_text_tokens              
-                x_rec = pl_module.vae.decode(img_seq, feed_seq=True)     
-            '''
 
             x_grid = torchvision.utils.make_grid(
                 tensor=x,

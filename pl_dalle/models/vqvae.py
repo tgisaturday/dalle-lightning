@@ -90,7 +90,7 @@ class VQVAE(pl.LightningModule):
         self.log("train/total_loss", loss, prog_bar=True, logger=True)
 
         if self.args.log_images:
-            return {'loss': loss, 'xrec': xrec.detach()}
+            return {'loss': loss, 'x':x.clone().detach().cpu(), 'xrec': xrec.clone().detach().cpu()}
         else:
             return loss
 
@@ -107,7 +107,7 @@ class VQVAE(pl.LightningModule):
         self.log("val/total_loss", loss, prog_bar=True, logger=True)     
 
         if self.args.log_images:
-            return {'loss': loss, 'xrec': xrec.detach()}
+            return {'loss': loss, 'x':x.clone().detach().cpu(), 'xrec': xrec.clone().detach().cpu()}
         else:
             return loss
 
@@ -177,7 +177,7 @@ class GumbelVQVAE(VQVAE):
         self.log("train/total_loss", loss, prog_bar=True, logger=True)                
         
         if self.args.log_images:
-            return {'loss': loss, 'xrec': xrec.detach()}
+            return {'loss': loss, 'x':x.clone().detach().cpu(), 'xrec': xrec.clone().detach().cpu()}
         else:
             return loss
 
@@ -196,6 +196,6 @@ class GumbelVQVAE(VQVAE):
         self.log("val/total_loss", loss, prog_bar=True, logger=True)     
 
         if self.args.log_images:
-            return {'loss': loss, 'xrec': xrec.detach()}
+            return {'loss': loss, 'x':x.clone().detach().cpu(), 'xrec': xrec.clone().detach().cpu()}
         else:
             return loss
