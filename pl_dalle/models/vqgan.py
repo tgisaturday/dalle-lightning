@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torchvision
 import pytorch_lightning as pl
 import math
 from einops import rearrange
@@ -10,10 +11,7 @@ from pl_dalle.modules.losses.vqperceptual import VQLPIPSWithDiscriminator
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 
-if _TORCHVISION_AVAILABLE:
-    import torchvision
-else:  # pragma: no cover
-    warn_missing_pkg("torchvision")
+
 
 class VQGAN(pl.LightningModule):
     def __init__(self,

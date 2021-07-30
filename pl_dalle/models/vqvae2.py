@@ -1,17 +1,13 @@
 import torch
 from torch import nn
 from torch.nn import functional as F
+import torchvision
 import pytorch_lightning as pl
 from torch import distributed as dist
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 import math
 from einops import rearrange
 
-
-if _TORCHVISION_AVAILABLE:
-    import torchvision
-else:  # pragma: no cover
-    warn_missing_pkg("torchvision")
 
 #from torch import distributed as dist
 # import vqvae.distributed as dist_fn

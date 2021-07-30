@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torchvision
 import pytorch_lightning as pl
 import math
 
@@ -9,11 +10,6 @@ from pl_dalle.modules.vqvae.quantize import VectorQuantizer, EMAVectorQuantizer,
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from einops import rearrange
 
-
-if _TORCHVISION_AVAILABLE:
-    import torchvision
-else:  # pragma: no cover
-    warn_missing_pkg("torchvision")
 
 class VQVAE(pl.LightningModule):
     def __init__(self,
