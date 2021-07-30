@@ -9,6 +9,7 @@ import math
 from einops import rearrange
 from pl_dalle.callbacks import make_image_grid
 
+
 #from torch import distributed as dist
 # import vqvae.distributed as dist_fn
 
@@ -122,13 +123,13 @@ class VQVAE2(pl.LightningModule):
         self.log("train/total_loss", loss, prog_bar=True, logger=True)                
 
         if self.args.log_images and self.global_step % self.args.image_log_steps == 0:
-            x_grid = make_image_grid(x)          
-            xrec_grid = make_image_grid(xrec) 
-            x_title = "train/input"
-            self.logger.experiment.add_image(x_title, x_grid, global_step=self.global_step)
-            xrec_title = "train/reconstruction"
-            self.logger.experiment.add_image(xrec_title, xrec_grid, global_step=self.global_step)
-        
+            if self.global_rank == 0:
+                x_grid = make_image_grid(x)          
+                xrec_grid = make_image_grid(xrec)
+                x_title = "train/input"
+                self.logger.experiment.add_image(x_title, x_grid, global_step=self.global_step)
+                xrec_title = "train/reconstruction"
+                self.logger.experiment.add_image(xrec_title, xrec_grid, global_step=self.global_step)
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -144,13 +145,13 @@ class VQVAE2(pl.LightningModule):
         self.log("val/total_loss", loss, prog_bar=True, logger=True)  
            
         if self.args.log_images and self.global_step % self.args.image_log_steps == 0:
-            x_grid = make_image_grid(x)          
-            xrec_grid = make_image_grid(xrec)
-            x_title = "val/input"
-            self.logger.experiment.add_image(x_title, x_grid, global_step=self.global_step)
-            xrec_title = "val/reconstruction"
-            self.logger.experiment.add_image(xrec_title, xrec_grid, global_step=self.global_step)
-        
+            if self.global_rank == 0:
+                x_grid = make_image_grid(x)          
+                xrec_grid = make_image_grid(xrec)
+                x_title = "val/input"
+                self.logger.experiment.add_image(x_title, x_grid, global_step=self.global_step)
+                xrec_title = "val/reconstruction"
+                self.logger.experiment.add_image(xrec_title, xrec_grid, global_step=self.global_step)
         return loss
 
     def configure_optimizers(self):
