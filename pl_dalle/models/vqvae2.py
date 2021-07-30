@@ -6,6 +6,13 @@ from torch import distributed as dist
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 import math
 from einops import rearrange
+
+
+if _TORCHVISION_AVAILABLE:
+    import torchvision
+else:  # pragma: no cover
+    warn_missing_pkg("torchvision")
+
 #from torch import distributed as dist
 # import vqvae.distributed as dist_fn
 
@@ -118,10 +125,31 @@ class VQVAE2(pl.LightningModule):
         self.log("train/embed_loss", latent_loss, prog_bar=True, logger=True)
         self.log("train/total_loss", loss, prog_bar=True, logger=True)                
 
-        if self.args.log_images:
-            return {'loss': loss, 'xrec': xrec.detach()}
-        else:
-            return loss
+        if self.args.log_images and self.global_step % self.every_n_steps == 0:
+            x_grid = torchvision.utils.make_grid(
+                tensor=x,
+                nrow=self.nrow,
+                padding=self.padding,
+                normalize=self.normalize,
+                value_range=self.norm_range,
+                scale_each=self.scale_each,
+                pad_value=self.pad_value,
+            )           
+            xrec_grid = torchvision.utils.make_grid(
+                tensor=xrec,
+                nrow=self.nrow,
+                padding=self.padding,
+                normalize=self.normalize,
+                value_range=self.norm_range,
+                scale_each=self.scale_each,
+                pad_value=self.pad_value,
+            )    
+            x_title = "train/input"
+            self.logger.experiment.add_image(x_title, x_grid, global_step=self.global_step)
+            xrec_title = "train/reconstruction"
+            self.logger.experiment.add_image(xrec_title, xrec_grid, global_step=self.global_step)
+        
+        return loss
 
     def validation_step(self, batch, batch_idx):
         x, _ = batch
@@ -135,10 +163,31 @@ class VQVAE2(pl.LightningModule):
         self.log("val/embed_loss", latent_loss, prog_bar=True, logger=True)
         self.log("val/total_loss", loss, prog_bar=True, logger=True)  
            
-        if self.args.log_images:
-            return {'loss': loss, 'xrec': xrec.detach()}
-        else:
-            return loss
+        if self.args.log_images and self.global_step % self.every_n_steps == 0:
+            x_grid = torchvision.utils.make_grid(
+                tensor=x,
+                nrow=self.nrow,
+                padding=self.padding,
+                normalize=self.normalize,
+                value_range=self.norm_range,
+                scale_each=self.scale_each,
+                pad_value=self.pad_value,
+            )           
+            xrec_grid = torchvision.utils.make_grid(
+                tensor=xrec,
+                nrow=self.nrow,
+                padding=self.padding,
+                normalize=self.normalize,
+                value_range=self.norm_range,
+                scale_each=self.scale_each,
+                pad_value=self.pad_value,
+            )    
+            x_title = "val/input"
+            self.logger.experiment.add_image(x_title, x_grid, global_step=self.global_step)
+            xrec_title = "val/reconstruction"
+            self.logger.experiment.add_image(xrec_title, xrec_grid, global_step=self.global_step)
+        
+        return loss
 
     def configure_optimizers(self):
         lr = self.hparams.learning_rate

@@ -9,6 +9,12 @@ from pl_dalle.modules.vqvae.quantize import VectorQuantizer, EMAVectorQuantizer,
 from pl_dalle.modules.losses.vqperceptual import VQLPIPSWithDiscriminator
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
+
+if _TORCHVISION_AVAILABLE:
+    import torchvision
+else:  # pragma: no cover
+    warn_missing_pkg("torchvision")
+
 class VQGAN(pl.LightningModule):
     def __init__(self,
                  args,batch_size, learning_rate,
@@ -97,10 +103,31 @@ class VQGAN(pl.LightningModule):
             self.log("train/disc_loss", discloss, prog_bar=True,logger=True)
             loss = discloss
         
-        if self.args.log_images:
-            return {'loss': loss, 'xrec': xrec.detach()}
-        else:
-            return loss
+        if self.args.log_images and self.global_step % self.every_n_steps == 0:
+            x_grid = torchvision.utils.make_grid(
+                tensor=x,
+                nrow=self.nrow,
+                padding=self.padding,
+                normalize=self.normalize,
+                value_range=self.norm_range,
+                scale_each=self.scale_each,
+                pad_value=self.pad_value,
+            )           
+            xrec_grid = torchvision.utils.make_grid(
+                tensor=xrec,
+                nrow=self.nrow,
+                padding=self.padding,
+                normalize=self.normalize,
+                value_range=self.norm_range,
+                scale_each=self.scale_each,
+                pad_value=self.pad_value,
+            )    
+            x_title = "train/input"
+            self.logger.experiment.add_image(x_title, x_grid, global_step=self.global_step)
+            xrec_title = "train/reconstruction"
+            self.logger.experiment.add_image(xrec_title, xrec_grid, global_step=self.global_step)
+        
+        return loss
 
             
 
@@ -118,10 +145,31 @@ class VQGAN(pl.LightningModule):
         self.log("val/embed_loss", qloss, prog_bar=True, logger=True)        
         self.log("val/total_loss", loss, prog_bar=True, logger=True) 
 
-        if self.args.log_images:
-            return {'loss': loss, 'xrec': xrec.detach()}
-        else:
-            return loss
+        if self.args.log_images and self.global_step % self.every_n_steps == 0:
+            x_grid = torchvision.utils.make_grid(
+                tensor=x,
+                nrow=self.nrow,
+                padding=self.padding,
+                normalize=self.normalize,
+                value_range=self.norm_range,
+                scale_each=self.scale_each,
+                pad_value=self.pad_value,
+            )           
+            xrec_grid = torchvision.utils.make_grid(
+                tensor=xrec,
+                nrow=self.nrow,
+                padding=self.padding,
+                normalize=self.normalize,
+                value_range=self.norm_range,
+                scale_each=self.scale_each,
+                pad_value=self.pad_value,
+            )    
+            x_title = "val/input"
+            self.logger.experiment.add_image(x_title, x_grid, global_step=self.global_step)
+            xrec_title = "val/reconstruction"
+            self.logger.experiment.add_image(xrec_title, xrec_grid, global_step=self.global_step)
+        
+        return loss
 
 
     def configure_optimizers(self):
@@ -219,10 +267,31 @@ class GumbelVQGAN(VQGAN):
             self.log("train/disc_loss", discloss, prog_bar=True,logger=True)
             loss = discloss
 
-        if self.args.log_images:
-            return {'loss': loss, 'xrec': xrec.detach()}
-        else:
-            return loss
+        if self.args.log_images and self.global_step % self.every_n_steps == 0:
+            x_grid = torchvision.utils.make_grid(
+                tensor=x,
+                nrow=self.nrow,
+                padding=self.padding,
+                normalize=self.normalize,
+                value_range=self.norm_range,
+                scale_each=self.scale_each,
+                pad_value=self.pad_value,
+            )           
+            xrec_grid = torchvision.utils.make_grid(
+                tensor=xrec,
+                nrow=self.nrow,
+                padding=self.padding,
+                normalize=self.normalize,
+                value_range=self.norm_range,
+                scale_each=self.scale_each,
+                pad_value=self.pad_value,
+            )    
+            x_title = "train/input"
+            self.logger.experiment.add_image(x_title, x_grid, global_step=self.global_step)
+            xrec_title = "train/reconstruction"
+            self.logger.experiment.add_image(xrec_title, xrec_grid, global_step=self.global_step)
+        
+        return loss
 
 
     def validation_step(self, batch, batch_idx):
@@ -240,7 +309,28 @@ class GumbelVQGAN(VQGAN):
         self.log("val/embed_loss", qloss, prog_bar=True, logger=True)        
         self.log("val/total_loss", loss, prog_bar=True, logger=True) 
         
-        if self.args.log_images:
-            return {'loss': loss, 'xrec': xrec.detach()}
-        else:
-            return loss
+        if self.args.log_images and self.global_step % self.every_n_steps == 0:
+            x_grid = torchvision.utils.make_grid(
+                tensor=x,
+                nrow=self.nrow,
+                padding=self.padding,
+                normalize=self.normalize,
+                value_range=self.norm_range,
+                scale_each=self.scale_each,
+                pad_value=self.pad_value,
+            )           
+            xrec_grid = torchvision.utils.make_grid(
+                tensor=xrec,
+                nrow=self.nrow,
+                padding=self.padding,
+                normalize=self.normalize,
+                value_range=self.norm_range,
+                scale_each=self.scale_each,
+                pad_value=self.pad_value,
+            )    
+            x_title = "val/input"
+            self.logger.experiment.add_image(x_title, x_grid, global_step=self.global_step)
+            xrec_title = "val/reconstruction"
+            self.logger.experiment.add_image(xrec_title, xrec_grid, global_step=self.global_step)
+        
+        return loss
