@@ -14,7 +14,7 @@ from pl_dalle.models.vqgan import VQGAN, EMAVQGAN, GumbelVQGAN
 from pl_dalle.models.vqvae import VQVAE, EMAVQVAE, GumbelVQVAE
 from pl_dalle.models.vqvae2 import VQVAE2
 from pl_dalle.loader import ImageDataModule
-#from pl_dalle.callbacks import VAEImageSampler
+from pl_dalle.callbacks import VAEImageSampler
 
 import pytorch_lightning as pl
 from pytorch_lightning import seed_everything
@@ -242,8 +242,8 @@ if __name__ == "__main__":
 
     if args.backup:
         trainer.callbacks.append(backup_callback)                                 
-    #if args.log_images:
-    #    trainer.callbacks.append(VAEImageSampler(every_n_steps=args.image_log_steps))  
+    if args.log_images:
+        trainer.callbacks.append(VAEImageSampler(every_n_steps=args.image_log_steps))  
         
     print("Setting batch size: {} learning rate: {:.2e}".format(model.hparams.batch_size, model.hparams.learning_rate))
     

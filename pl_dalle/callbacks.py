@@ -11,41 +11,11 @@ from pytorch_lightning.utilities.types import STEP_OUTPUT
 from pytorch_lightning.utilities.distributed import rank_zero_only
 import torch.nn.functional as F
 
+if _TORCHVISION_AVAILABLE:
+    import torchvision
+else:  # pragma: no cover
+    warn_missing_pkg("torchvision")
 
-import torchvision
-
-def make_image_grid(
-    x,
-    nrow: int = 8,
-    padding: int = 2,
-    normalize: bool = True,
-    norm_range: Optional[Tuple[int, int]] = None,
-    scale_each: bool = False,
-    pad_value: int = 0,   
-    ):
-
-
-    x_grid = torchvision.utils.make_grid(
-        tensor=x,
-        nrow=nrow,
-        padding=padding,
-        normalize=normalize,
-        value_range=norm_range,
-        scale_each=scale_each,
-        pad_value=pad_value,
-        )             
-    return x_grid
-
-
-def vae_log_image(pl_module, x, xrec, stage, global_step, image_log_step):
-    if global_step % image_log_step ==0:
-        x_grid = make_image_grid(x)          
-        xrec_grid = make_image_grid(xrec)
-        x_title = f"{stage}/input"
-        pl_module.logger.experiment.add_image(x_title, x_grid, global_step=pl_module.global_step)
-        xrec_title = f"{stage}/reconstruction"
-        pl_module.logger.experiment.add_image(xrec_title, xrec_grid, global_step=pl_module.global_step) 
-    return   
 
 class VAEImageSampler(Callback):
     
@@ -86,7 +56,7 @@ class VAEImageSampler(Callback):
         self.scale_each = scale_each
         self.pad_value = pad_value
 
-    @rank_zero_only
+
     def on_train_batch_end(
         self,
         trainer: 'pl.Trainer',
@@ -132,7 +102,7 @@ class VAEImageSampler(Callback):
             xrec_title = "train/reconstruction"
             trainer.logger.experiment.add_image(xrec_title, xrec_grid, global_step=trainer.global_step)
 
-    @rank_zero_only
+
     def on_validation_batch_end(
         self,
         trainer: 'pl.Trainer',

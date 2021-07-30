@@ -8,7 +8,6 @@ from pl_dalle.modules.vqvae.vae import Encoder, Decoder
 from pl_dalle.modules.vqvae.quantize import VectorQuantizer, EMAVectorQuantizer, GumbelQuantizer
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from einops import rearrange
-from pl_dalle.callbacks import vae_log_image
 
 class VQVAE(pl.LightningModule):
     def __init__(self,
@@ -89,11 +88,11 @@ class VQVAE(pl.LightningModule):
         self.log("train/rec_loss", aeloss, prog_bar=True, logger=True)
         self.log("train/embed_loss", qloss, prog_bar=True, logger=True)
         self.log("train/total_loss", loss, prog_bar=True, logger=True)
-        
-        if self.args.log_images:
-            vae_log_image(self, x, xrec, 'train', self.global_step, self.args.image_log_steps)
 
-        return loss
+        if self.args.log_images:
+            return {'loss': loss, 'xrec': xrec.detach()}
+        else:
+            return loss
 
     def validation_step(self, batch, batch_idx):
         x, _ = batch
@@ -108,8 +107,9 @@ class VQVAE(pl.LightningModule):
         self.log("val/total_loss", loss, prog_bar=True, logger=True)     
 
         if self.args.log_images:
-            vae_log_image(self, x, xrec, 'val', self.global_step, self.args.image_log_steps)
-        return loss
+            return {'loss': loss, 'xrec': xrec.detach()}
+        else:
+            return loss
 
     def configure_optimizers(self):
         lr = self.hparams.learning_rate
@@ -177,8 +177,9 @@ class GumbelVQVAE(VQVAE):
         self.log("train/total_loss", loss, prog_bar=True, logger=True)                
         
         if self.args.log_images:
-            vae_log_image(self, x, xrec, 'train', self.global_step, self.args.image_log_steps)
-        return loss
+            return {'loss': loss, 'xrec': xrec.detach()}
+        else:
+            return loss
 
 
     def validation_step(self, batch, batch_idx):
@@ -195,5 +196,6 @@ class GumbelVQVAE(VQVAE):
         self.log("val/total_loss", loss, prog_bar=True, logger=True)     
 
         if self.args.log_images:
-            vae_log_image(self, x, xrec, 'val', self.global_step, self.args.image_log_steps)
-        return loss
+            return {'loss': loss, 'xrec': xrec.detach()}
+        else:
+            return loss

@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
 import pytorch_lightning as pl
 import math
 from einops import rearrange
@@ -9,9 +8,6 @@ from pl_dalle.modules.vqvae.vae import Encoder, Decoder
 from pl_dalle.modules.vqvae.quantize import VectorQuantizer, EMAVectorQuantizer, GumbelQuantizer
 from pl_dalle.modules.losses.vqperceptual import VQLPIPSWithDiscriminator
 from torch.optim.lr_scheduler import ReduceLROnPlateau
-from pl_dalle.callbacks import make_image_grid
-
-
 
 class VQGAN(pl.LightningModule):
     def __init__(self,
@@ -101,15 +97,10 @@ class VQGAN(pl.LightningModule):
             self.log("train/disc_loss", discloss, prog_bar=True,logger=True)
             loss = discloss
         
-        if self.args.log_images and self.global_step % self.args.image_log_steps == 0:
-            if self.global_rank == 0:
-                x_grid = make_image_grid(x)          
-                xrec_grid = make_image_grid(xrec)
-                x_title = "train/input"
-                self.logger.experiment.add_image(x_title, x_grid, global_step=self.global_step)
-                xrec_title = "train/reconstruction"
-                self.logger.experiment.add_image(xrec_title, xrec_grid, global_step=self.global_step)
-        return loss
+        if self.args.log_images:
+            return {'loss': loss, 'xrec': xrec.detach()}
+        else:
+            return loss
 
             
 
@@ -127,15 +118,10 @@ class VQGAN(pl.LightningModule):
         self.log("val/embed_loss", qloss, prog_bar=True, logger=True)        
         self.log("val/total_loss", loss, prog_bar=True, logger=True) 
 
-        if self.args.log_images and self.global_step % self.args.image_log_steps == 0:
-            if self.global_rank == 0:
-                x_grid = make_image_grid(x)          
-                xrec_grid = make_image_grid(xrec)
-                x_title = "val/input"
-                self.logger.experiment.add_image(x_title, x_grid, global_step=self.global_step)
-                xrec_title = "val/reconstruction"
-                self.logger.experiment.add_image(xrec_title, xrec_grid, global_step=self.global_step)
-        return loss
+        if self.args.log_images:
+            return {'loss': loss, 'xrec': xrec.detach()}
+        else:
+            return loss
 
 
     def configure_optimizers(self):
@@ -233,15 +219,10 @@ class GumbelVQGAN(VQGAN):
             self.log("train/disc_loss", discloss, prog_bar=True,logger=True)
             loss = discloss
 
-        if self.args.log_images and self.global_step % self.args.image_log_steps == 0:
-            if self.global_rank == 0:
-                x_grid = make_image_grid(x)          
-                xrec_grid = make_image_grid(xrec)
-                x_title = "train/input"
-                self.logger.experiment.add_image(x_title, x_grid, global_step=self.global_step)
-                xrec_title = "train/reconstruction"
-                self.logger.experiment.add_image(xrec_title, xrec_grid, global_step=self.global_step)
-        return loss
+        if self.args.log_images:
+            return {'loss': loss, 'xrec': xrec.detach()}
+        else:
+            return loss
 
 
     def validation_step(self, batch, batch_idx):
@@ -259,12 +240,7 @@ class GumbelVQGAN(VQGAN):
         self.log("val/embed_loss", qloss, prog_bar=True, logger=True)        
         self.log("val/total_loss", loss, prog_bar=True, logger=True) 
         
-        if self.args.log_images and self.global_step % self.args.image_log_steps == 0:
-            if self.global_rank == 0:
-                x_grid = make_image_grid(x)          
-                xrec_grid = make_image_grid(xrec)
-                x_title = "val/input"
-                self.logger.experiment.add_image(x_title, x_grid, global_step=self.global_step)
-                xrec_title = "val/reconstruction"
-                self.logger.experiment.add_image(xrec_title, xrec_grid, global_step=self.global_step)
-        return loss
+        if self.args.log_images:
+            return {'loss': loss, 'xrec': xrec.detach()}
+        else:
+            return loss
