@@ -97,8 +97,10 @@ class VQGAN(pl.LightningModule):
             self.log("train/disc_loss", discloss, prog_bar=True,logger=True)
             loss = discloss
         
-
-        return loss
+        if self.args.log_images:
+            return {'loss': loss, 'xrec': xrec.detach()}
+        else:
+            return loss
 
             
 
@@ -116,8 +118,10 @@ class VQGAN(pl.LightningModule):
         self.log("val/embed_loss", qloss, prog_bar=True, logger=True)        
         self.log("val/total_loss", loss, prog_bar=True, logger=True) 
 
-
-        return loss
+        if self.args.log_images:
+            return {'loss': loss, 'xrec': xrec.detach()}
+        else:
+            return loss
 
 
     def configure_optimizers(self):
@@ -215,7 +219,10 @@ class GumbelVQGAN(VQGAN):
             self.log("train/disc_loss", discloss, prog_bar=True,logger=True)
             loss = discloss
 
-        return loss
+        if self.args.log_images:
+            return {'loss': loss, 'xrec': xrec.detach()}
+        else:
+            return loss
 
 
     def validation_step(self, batch, batch_idx):
@@ -232,5 +239,8 @@ class GumbelVQGAN(VQGAN):
         self.log("val/disc_loss", discloss, prog_bar=True, logger=True)
         self.log("val/embed_loss", qloss, prog_bar=True, logger=True)        
         self.log("val/total_loss", loss, prog_bar=True, logger=True) 
-
-        return loss
+        
+        if self.args.log_images:
+            return {'loss': loss, 'xrec': xrec.detach()}
+        else:
+            return loss

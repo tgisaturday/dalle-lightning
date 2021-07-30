@@ -89,8 +89,10 @@ class VQVAE(pl.LightningModule):
         self.log("train/embed_loss", qloss, prog_bar=True, logger=True)
         self.log("train/total_loss", loss, prog_bar=True, logger=True)
 
-
-        return loss
+        if self.args.log_images:
+            return {'loss': loss, 'xrec': xrec.detach()}
+        else:
+            return loss
 
     def validation_step(self, batch, batch_idx):
         x, _ = batch
@@ -104,8 +106,10 @@ class VQVAE(pl.LightningModule):
         self.log("val/embed_loss", qloss, prog_bar=True, logger=True)
         self.log("val/total_loss", loss, prog_bar=True, logger=True)     
 
-
-        return loss
+        if self.args.log_images:
+            return {'loss': loss, 'xrec': xrec.detach()}
+        else:
+            return loss
 
     def configure_optimizers(self):
         lr = self.hparams.learning_rate
@@ -172,8 +176,10 @@ class GumbelVQVAE(VQVAE):
         self.log("train/embed_loss", qloss, prog_bar=True, logger=True)
         self.log("train/total_loss", loss, prog_bar=True, logger=True)                
         
-
-        return loss
+        if self.args.log_images:
+            return {'loss': loss, 'xrec': xrec.detach()}
+        else:
+            return loss
 
 
     def validation_step(self, batch, batch_idx):
@@ -189,4 +195,7 @@ class GumbelVQVAE(VQVAE):
         self.log("val/embed_loss", qloss, prog_bar=True, logger=True)
         self.log("val/total_loss", loss, prog_bar=True, logger=True)     
 
-        return loss
+        if self.args.log_images:
+            return {'loss': loss, 'xrec': xrec.detach()}
+        else:
+            return loss
