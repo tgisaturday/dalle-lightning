@@ -15,7 +15,22 @@ python3 -m torch_xla.core.xrt_run_server --port 51011 --restart
 
 python3 dalle-lightning/train_vae.py --use_tpus --model evqvae --fake_data
 
-python3 dalle-lightning/train_dalle.py --use_tpus --train_dir /datasets/lgaivision-sbu-eu/ --val_dir /datasets/lgaivision-sbu-eu/ --debug --xla_stat 
+python3 dalle-lightning/train_dalle.py --use_tpus ---fake_data --debug --xla_stat 
+
+python3 dalle-lightning/train_dalle.py --use_tpus --train_dir /datasets/lgaivision-sbu-eu/ --val_dir /datasets/lgaivision-sbu-eu/ --xla_stat --precision 32 --vae_path /datasets/vae.pt
+
+python3 dalle-lightning/train_dalle.py --use_tpus --train_dir /datasets/lgaivision-cc3m-eu/training/ --val_dir /datasets/lgaivision-cc3m-eu/validation/ --xla_stat --precision 32 --vae_path /datasets/vae.pt
+
+python3 dalle-lightning/train_vae.py --use_tpus --train_dir /datasets/lgaivision-cc3m-eu/training/ --val_dir /datasets/lgaivision-cc3m-eu/validation/ --model vqvae --xla_stat --backup --log_images
+
+python3 dalle-lightning/train_vae.py --use_tpus --train_dir /datasets/lgaivision-imagenet21k-eu/imagenet21k_train/ --val_dir /datasets/lgaivision-imagenet21k-eu/imagenet21k_val/ --xla_stat --backup --debug --model evqvae
+python3 -m torch_xla.distributed.xla_dist --tpu=tpu-pod-256 --restart-tpuvm-pod-server -- python3 dalle-lightning/train_vae.py --use_tpus --train_dir /datasets/lgaivision-imagenet21k-eu/imagenet21k_train/ --val_dir /datasets/lgaivision-imagenet21k-eu/imagenet21k_val/ --xla_stat --debug --model vqvae --log_images --fake_data
+python3 -m torch_xla.distributed.xla_dist --tpu=tpu-pod-256 --restart-tpuvm-pod-server -- python3 dalle-lightning/train_dalle.py --use_tpus --debug --fake_data --vae dvae --xla_stat --precision 32 --vae_path /datasets/vae.pt 
+
+python3 -m torch_xla.distributed.xla_dist --tpu=tpu-pod-256 --restart-tpuvm-pod-server -- python3 dalle-lightning/train_dalle.py --use_tpus --debug --fake_data --vae dvae --xla_stat --precision 32 --vae_path /datasets/vae.pt --backup --log_images
+
+
+python3 -m torch_xla.distributed.xla_dist --tpu=tpu-pod-256 --restart-tpuvm-pod-server -- python3 dalle-lightning/train_dalle.py --use_tpus --train_dir /datasets/lgaivision-sbu-eu/ --val_dir /datasets/lgaivision-sbu-eu/ --vae dvae --xla_stat --precision 32 --vae_path /datasets/vae.pt --backup --log_images 
 
 export TF_CPP_VMODULE=tensor=5,computation_client=5,xrt_computation_client=5,aten_xla_type=1 && export TF_CPP_MIN_LOG_LEVEL=0
 
@@ -23,13 +38,15 @@ export TF_CPP_VMODULE=tensor=5,computation_client=5,xrt_computation_client=5,ate
 #TPU Pods
 
 export PROJECT_ID=lgai-vision-tpu
-export TPU_NAME=tpu-pod-256-vae2
+export TPU_NAME=tpu-pod-256a
 export ZONE=europe-west4-a
 export RUNTIME_VERSION=v2-alpha
 
 gcloud alpha compute tpus tpu-vm create ${TPU_NAME} \
 --zone ${ZONE} --project ${PROJECT_ID} --accelerator-type v3-256 \
 --version ${RUNTIME_VERSION}  --reserved 
+
+
 
 gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
 --zone ${ZONE} --project ${PROJECT_ID}
@@ -47,6 +64,9 @@ gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
 --zone ${ZONE} --project ${PROJECT_ID} --worker=all \
   --command "cd dalle-lightning && git pull"
 
+gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
+--zone ${ZONE} --project ${PROJECT_ID} --worker=all \
+  --command "rm -rf results"
 
 
 gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
@@ -61,24 +81,50 @@ gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
 
 gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
 --zone ${ZONE} --project ${PROJECT_ID} --worker=all \
-  --command "sudo mkdir -p /datasets && sudo mount 10.6.112.122:/hyperdata /datasets"
+  --command "sudo mkdir -p /datasets && sudo mount 10.91.141.122:/hyperdata /datasets"
 
 
 #Run training (Move to TPU VM First)
 
-python3 -m torch_xla.distributed.xla_dist --tpu=tpu-pod-256-vae --restart-tpuvm-pod-server -- python3 dalle-lightning/train_vae.py --use_tpus --train_dir /datasets/lgaivision-imagenet21k-eu/imagenet21k_train/ --val_dir /datasets/lgaivision-imagenet21k-eu/imagenet21k_val/ --model gvqvae --xla_stat 
+python3 -m torch_xla.distributed.xla_dist --tpu=tpu-pod-512 --restart-tpuvm-pod-server -- python3 dalle-lightning/train_vae.py --use_tpus --train_dir /datasets/lgaivision-imagenet21k-eu/imagenet21k_train/ --val_dir /datasets/lgaivision-imagenet21k-eu/imagenet21k_val/ --model gvqvae --xla_stat --backup
 
-python3 -m torch_xla.distributed.xla_dist --tpu=tpu-pod-256-vae2 --restart-tpuvm-pod-server -- python3 dalle-lightning/train_vae.py --use_tpus --train_dir /datasets/lgaivision-imagenet21k-eu/imagenet21k_train/ --val_dir /datasets/lgaivision-imagenet21k-eu/imagenet21k_val/ --model evqvae --xla_stat 
+python3 -m torch_xla.distributed.xla_dist --tpu=tpu-pod-256-vae --restart-tpuvm-pod-server -- python3 dalle-lightning/train_vae.py --use_tpus --train_dir /datasets/lgaivision-imagenet21k-eu/imagenet21k_train/ --val_dir /datasets/lgaivision-imagenet21k-eu/imagenet21k_val/ --model evqvae --xla_stat --backup --log_image --precision 32
+
+python3 -m torch_xla.distributed.xla_dist --tpu=tpu-pod-256-dalle --restart-tpuvm-pod-server -- python3 dalle-lightning/train_dalle.py --use_tpus --vae dvae --vae_path /datasets/vae.pt --train_dir /datasets/lgaivision-sbu-eu/ --val_dir /datasets/lgaivision-sbu-eu/ --backup --log_image --precision 32 --xla_stat
+
+python3 -m torch_xla.distributed.xla_dist --tpu=tpu-pod-256-dalle --restart-tpuvm-pod-server -- python3 dalle-lightning/train_dalle.py --use_tpus --vae dvae --vae_path /datasets/vae.pt --train_dir /datasets/lgaivision-cc3m-eu/training/ --val_dir /datasets/lgaivision-cc3m-eu/validation/ --backup --log_image --precision 32 --xla_stat
+
+python3 -m torch_xla.distributed.xla_dist --tpu=tpu-pod-32 --restart-tpuvm-pod-server -- python3 dalle-lightning/train_dalle.py --use_tpus --vae dvae --vae_path /datasets/vae.pt --train_dir /datasets/lgaivision-cc3m-eu/training/ --val_dir /datasets/lgaivision-cc3m-eu/validation/ --backup --precision 32 --xla_stat
 
 
-python3 -m torch_xla.distributed.xla_dist --tpu=tpu-pod-256-dalle --restart-tpuvm-pod-server -- python3 dalle-lightning/train_dalle.py --use_tpus --train_dir /datasets/lgaivision-cc3m-eu/training/ --val_dir /datasets/lgaivision-cc3m-eu/validation/ --xla_stat --precision 32
+python3 -m torch_xla.distributed.xla_dist --tpu=tpu-pod-32 --restart-tpuvm-pod-server -- python3 dalle-lightning/train_dalle.py --use_tpus --vae dvae --vae_path /datasets/vae.pt --train_dir /datasets/lgaivision-sbu-eu/ --val_dir /datasets/lgaivision-sbu-eu/ --backup --log_image --precision 32 
+
+python3 -m torch_xla.distributed.xla_dist --tpu=tpu-pod-log-test --restart-tpuvm-pod-server -- python3 dalle-lightning/train_dalle.py --use_tpus --vae dvae --vae_path /datasets/vae.pt --train_dir /datasets/lgaivision-sbu-eu/ --val_dir /datasets/lgaivision-sbu-eu/ --backup --log_image --precision 32 
+
+python3 -m torch_xla.distributed.xla_dist --tpu=tpu-pod-256 --restart-tpuvm-pod-server -- python3 dalle-lightning/train_dalle.py --use_tpus --vae dvae --vae_path /datasets/vae.pt --train_dir /datasets/lgaivision-sbu-eu/ --val_dir /datasets/lgaivision-sbu-eu/ --backup --precision 32 
+
+python3 -m torch_xla.distributed.xla_dist --tpu=tpu-pod-256 --restart-tpuvm-pod-server -- python3 dalle-lightning/train_vae.py --use_tpus --train_dir /datasets/lgaivision-imagenet21k-eu/imagenet21k_train/ --val_dir /datasets/lgaivision-imagenet21k-eu/imagenet21k_val/ --model gvqvae --xla_stat --backup --log_image
+
+python3 -m torch_xla.distributed.xla_dist --tpu=tpu-pod-256 --restart-tpuvm-pod-server -- python3 dalle-lightning/train_dalle.py --use_tpus --train_dir /datasets/lgaivision-cc3m-eu/training/ --val_dir /datasets/lgaivision-cc3m-eu/validation/ --xla_stat --precision 32
+
+python3 -m torch_xla.distributed.xla_dist --tpu=tpu-pod-512 --restart-tpuvm-pod-server -- python3 dalle-lightning/train_vae.py --use_tpus --debug --fake_data --backup --model vqvae --xla_stat --precision 32
+
+python3 -m torch_xla.distributed.xla_dist --tpu=tpu-pod-512 --restart-tpuvm-pod-server -- python3 dalle-lightning/train_dalle.py --use_tpus --debug --fake_data --backup --vae openaivae --xla_stat --precision 32
+
+
+python3 -m torch_xla.distributed.xla_dist --tpu=tpu-pod-256 --restart-tpuvm-pod-server -- python3 dalle-lightning/train_dalle.py --use_tpus --debug --fake_data --backup --vae dpdvae --xla_stat --precision 32 --vae_path /datasets/vae.pt
+
+python3 -m torch_xla.distributed.xla_dist --tpu=tpu-pod-256 --restart-tpuvm-pod-server -- python3 dalle-lightning/train_dalle.py --use_tpus --train_dir /datasets/lgaivision-cc3m-eu/training/ --val_dir /datasets/lgaivision-cc3m-eu/validation/ --xla_stat --precision 32 --vae_path /datasets/vae.pt
+
+python3 dalle-lightning/train_vae.py --use_tpus --train_dir /datasets/lgaivision-cc3m-eu/training/ --val_dir /datasets/lgaivision-cc3m-eu/validation/ --model vqvae --xla_stat --backup --log_images
+
+python3 dalle-lightning/train_vae.py --use_tpus --train_dir /datasets/lgaivision-imagenet21k-eu/imagenet21k_train/ --val_dir /datasets/lgaivision-imagenet21k-eu/imagenet21k_val/ --xla_stat --backup --log_images --debug --model evqvae
 
 
 
-
-gcloud compute --project=lgai-vision-tpu instances create pod-ctrl-32\
+gcloud compute --project=lgai-vision-tpu instances create pod-ctrl\
   --zone=europe-west4-a  \
-  --machine-type=n1-standard-1  \
+  --machine-type=n2-standard-16  \
   --image-family=torch-xla \
   --image-project=ml-images  \
   --boot-disk-size=200GB \
@@ -95,7 +141,7 @@ export TPU_NAME=tpu-vm-pod-32
 
 python3 -m torch_xla.distributed.xla_dist --tpu=tpu-vm-pod-32 --restart-tpuvm-pod --env LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libtcmalloc.so.4  -- python3 /home/taehoon.kim/vqgan/main.py --use_tpus
 
-
+python3 -m torch_xla.distributed.xla_dist --tpu=tpu-pod-256 --restart-tpuvm-pod --env LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libtcmalloc.so.4 -- python3 dalle-lightning/train_vae.py --use_tpus --train_dir /datasets/lgaivision-imagenet21k-eu/imagenet21k_train/ --val_dir /datasets/lgaivision-imagenet21k-eu/imagenet21k_val/ --model gvqvae --xla_stat --backup --log_image
 ----------------------
 
 

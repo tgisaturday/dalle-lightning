@@ -56,6 +56,7 @@ class VAEImageSampler(Callback):
         self.scale_each = scale_each
         self.pad_value = pad_value
 
+    @rank_zero_only
     def on_train_batch_end(
         self,
         trainer: 'pl.Trainer',
@@ -92,7 +93,7 @@ class VAEImageSampler(Callback):
             xrec_title = "train/reconstruction"
             trainer.logger.experiment.add_image(xrec_title, xrec_grid, global_step=trainer.global_step)
 
-
+    @rank_zero_only
     def on_validation_batch_end(
         self,
         trainer: 'pl.Trainer',
@@ -175,7 +176,7 @@ class DalleGenerativeImageSampler(Callback):
         self.pad_value = pad_value
         self.tokenizer = tokenizer
 
-
+    @rank_zero_only
     def on_train_batch_end(
         self,
         trainer: 'pl.Trainer',
@@ -240,7 +241,7 @@ class DalleGenerativeImageSampler(Callback):
             xgen_title = "train/generation"
             trainer.logger.experiment.add_image(xgen_title, xgen_grid, global_step=trainer.global_step)
 
-
+    @rank_zero_only
     def on_validation_batch_end(
         self,
         trainer: 'pl.Trainer',
@@ -348,7 +349,7 @@ class DalleSimpleImageSampler(Callback):
         self.pad_value = pad_value
         self.tokenizer = tokenizer
 
-
+    @rank_zero_only
     def on_train_batch_end(
         self,
         trainer: 'pl.Trainer',
@@ -393,7 +394,7 @@ class DalleSimpleImageSampler(Callback):
             trainer.logger.experiment.add_image(xrec_title, xrec_grid, global_step=trainer.global_step)
 
 
-
+    @rank_zero_only
     def on_validation_batch_end(
         self,
         trainer: 'pl.Trainer',
