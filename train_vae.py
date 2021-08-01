@@ -171,7 +171,7 @@ if __name__ == "__main__":
                                 args.batch_size, args.num_workers, 
                                 args.img_size, args.resize_ratio, 
                                 args.fake_data, args.web_dataset)
-    datamodule.setup()   
+  
     # model
     if args.model == 'vqgan':
         model = VQGAN(args, args.batch_size, args.learning_rate)

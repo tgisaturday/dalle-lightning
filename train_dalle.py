@@ -234,8 +234,8 @@ if __name__ == "__main__":
                                 args.resize_ratio,args.truncate_captions, 
                                 tokenizer,
                                 args.fake_data, args.web_dataset)
-                                
-    datamodule.setup()                            
+
+                         
     if args.wandb:
         logger = pl.loggers.wandb.WandbLogger(project='dalle', log_model='all')
         logger.watch(model)
