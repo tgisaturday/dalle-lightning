@@ -207,7 +207,7 @@ class TextImageDataModule(LightningDataModule):
                                         transform=self.transform_val,
                                         shuffle=False,
                                         )
-        print('data setup fin')
+        
     def train_dataloader(self):
         if self.web_dataset:
             return wds.WebLoader(self.train_dataset, batch_size=None, num_workers=self.num_workers, shuffle=True)
