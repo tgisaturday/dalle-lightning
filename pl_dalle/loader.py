@@ -27,7 +27,7 @@ def web_dataset_helper(path):
         DATASET = path
         print('Found WebDataset .tar(.gz) file under given path {}!'.format(path))
     else:
-        raise Exception('No folder, no .tar(.gz) and no url pointing to tar files provided under {}.'.format(args.image_text_folder))
+        raise Exception('No folder, no .tar(.gz) and no url pointing to tar files provided under {}.'.format(path))
     return DATASET
 
 def identity(x):
@@ -75,16 +75,18 @@ class ImageDataModule(LightningDataModule):
                 num_batches = DATASET_SIZE // BATCH_SIZE
 
                 self.train_dataset = (
-                    wds.WebDataset(DATASET_TRAIN, length=num_batches)
+                    wds.WebDataset(DATASET_TRAIN, length=num_batches, #cache_dir="./cache"
+                    )
                     # .shuffle(is_shuffle) # Commented out for WebDataset as the behaviour cannot be predicted yet
                     .decode("pil")
-                    .to_tuple("jpg;png;jpeg cls")
-                    .map_tuple(self.transform_train, identity)
+                    .to_tuple("jpg;png;jpeg")
+                    .map_tuple(self.transform_train)
                     .batched(BATCH_SIZE, partial=False) # It is good to avoid partial batches when using Distributed training
                     )  
+
                 self.val_dataset = (
-                    wds.WebDataset(DATASET_VAL,length=num_batches)
-                    # .shuffle(is_shuffle) # Commented out for WebDataset as the behaviour cannot be predicted yet
+                    wds.webdataset(DATASET_VAL, length=num_batches)
+                    # .shuffle(is_shuffle) # commented out for webdataset as the behaviour cannot be predicted yet
                     .decode("pil")
                     .to_tuple("jpg;png;jpeg cls")
                     .map_tuple(self.transform_val, identity)
@@ -97,19 +99,13 @@ class ImageDataModule(LightningDataModule):
 
     def train_dataloader(self):
         if self.web_dataset:
-            return wds.WebLoader(self.train_dataset, batch_size=self.batch_size, num_workers=self.num_workers,shuffle=True)
+            return wds.WebLoader(self.train_dataset, batch_size=None, num_workers=self.num_workers)
         else:
-            return DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=self.num_workers,shuffle=True)
+            return DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=True)
 
     def val_dataloader(self):
         if self.web_dataset:
-            return wds.WebLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers)
-        else:
-            return DataLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers)
-
-    def val_dataloader(self):
-        if self.web_dataset:
-            return wds.WebLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers)
+            return wds.WebLoader(self.val_dataset, batch_size=None, num_workers=self.num_workers)
         else:
             return DataLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers)
 
@@ -213,19 +209,13 @@ class TextImageDataModule(LightningDataModule):
                                         )
     def train_dataloader(self):
         if self.web_dataset:
-            return wds.WebLoader(self.train_dataset, batch_size=self.batch_size, num_workers=self.num_workers,shuffle=True)
+            return wds.WebLoader(self.train_dataset, batch_size=None, num_workers=self.num_workers, shuffle=True)
         else:
-            return DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=self.num_workers,shuffle=True)
+            return DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=True)
 
     def val_dataloader(self):
         if self.web_dataset:
-            return wds.WebLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers)
-        else:
-            return DataLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers)
-
-    def val_dataloader(self):
-        if self.web_dataset:
-            return wds.WebLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers)
+            return wds.WebLoader(self.val_dataset, batch_size=None, num_workers=self.num_workers)
         else:
             return DataLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers)
 

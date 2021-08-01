@@ -42,6 +42,13 @@ class VQGAN(pl.LightningModule):
         self.quantize = VectorQuantizer(args.num_tokens, args.codebook_dim, beta=args.quant_beta)
         self.post_quant_conv = torch.nn.Conv2d(args.codebook_dim, args.z_channels, 1)
 
+        for name, p in self.named_parameters():
+            if name in ['weight']:
+                nn.init.orthogonal_(p)
+            elif name in ['bias']:
+                nn.init.kaiming_normal_(p)
+            
+
     def encode(self, x):
         h = self.encoder(x)
         h = self.quant_conv(h)
@@ -77,7 +84,7 @@ class VQGAN(pl.LightningModule):
         return dec, diff
 
     def training_step(self, batch, batch_idx, optimizer_idx):     
-        x, _ = batch
+        x = batch[0]
         xrec, qloss = self(x)
     
         if optimizer_idx == 0:
@@ -104,7 +111,7 @@ class VQGAN(pl.LightningModule):
             
 
     def validation_step(self, batch, batch_idx):
-        x, _ = batch
+        x = batch[0]
         xrec, qloss = self(x)
         aeloss = self.loss(qloss, x, xrec, 0, self.global_step,
                                         last_layer=self.get_last_layer(), split="val")
@@ -195,7 +202,7 @@ class GumbelVQGAN(VQGAN):
 
 
     def training_step(self, batch, batch_idx, optimizer_idx):
-        x, _ = batch
+        x = batch[0]
         #temperature annealing
         self.temperature = max(self.temperature * math.exp(-self.anneal_rate * self.global_step), self.temp_min)
         self.quantize.temperature = self.temperature
@@ -222,7 +229,7 @@ class GumbelVQGAN(VQGAN):
 
 
     def validation_step(self, batch, batch_idx):
-        x, _ = batch
+        x = batch[0]
         self.quantize.temperature = 1.0        
         xrec, qloss = self(x)
         aeloss = self.loss(qloss, x, xrec, 0, self.global_step,
