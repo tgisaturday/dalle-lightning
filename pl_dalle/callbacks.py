@@ -14,15 +14,15 @@ import torch.nn.functional as F
 if _TORCHVISION_AVAILABLE:
     import torchvision
     import torchvision.transforms.functional as TF
-    import wandb
 else:  # pragma: no cover
     warn_missing_pkg("torchvision")
+
+import importlib
 
 
 
 
 class VAEImageSampler(Callback):
-    
     def __init__(
         self,
         every_n_steps: int = 1000,
@@ -60,7 +60,10 @@ class VAEImageSampler(Callback):
         self.norm_range = norm_range
         self.scale_each = scale_each
         self.pad_value = pad_value
-        self.wandb = use_wandb
+        if use_wandb:
+            self.wandb = importlib.__import__('wandb')
+        else:
+            self.wandb = None
 
     @rank_zero_only
     def on_train_batch_end(
@@ -99,9 +102,9 @@ class VAEImageSampler(Callback):
                     else:
                         norm_range(x, self.norm_range)
                         norm_range(xrec, self.norm_range)
-                    
-                pairs = [[wandb.Image(TF.to_pil_image(x.cpu())), wandb.Image(TF.to_pil_image(xrec.cpu()))] for x, xrec in zip(x, xrec)]
-                table = wandb.Table(columns=["input", "reconstruction"], data=pairs)
+
+                pairs = [[self.wandb.Image(TF.to_pil_image(x.cpu())), self.wandb.Image(TF.to_pil_image(xrec.cpu()))] for x, xrec in zip(x, xrec)]
+                table = self.wandb.Table(columns=["input", "reconstruction"], data=pairs)
                 trainer.logger.experiment.log({"table": table, "global_step": trainer.global_step})
             else:
                 x_grid = torchvision.utils.make_grid(
@@ -165,8 +168,8 @@ class VAEImageSampler(Callback):
                         norm_range(x, self.norm_range)
                         norm_range(xrec, self.norm_range)
                     
-                pairs = [[wandb.Image(TF.to_pil_image(x.cpu())), wandb.Image(TF.to_pil_image(xrec.cpu()))] for x, xrec in zip(x, xrec)]
-                table = wandb.Table(columns=["input", "reconstruction"], data=pairs)
+                pairs = [[self.wandb.Image(TF.to_pil_image(x.cpu())), self.wandb.Image(TF.to_pil_image(xrec.cpu()))] for x, xrec in zip(x, xrec)]
+                table = self.wandb.Table(columns=["input", "reconstruction"], data=pairs)
                 trainer.logger.experiment.log({"table": table, "global_step": trainer.global_step})
             else:
                 x_grid = torchvision.utils.make_grid(
