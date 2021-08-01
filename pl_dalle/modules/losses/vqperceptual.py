@@ -13,6 +13,8 @@ class DummyLoss(nn.Module):
 
 def adopt_weight(weight, global_step, threshold=0, value=0.):
     if global_step < threshold:
+        # diff = global_step - threshold
+        # weight = weight * exp(diff / 1e4)
         weight = value
     return weight
 
@@ -117,6 +119,6 @@ class VQLPIPSWithDiscriminator(nn.Module):
                 logits_real = self.discriminator(torch.cat((inputs.contiguous().detach(), cond), dim=1))
                 logits_fake = self.discriminator(torch.cat((reconstructions.contiguous().detach(), cond), dim=1))
 
-            disc_factor = adopt_weight(self.disc_factor, global_step, threshold=self.discriminator_iter_start)
+            disc_factor = self.disc_factor # adopt_weight(self.disc_factor, global_step, threshold=self.discriminator_iter_start)
             d_loss = disc_factor * self.disc_loss(logits_real, logits_fake)
             return d_loss

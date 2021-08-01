@@ -62,6 +62,11 @@ class NLayerDiscriminator(nn.Module):
             nn.Conv2d(ndf * nf_mult, 1, kernel_size=kw, stride=1, padding=padw)]  # output 1 channel prediction map
         self.main = nn.Sequential(*sequence)
 
+        for module in self.modules():
+            if isinstance(module, (nn.Conv2d, nn.Linear)):
+                module = nn.utils.spectral_norm(module)
+
+
     def forward(self, input):
         """Standard forward."""
         return self.main(input)

@@ -13,8 +13,12 @@ import torch.nn.functional as F
 
 if _TORCHVISION_AVAILABLE:
     import torchvision
+    import torchvision.transforms.functional as TF
+    import wandb
 else:  # pragma: no cover
     warn_missing_pkg("torchvision")
+
+
 
 
 class VAEImageSampler(Callback):
@@ -28,6 +32,7 @@ class VAEImageSampler(Callback):
         norm_range: Optional[Tuple[int, int]] = None,
         scale_each: bool = False,
         pad_value: int = 0,
+        use_wandb: bool = False,
     ) -> None:
         """
         Args:
@@ -55,6 +60,7 @@ class VAEImageSampler(Callback):
         self.norm_range = norm_range
         self.scale_each = scale_each
         self.pad_value = pad_value
+        self.wandb = use_wandb
 
     @rank_zero_only
     def on_train_batch_end(
@@ -70,28 +76,56 @@ class VAEImageSampler(Callback):
         if trainer.global_step % self.every_n_steps == 0:
             x = outputs['x']
             xrec = outputs['xrec']
-            x_grid = torchvision.utils.make_grid(
-                tensor=x,
-                nrow=self.nrow,
-                padding=self.padding,
-                normalize=self.normalize,
-                value_range=self.norm_range,
-                scale_each=self.scale_each,
-                pad_value=self.pad_value,
-            )           
-            xrec_grid = torchvision.utils.make_grid(
-                tensor=xrec,
-                nrow=self.nrow,
-                padding=self.padding,
-                normalize=self.normalize,
-                value_range=self.norm_range,
-                scale_each=self.scale_each,
-                pad_value=self.pad_value,
-            )    
-            x_title = "train/input"
-            trainer.logger.experiment.add_image(x_title, x_grid, global_step=trainer.global_step)
-            xrec_title = "train/reconstruction"
-            trainer.logger.experiment.add_image(xrec_title, xrec_grid, global_step=trainer.global_step)
+            if self.wandb:
+                if self.normalize:
+                    x = x.clone()
+                    xrec = xrec.clone()
+
+                    def norm_ip(img, low, high):
+                        img.clamp_(min=low, max=high)
+                        img.sub_(low).div_(max(high - low, 1e-5))
+
+                    def norm_range(t, value_range):
+                        if value_range is not None:
+                            norm_ip(t, value_range[0], value_range[1])
+                        else:
+                            norm_ip(t, float(t.min()), float(t.max()))
+
+                    if self.scale_each:
+                        for t in x:
+                            norm_range(t, self.norm_range)
+                        for t in xrec:
+                            norm_range(t, self.norm_range)
+                    else:
+                        norm_range(x, self.norm_range)
+                        norm_range(xrec, self.norm_range)
+                    
+                pairs = [[wandb.Image(TF.to_pil_image(x.cpu())), wandb.Image(TF.to_pil_image(xrec.cpu()))] for x, xrec in zip(x, xrec)]
+                table = wandb.Table(columns=["input", "reconstruction"], data=pairs)
+                trainer.logger.experiment.log({"table": table, "global_step": trainer.global_step})
+            else:
+                x_grid = torchvision.utils.make_grid(
+                    tensor=x,
+                    nrow=self.nrow,
+                    padding=self.padding,
+                    normalize=self.normalize,
+                    value_range=self.norm_range,
+                    scale_each=self.scale_each,
+                    pad_value=self.pad_value,
+                )           
+                xrec_grid = torchvision.utils.make_grid(
+                    tensor=xrec,
+                    nrow=self.nrow,
+                    padding=self.padding,
+                    normalize=self.normalize,
+                    value_range=self.norm_range,
+                    scale_each=self.scale_each,
+                    pad_value=self.pad_value,
+                )    
+                x_title = "train/input"
+                trainer.logger.experiment.add_image(x_title, x_grid, global_step=trainer.global_step)
+                xrec_title = "train/reconstruction"
+                trainer.logger.experiment.add_image(xrec_title, xrec_grid, global_step=trainer.global_step)
 
     @rank_zero_only
     def on_validation_batch_end(
@@ -107,28 +141,56 @@ class VAEImageSampler(Callback):
         if trainer.global_step % self.every_n_steps == 0:
             x = outputs['x']
             xrec = outputs['xrec']
-            x_grid = torchvision.utils.make_grid(
-                tensor=x,
-                nrow=self.nrow,
-                padding=self.padding,
-                normalize=self.normalize,
-                value_range=self.norm_range,
-                scale_each=self.scale_each,
-                pad_value=self.pad_value,
-            )           
-            xrec_grid = torchvision.utils.make_grid(
-                tensor=xrec,
-                nrow=self.nrow,
-                padding=self.padding,
-                normalize=self.normalize,
-                value_range=self.norm_range,
-                scale_each=self.scale_each,
-                pad_value=self.pad_value,
-            )    
-            x_title = "val/input"
-            trainer.logger.experiment.add_image(x_title, x_grid, global_step=trainer.global_step)
-            xrec_title = "val/reconstruction"
-            trainer.logger.experiment.add_image(xrec_title, xrec_grid, global_step=trainer.global_step)
+            if self.wandb:
+                if self.normalize:
+                    x = x.clone()
+                    xrec = xrec.clone()
+
+                    def norm_ip(img, low, high):
+                        img.clamp_(min=low, max=high)
+                        img.sub_(low).div_(max(high - low, 1e-5))
+
+                    def norm_range(t, value_range):
+                        if value_range is not None:
+                            norm_ip(t, value_range[0], value_range[1])
+                        else:
+                            norm_ip(t, float(t.min()), float(t.max()))
+
+                    if self.scale_each:
+                        for t in x:
+                            norm_range(t, self.norm_range)
+                        for t in xrec:
+                            norm_range(t, self.norm_range)
+                    else:
+                        norm_range(x, self.norm_range)
+                        norm_range(xrec, self.norm_range)
+                    
+                pairs = [[wandb.Image(TF.to_pil_image(x.cpu())), wandb.Image(TF.to_pil_image(xrec.cpu()))] for x, xrec in zip(x, xrec)]
+                table = wandb.Table(columns=["input", "reconstruction"], data=pairs)
+                trainer.logger.experiment.log({"table": table, "global_step": trainer.global_step})
+            else:
+                x_grid = torchvision.utils.make_grid(
+                    tensor=x,
+                    nrow=self.nrow,
+                    padding=self.padding,
+                    normalize=self.normalize,
+                    value_range=self.norm_range,
+                    scale_each=self.scale_each,
+                    pad_value=self.pad_value,
+                )           
+                xrec_grid = torchvision.utils.make_grid(
+                    tensor=xrec,
+                    nrow=self.nrow,
+                    padding=self.padding,
+                    normalize=self.normalize,
+                    value_range=self.norm_range,
+                    scale_each=self.scale_each,
+                    pad_value=self.pad_value,
+                )    
+                x_title = "val/input"
+                trainer.logger.experiment.add_image(x_title, x_grid, global_step=trainer.global_step)
+                xrec_title = "val/reconstruction"
+                trainer.logger.experiment.add_image(xrec_title, xrec_grid, global_step=trainer.global_step)
 
 
 class DalleGenerativeImageSampler(Callback):
