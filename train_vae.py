@@ -3,7 +3,6 @@ import numpy as np
 import random
 from PIL import Image
 import torch
-import wandb
 
 
 # vision imports
@@ -22,7 +21,6 @@ from pytorch_lightning import seed_everything
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import XLAStatsMonitor
 from pytorch_lightning.callbacks.model_checkpoint import ModelCheckpoint
-from pytorch_lightning.loggers import WandbLogger
 
 
 
@@ -161,6 +159,7 @@ if __name__ == "__main__":
     parser.add_argument('--codebook_weight', type=float, default=1.0,
                     help='lossconfig') 
 
+    parser.add_argument('--wandb', action='store_true', default=False, help='use wandb for logging')
     #misc configuration
  
     args = parser.parse_args()
@@ -235,7 +234,12 @@ if __name__ == "__main__":
         
 
     else:
-        logger = WandbLogger(project='vqgan', log_model='all')
+        if args.wandb:
+            logger = pl.loggers.WandbLogger(project='vqgan', log_model='all')
+            logger.watch(model)
+        else:
+            logger = pl.loggers.TensorboardLogger("tb_logs")
+
         trainer = Trainer(tpu_cores=tpus, gpus= gpus, default_root_dir=default_root_dir,
                           max_epochs=args.epochs, progress_bar_refresh_rate=args.refresh_rate,precision=args.precision,
                           accelerator='ddp', benchmark=True,
@@ -244,12 +248,11 @@ if __name__ == "__main__":
                           resume_from_checkpoint = ckpt_path,
                           logger = logger,
           )
-        logger.watch(model)
 
     if args.backup:
         trainer.callbacks.append(backup_callback)                                 
     if args.log_images:
-        trainer.callbacks.append(VAEImageSampler(every_n_steps=args.image_log_steps))  
+        trainer.callbacks.append(VAEImageSampler(every_n_steps=args.image_log_steps, use_wandb=args.wandb))  
         
     print("Setting batch size: {} learning rate: {:.2e}".format(model.hparams.batch_size, model.hparams.learning_rate))
     
