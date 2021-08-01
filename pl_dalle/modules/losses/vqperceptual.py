@@ -13,8 +13,6 @@ class DummyLoss(nn.Module):
 
 def adopt_weight(weight, global_step, threshold=0, value=0.):
     if global_step < threshold:
-        # diff = global_step - threshold
-        # weight = weight * exp(diff / 1e4)
         weight = value
     return weight
 
