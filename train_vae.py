@@ -250,7 +250,7 @@ if __name__ == "__main__":
     if args.backup:
         trainer.callbacks.append(backup_callback)                                 
     if args.log_images:
-        trainer.callbacks.append(VAEImageSampler(every_n_steps=args.image_log_steps, use_wandb=args.wandb))  
+        trainer.callbacks.append(ReconstructedImageLogger(every_n_steps=args.image_log_steps, use_wandb=args.wandb))  
         
     print("Setting batch size: {} learning rate: {:.2e}".format(model.hparams.batch_size, model.hparams.learning_rate))
     
