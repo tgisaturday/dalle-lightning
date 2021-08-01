@@ -22,7 +22,7 @@ import importlib
 
 
 
-class VAEImageSampler(Callback):
+class ReconstructedImageLogger(Callback):
     def __init__(
         self,
         every_n_steps: int = 1000,

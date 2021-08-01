@@ -14,7 +14,7 @@ from pl_dalle.models.vqgan import VQGAN, EMAVQGAN, GumbelVQGAN
 from pl_dalle.models.vqvae import VQVAE, EMAVQVAE, GumbelVQVAE
 from pl_dalle.models.vqvae2 import VQVAE2
 from pl_dalle.loader import ImageDataModule
-from pl_dalle.callbacks import VAEImageSampler
+from pl_dalle.callbacks import ReconstructedImageLogger
 
 import pytorch_lightning as pl
 from pytorch_lightning import seed_everything

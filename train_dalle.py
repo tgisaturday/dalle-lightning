@@ -16,7 +16,7 @@ from pl_dalle.models.dalle import DiscreteVAE, DALLE
 
 from pl_dalle.loader import TextImageDataModule
 from pl_dalle.modules.dalle.tokenizer import tokenizer, HugTokenizer, YttmTokenizer
-from pl_dalle.callbacks import VAEImageSampler, DalleGenerativeImageSampler
+from pl_dalle.callbacks import ReconstructedImageLogger, DalleGenerativeImageSampler
 
 from torchvision import transforms as T
 from PIL import Image
