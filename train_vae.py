@@ -171,7 +171,7 @@ if __name__ == "__main__":
                                 args.batch_size, args.num_workers, 
                                 args.img_size, args.resize_ratio, 
                                 args.fake_data, args.web_dataset)
-   
+    datamodule.setup()   
     # model
     if args.model == 'vqgan':
         model = VQGAN(args, args.batch_size, args.learning_rate)
@@ -227,7 +227,7 @@ if __name__ == "__main__":
         logger = pl.loggers.wandb.WandbLogger(project='vqvae', log_model='all')
         logger.watch(model)
     else:
-        logger = pl.loggers.tensorboard.TensorBoardLogger("tb_logs")                
+        logger = pl.loggers.tensorboard.TensorBoardLogger(args.log_dir)                
     if args.use_tpus:
         trainer = Trainer(tpu_cores=tpus, gpus= gpus, default_root_dir=default_root_dir,
                           max_epochs=args.epochs, progress_bar_refresh_rate=args.refresh_rate,precision=args.precision,

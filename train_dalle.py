@@ -234,11 +234,13 @@ if __name__ == "__main__":
                                 args.resize_ratio,args.truncate_captions, 
                                 tokenizer,
                                 args.fake_data, args.web_dataset)
+                                
+    datamodule.setup()                            
     if args.wandb:
-        logger = pl.loggers.wandb.WandbLogger(project='vqvae', log_model='all')
+        logger = pl.loggers.wandb.WandbLogger(project='dalle', log_model='all')
         logger.watch(model)
     else:
-        logger = pl.loggers.tensorboard.TensorBoardLogger("tb_logs")    
+        logger = pl.loggers.tensorboard.TensorBoardLogger(args.log_dir)    
 
     if args.use_tpus:
         trainer = Trainer(tpu_cores=tpus, gpus= gpus, default_root_dir=default_root_dir,
