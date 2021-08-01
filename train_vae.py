@@ -224,10 +224,10 @@ if __name__ == "__main__":
                 print("Setting default ckpt to {}. If this is unexpected behavior, remove {}".format(ckpt_path, ckpt_path))
 
     if args.wandb:
-        logger = pl.loggers.WandbLogger(project='vqvae', log_model='all')
+        logger = pl.loggers.wandb.WandbLogger(project='vqvae', log_model='all')
         logger.watch(model)
     else:
-        logger = pl.loggers.TensorboardLogger("tb_logs")                
+        logger = pl.loggers.tensorboard.TensorboardLogger("tb_logs")                
     if args.use_tpus:
         trainer = Trainer(tpu_cores=tpus, gpus= gpus, default_root_dir=default_root_dir,
                           max_epochs=args.epochs, progress_bar_refresh_rate=args.refresh_rate,precision=args.precision,
