@@ -68,7 +68,7 @@ class ImageDataModule(LightningDataModule):
         else:
             if self.web_dataset:
                 DATASET_TRAIN = web_dataset_helper(self.train_dir)
-                #DATASET_VAL = web_dataset_helper(self.val_dir)
+                DATASET_VAL = web_dataset_helper(self.val_dir)
                 DATASET_SIZE = int(1e9)
                 BATCH_SIZE = self.batch_size
                 
@@ -83,16 +83,15 @@ class ImageDataModule(LightningDataModule):
                     .map_tuple(self.transform_train)
                     .batched(BATCH_SIZE, partial=False) # It is good to avoid partial batches when using Distributed training
                     )  
-                '''
+
                 self.val_dataset = (
-                    wds.webdataset(dataset_val,length=num_batches)
+                    wds.webdataset(DATASET_VAL, length=num_batches)
                     # .shuffle(is_shuffle) # commented out for webdataset as the behaviour cannot be predicted yet
                     .decode("pil")
                     .to_tuple("jpg;png;jpeg cls")
                     .map_tuple(self.transform_val, identity)
                     .batched(BATCH_SIZE, partial=False) # It is good to avoid partial batches when using Distributed training
                     )                                     
-                '''
             else:
                 self.train_dataset = ImageFolder(self.train_dir, self.transform_train)
                 self.val_dataset = ImageFolder(self.val_dir, self.transform_val)
@@ -102,7 +101,7 @@ class ImageDataModule(LightningDataModule):
         if self.web_dataset:
             return wds.WebLoader(self.train_dataset, batch_size=None, num_workers=self.num_workers)
         else:
-            return DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=self.num_workers,shuffle=True)
+            return DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=True)
 
     def val_dataloader(self):
         if self.web_dataset:
@@ -210,19 +209,13 @@ class TextImageDataModule(LightningDataModule):
                                         )
     def train_dataloader(self):
         if self.web_dataset:
-            return wds.WebLoader(self.train_dataset, batch_size=self.batch_size, num_workers=self.num_workers,shuffle=True)
+            return wds.WebLoader(self.train_dataset, batch_size=None, num_workers=self.num_workers, shuffle=True)
         else:
-            return DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=self.num_workers,shuffle=True)
+            return DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=True)
 
     def val_dataloader(self):
         if self.web_dataset:
-            return wds.WebLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers)
-        else:
-            return DataLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers)
-
-    def val_dataloader(self):
-        if self.web_dataset:
-            return wds.WebLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers)
+            return wds.WebLoader(self.val_dataset, batch_size=None, num_workers=self.num_workers)
         else:
             return DataLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers)
 
