@@ -153,6 +153,8 @@ if __name__ == "__main__":
     parser.add_argument('--loss_img_weight', default = 7, type = int, 
                     help = 'Image loss weight')
 
+    parser.add_argument('--wandb', action='store_true', default=False, help='use wandb for logging')
+
     args = parser.parse_args()
 
     #random seed fix
@@ -232,7 +234,11 @@ if __name__ == "__main__":
                                 args.resize_ratio,args.truncate_captions, 
                                 tokenizer,
                                 args.fake_data, args.web_dataset)
-
+    if args.wandb:
+        logger = pl.loggers.WandbLogger(project='vqvae', log_model='all')
+        logger.watch(model)
+    else:
+        logger = pl.loggers.TensorboardLogger("tb_logs")    
 
     if args.use_tpus:
         trainer = Trainer(tpu_cores=tpus, gpus= gpus, default_root_dir=default_root_dir,
@@ -240,7 +246,8 @@ if __name__ == "__main__":
                           gradient_clip_val=args.clip_grad_norm, accumulate_grad_batches=args.ga_steps,
                           num_sanity_val_steps=args.num_sanity_val_steps,
                           limit_train_batches=limit_train_batches,limit_test_batches=limit_test_batches,                          
-                          resume_from_checkpoint = ckpt_path)
+                          resume_from_checkpoint = ckpt_path,
+                          logger=logger)
         if args.xla_stat:
             trainer.callbacks.append(XLAStatsMonitor())                         
     else:
@@ -250,7 +257,8 @@ if __name__ == "__main__":
                           gradient_clip_val=args.clip_grad_norm,
                           num_sanity_val_steps=args.num_sanity_val_steps,
                           limit_train_batches=limit_train_batches,limit_test_batches=limit_test_batches,                          
-                          resume_from_checkpoint = ckpt_path)
+                          resume_from_checkpoint = ckpt_path,
+                          logger=logger)
 
     if args.backup:
         trainer.callbacks.append(backup_callback)      

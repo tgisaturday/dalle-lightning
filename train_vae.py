@@ -222,32 +222,30 @@ if __name__ == "__main__":
             ckpt_path = sorted(glob.glob(os.path.join(args.backup_dir,'*.ckpt')))[-1]
             if args.resume:
                 print("Setting default ckpt to {}. If this is unexpected behavior, remove {}".format(ckpt_path, ckpt_path))
-                
+
+    if args.wandb:
+        logger = pl.loggers.WandbLogger(project='vqvae', log_model='all')
+        logger.watch(model)
+    else:
+        logger = pl.loggers.TensorboardLogger("tb_logs")                
     if args.use_tpus:
         trainer = Trainer(tpu_cores=tpus, gpus= gpus, default_root_dir=default_root_dir,
                           max_epochs=args.epochs, progress_bar_refresh_rate=args.refresh_rate,precision=args.precision,
                           num_sanity_val_steps=args.num_sanity_val_steps,
                           limit_train_batches=limit_train_batches,limit_test_batches=limit_test_batches,
-                          resume_from_checkpoint = ckpt_path)
+                          resume_from_checkpoint = ckpt_path,
+                          logger = logger)
         if args.xla_stat:
             trainer.callbacks.append(XLAStatsMonitor())
         
-
     else:
-        if args.wandb:
-            logger = pl.loggers.WandbLogger(project='vqgan', log_model='all')
-            logger.watch(model)
-        else:
-            logger = pl.loggers.TensorboardLogger("tb_logs")
-
         trainer = Trainer(tpu_cores=tpus, gpus= gpus, default_root_dir=default_root_dir,
                           max_epochs=args.epochs, progress_bar_refresh_rate=args.refresh_rate,precision=args.precision,
                           accelerator='ddp', benchmark=True,
                           num_sanity_val_steps=args.num_sanity_val_steps,
                           limit_train_batches=limit_train_batches,limit_test_batches=limit_test_batches,                          
                           resume_from_checkpoint = ckpt_path,
-                          logger = logger,
-          )
+                          logger = logger)
 
     if args.backup:
         trainer.callbacks.append(backup_callback)                                 
