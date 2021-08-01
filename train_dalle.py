@@ -16,7 +16,7 @@ from pl_dalle.models.dalle import DiscreteVAE, DALLE
 
 from pl_dalle.loader import TextImageDataModule
 from pl_dalle.modules.dalle.tokenizer import tokenizer, HugTokenizer, YttmTokenizer
-from pl_dalle.callbacks import DalleSimpleImageSampler, DalleGenerativeImageSampler
+from pl_dalle.callbacks import VAEImageSampler, DalleGenerativeImageSampler
 
 from torchvision import transforms as T
 from PIL import Image
@@ -266,7 +266,7 @@ if __name__ == "__main__":
     if args.log_generations:
          trainer.callbacks.append(DalleGenerativeImageSampler(every_n_steps=args.image_log_steps, tokenizer = tokenizer))
     elif args.log_images:
-        trainer.callbacks.append(DalleSimpleImageSampler(every_n_steps=args.image_log_steps, tokenizer = tokenizer))         
+        trainer.callbacks.append(VAEImageSampler(every_n_steps=args.image_log_steps, tokenizer = tokenizer))         
         
     print("Setting batch size: {} learning rate: {:.2e}".format(model.hparams.batch_size, model.hparams.learning_rate))
     
