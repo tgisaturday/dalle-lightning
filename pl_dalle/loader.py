@@ -252,7 +252,7 @@ class FakeTextImageData(VisionDataset):
         rng_state = torch.get_rng_state()
         torch.manual_seed(index + self.random_offset)
         img = torch.randn(*self.image_size)
-        text = torch.randint(1000,(self.text_len,))
+        text = torch.randint(10000,(self.text_len,))
         torch.set_rng_state(rng_state)
 
         # convert to PIL Image
@@ -306,19 +306,6 @@ class TextImageDataset(Dataset):
 
     def __len__(self):
         return len(self.keys)
-
-    def random_sample(self):
-        return self.__getitem__(randint(0, self.__len__() - 1))
-
-    def sequential_sample(self, ind):
-        if ind >= self.__len__() - 1:
-            return self.__getitem__(0)
-        return self.__getitem__(ind + 1)
-
-    def skip_sample(self, ind):
-        if self.shuffle:
-            return self.random_sample()
-        return self.sequential_sample(ind=ind)
 
     def __getitem__(self, ind):
         key = self.keys[ind]
