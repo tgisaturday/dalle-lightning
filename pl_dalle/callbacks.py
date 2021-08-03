@@ -42,9 +42,6 @@ class ReconstructedImageLogger(Callback):
                 images separately rather than the (min, max) over all images. Default: ``False``.
             pad_value: Value for the padded pixels. Default: ``0``.
         """
-        if not _TORCHVISION_AVAILABLE:  # pragma: no cover
-            raise ModuleNotFoundError("You want to use `torchvision` which is not installed yet.")
-
         super().__init__()
         self.every_n_steps = every_n_steps
         self.nrow = nrow
@@ -219,9 +216,7 @@ class DalleGenerativeImageSampler(Callback):
                 images separately rather than the (min, max) over all images. Default: ``False``.
             pad_value: Value for the padded pixels. Default: ``0``.
         """
-        if not _TORCHVISION_AVAILABLE:  # pragma: no cover
-            raise ModuleNotFoundError("You want to use `torchvision` which is not installed yet.")
-
+        
         super().__init__()
         self.every_n_steps = every_n_steps
         self.text_seq_len = text_seq_len
