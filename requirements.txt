@@ -4,7 +4,6 @@ albumentations
 opencv-python
 pudb
 git+https://github.com/PytorchLightning/pytorch-lightning.git
-pytorch-lightning-bolts
 einops
 regex
 g-mlp-pytorch

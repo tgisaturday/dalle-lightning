@@ -5,17 +5,10 @@ import torch
 import pytorch_lightning as pl
 from pytorch_lightning import Callback, LightningModule, Trainer
 
-from pl_bolts.utils import _TORCHVISION_AVAILABLE
-from pl_bolts.utils.warnings import warn_missing_pkg
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from pytorch_lightning.utilities.distributed import rank_zero_only
 import torch.nn.functional as F
-
-if _TORCHVISION_AVAILABLE:
-    import torchvision
-    import torchvision.transforms.functional as TF
-else:  # pragma: no cover
-    warn_missing_pkg("torchvision")
+import torchvision
 
 import importlib
 
