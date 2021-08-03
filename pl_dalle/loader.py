@@ -12,6 +12,9 @@ from typing import Any, Callable, Optional, Tuple
 from torchvision import transforms
 import webdataset as wds
 
+from PIL import Image
+from io import BytesIO
+
 def web_dataset_helper(path):
     if Path(path).is_dir():
         DATASET = [str(p) for p in Path(path).glob("**/*") if ".tar" in str(p).lower()] # .name
@@ -88,7 +91,7 @@ class ImageDataModule(LightningDataModule):
                     wds.webdataset(DATASET_VAL, length=num_batches)
                     # .shuffle(is_shuffle) # commented out for webdataset as the behaviour cannot be predicted yet
                     .decode("pil")
-                    .to_tuple("jpg;png;jpeg cls")
+                    .to_tuple("jpg;png;jpeg")
                     .map_tuple(self.transform_val, identity)
                     .batched(BATCH_SIZE, partial=False) # It is good to avoid partial batches when using Distributed training
                     )                                     
@@ -112,7 +115,7 @@ class ImageDataModule(LightningDataModule):
 class TextImageDataModule(LightningDataModule):
 
     def __init__(self, train_dir, val_dir, batch_size, num_workers, img_size, text_seq_len,
-                resize_ratio=0.75, truncate_captions=False, tokenizer=None, fake_data=False, web_dataset=False):
+                resize_ratio=0.75, truncate_captions=False, tokenizer=None, fake_data=False, web_dataset=False, wds_keys = 'img,cap'):
         super().__init__()
         self.train_dir = train_dir
         self.val_dir = val_dir
@@ -125,7 +128,8 @@ class TextImageDataModule(LightningDataModule):
         self.tokenizer = tokenizer
         self.fake_data = fake_data
         self.web_dataset = web_dataset
-        
+        self.truncate_captions = truncate_captions
+        self.wds_keys = wds_keys
         self.transform_train = T.Compose([
                             T.Lambda(lambda img: img.convert('RGB') if img.mode != 'RGB' else img),
                             T.RandomResizedCrop(img_size,
@@ -140,7 +144,15 @@ class TextImageDataModule(LightningDataModule):
                                     T.ToTensor(),
                                     T.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
                                     ])
-                                    
+    def imagetransform(self, b):
+        return Image.open(BytesIO(b))
+
+    def tokenize(self, s):
+        return self.tokenizer.tokenize(
+            s.decode('utf-8'),
+            self.text_seq_len,
+            truncate_text=self.truncate_captions).squeeze(0) 
+
     def setup(self, stage=None):
         if self.fake_data:
             self.train_dataset = FakeTextImageData(1200000, (3, self.img_size, self.img_size), self.text_seq_len, self.transform_train)
@@ -152,17 +164,17 @@ class TextImageDataModule(LightningDataModule):
                 DATASET_SIZE = int(1e9)
                 BATCH_SIZE = self.batch_size
                 
-                myimg, mycap = ("image","text")
+                myimg, mycap = (self.wds_keys.split[0], self.wds_keys.split[1])
                 train_image_text_mapping = {
-                                myimg: self.transform_train,
-                                mycap: self.tokenizer
+                                myimg: self.imagetransform,
+                                mycap: self.tokenize
                             }
                 train_image_mapping = {
                                 myimg: self.transform_train
                             }
                 val_image_text_mapping = {
-                                myimg: self.transform_val,
-                                mycap: self.tokenizer
+                                myimg: self.imagetransform,
+                                mycap: self.tokenize
                             }
                 val_image_mapping = {
                                 myimg: self.transform_val
@@ -180,7 +192,7 @@ class TextImageDataModule(LightningDataModule):
                     )   
                 self.val_dataset = (
                     wds.WebDataset(DATASET_VAL, length=num_batches)
-                    # .shuffle(is_shuffle) # Commented out for WebDataset as the behaviour cannot be predicted yet
+                    # .shuffle(is_shuffle) # Commented out for WebDataset as the behaviour cannot be predicted yet                  
                     .map_dict(**val_image_text_mapping)     
                     .map_dict(**val_image_mapping)
                     .to_tuple(mycap, myimg)

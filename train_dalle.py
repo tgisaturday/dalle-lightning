@@ -126,7 +126,9 @@ if __name__ == "__main__":
     parser.add_argument('--xla_stat', action='store_true', default=False,
                     help='print out tpu related stat')     
     parser.add_argument('--web_dataset',action='store_true', default=False,
-                    help='enable web_dataset')   
+                    help='enable web_dataset') 
+    parser.add_argument('--wds_keys', type=str, default='img,cap',
+                    help='web_dataset keys')                       
     #VAE configuration
     parser.add_argument('--vae', type=str, default='dvae')
 
@@ -233,7 +235,7 @@ if __name__ == "__main__":
                                 args.img_size, args.text_seq_len, 
                                 args.resize_ratio,args.truncate_captions, 
                                 tokenizer,
-                                args.fake_data, args.web_dataset)
+                                args.fake_data, args.web_dataset, args.wds_keys)
 
                          
     if args.wandb:
