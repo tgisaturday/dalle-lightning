@@ -144,8 +144,10 @@ class EMAVQVAE(VQVAE):
     #exclude self.quantize from grad calculation since it is updated through EMA
     def configure_optimizers(self):
         lr = self.hparams.learning_rate
-        opt = torch.optim.Adam(list(self.parameters())
-                                -list(self.quantize.parameters()),
+        opt = torch.optim.Adam(list(self.encoder.parameters())+
+                                  list(self.decoder.parameters())+
+                                  list(self.quant_conv.parameters())+
+                                  list(self.post_quant_conv.parameters()),
                                 lr=lr, betas=(0.5, 0.9))
         if self.args.lr_decay:
             scheduler = ReduceLROnPlateau(
