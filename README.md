@@ -35,19 +35,19 @@ python train_dalle.py --use_tpus --train_dir [training_set] --val_dir [val_set] 
 - [x] Add VQVAE, VQGAN, and Gumbel VQVAE(Discrete VAE), Gumbel VQGAN
 - [x] Add [VQVAE2](https://arxiv.org/abs/1906.00446)
 - [x] Add EMA update for Vector Quantization
-- [ ] Reimplement EMA VectorQuantizer with nn.Embedding
 - [x] Debug VAEs (Single TPU Node, TPU Pods, GPUs)
 - [x] Resolve SIGSEGV issue with large TPU Pods [pytorch-xla #3028](https://github.com/pytorch/xla/issues/3028)
 - [x] Add DALL-E
 - [x] Debug DALL-E (Single TPU Node, TPU Pods, GPUs)
 - [x] Add WebDataset support
-- [ ] Debug WebDataset functionality
 - [x] Add VAE Image Logger by modifying pl_bolts TensorboardGenerativeModelImageSampler()
 - [x] Add DALLE Image Logger by modifying pl_bolts TensorboardGenerativeModelImageSampler()
 - [x] Add automatic checkpoint saver and resume for sudden (which happens a lot) TPU restart
 - [ ] Add [RBGumbelQuantizer](https://arxiv.org/abs/2010.04838)
 - [ ] Add [HiT](https://arxiv.org/abs/2106.07631)
-- [x] Resolve SIGSEGV issue with large TPU Pods [pytorch-xla #3068](https://github.com/pytorch/xla/issues/3068)
+- [ ] Resolve SIGSEGV issue with large TPU Pods [pytorch-xla #3068](https://github.com/pytorch/xla/issues/3068)
+- [ ] Debug WebDataset functionality
+- [ ] Reimplement EMA VectorQuantizer with nn.Embedding
 
 ## BibTeX
 ```
