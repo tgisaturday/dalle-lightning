@@ -585,6 +585,9 @@ class DALLE(pl.LightningModule):
         else:     
             return loss, loss_text, loss_img
 
+    def get_trainable_params(self):
+        return [params for params in self.parameters() if params.requires_grad]
+
     def training_step(self, batch, batch_idx):
         text, images = batch
         if self.args.log_images:
@@ -618,7 +621,7 @@ class DALLE(pl.LightningModule):
 
     def configure_optimizers(self):
         lr = self.hparams.learning_rate
-        opt = Adam(self.parameters(), lr=lr)    
+        opt = Adam(self.get_trainable_params(), lr=lr)    
         if self.args.lr_decay:
             scheduler = ReduceLROnPlateau(
             opt,

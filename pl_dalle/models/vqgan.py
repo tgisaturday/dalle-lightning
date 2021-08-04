@@ -83,6 +83,9 @@ class VQGAN(pl.LightningModule):
         dec = self.decode(quant)
         return dec, diff
 
+    def get_trainable_params(self):
+        return [params for params in self.parameters() if params.requires_grad]
+        
     def training_step(self, batch, batch_idx, optimizer_idx):     
         x = batch[0]
         xrec, qloss = self(x)
