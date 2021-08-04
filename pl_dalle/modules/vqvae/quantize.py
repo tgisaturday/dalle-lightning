@@ -120,7 +120,8 @@ class EMAVectorQuantizer(nn.Module):
         self.decay = decay
         self.eps = eps
         self.beta = beta
-        self.embedding = nn.Embedding(self.num_tokens, self.codebook_dim).requires_grad_(False)
+        self.embedding = nn.Embedding(self.num_tokens, self.codebook_dim)
+        self.embedding.weight.requires_grad = False
         self.cluster_size = nn.Parameter(torch.zeros(num_tokens),requires_grad=False)
         self.embed_avg = nn.Parameter(torch.Tensor(self.num_tokens, self.codebook_dim),requires_grad=False)
         self.embed_avg.data.copy_(self.embedding.weight.data)
