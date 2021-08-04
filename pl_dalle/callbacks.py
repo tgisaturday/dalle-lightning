@@ -70,11 +70,11 @@ class ReconstructedImageLogger(Callback):
         """Called when the train batch ends."""
         if trainer.global_step % self.every_n_steps == 0:
             if self.multi_optim:
-                x = outputs[0]['x'].cpu()
-                xrec = outputs[0]['xrec'].cpu()
+                x = outputs[0]['x']
+                xrec = outputs[0]['xrec']
             else:
-                x = outputs['x'].cpu()
-                xrec = outputs['xrec'].cpu()
+                x = outputs['x']
+                xrec = outputs['xrec']
             if self.wandb:
                 if self.normalize:
                     x = x.clone()
@@ -139,11 +139,11 @@ class ReconstructedImageLogger(Callback):
         """Called when the validation batch ends."""
         if trainer.global_step % self.every_n_steps == 0:
             if self.multi_optim:
-                x = outputs[0]['x'].cpu()
-                xrec = outputs[0]['xrec'].cpu()
+                x = outputs[0]['x']
+                xrec = outputs[0]['xrec']
             else:
-                x = outputs['x'].cpu()
-                xrec = outputs['xrec'].cpu()
+                x = outputs['x']
+                xrec = outputs['xrec']
             if self.wandb:
                 if self.normalize:
                     x = x.clone()
