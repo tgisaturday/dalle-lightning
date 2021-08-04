@@ -154,7 +154,7 @@ class EMAVectorQuantizer(nn.Module):
             #cluster size Laplace smoothing 
             n = self.cluster_size.sum()
             cluster_size = (
-                (self.embedding.cluster_size + self.eps) / (n + self.num_tokens * self.eps) * n
+                (self.cluster_size + self.eps) / (n + self.num_tokens * self.eps) * n
             )
             #normalize embedding average with smoothed cluster size
             embed_normalized = self.embed_avg / cluster_size.unsqueeze(0)
