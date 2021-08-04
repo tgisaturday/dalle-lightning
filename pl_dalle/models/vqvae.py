@@ -141,6 +141,26 @@ class EMAVQVAE(VQVAE):
         self.quantize = EMAVectorQuantizer(num_tokens=args.num_tokens,
                                        codebook_dim=args.codebook_dim,
                                        beta=args.quant_beta, decay=args.quant_ema_decay, eps=args.quant_ema_eps)        
+    #exclude self.quantize from grad calculation since it is updated through EMA
+    def configure_optimizers(self):
+        lr = self.hparams.learning_rate
+        opt = torch.optim.Adam(list(self.parameters())
+                                -list(self.quantize.parameters),
+                                lr=lr, betas=(0.5, 0.9))
+        if self.args.lr_decay:
+            scheduler = ReduceLROnPlateau(
+            opt,
+            mode="min",
+            factor=0.5,
+            patience=10,
+            cooldown=10,
+            min_lr=1e-6,
+            verbose=True,
+            )    
+            sched = {'scheduler':scheduler, 'monitor':'val/total_loss'}            
+            return [opt], [sched]
+        else:
+            return [opt], [] 
 
 class GumbelVQVAE(VQVAE):
     def __init__(self,

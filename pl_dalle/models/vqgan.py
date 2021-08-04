@@ -180,8 +180,41 @@ class EMAVQGAN(VQGAN):
         self.quantize = EMAVectorQuantizer(num_tokens=args.num_tokens,
                                        codebook_dim=args.codebook_dim,
                                        beta=args.quant_beta, decay=args.quant_ema_decay, eps=args.quant_ema_eps)
-
-
+    
+    #exclude self.quantize from grad calculation since it is updated through EMA
+    def configure_optimizers(self):
+        lr = self.hparams.learning_rate
+        opt_ae = torch.optim.Adam(list(self.encoder.parameters())+
+                                  list(self.decoder.parameters())+
+                                  list(self.quant_conv.parameters())+
+                                  list(self.post_quant_conv.parameters()),
+                                  lr=lr, betas=(0.5, 0.9))
+        opt_disc = torch.optim.Adam(self.loss.discriminator.parameters(),
+                                    lr=lr, betas=(0.5, 0.9))
+        if self.args.lr_decay:
+            scheduler_ae = ReduceLROnPlateau(
+            opt_ae,
+            mode="min",
+            factor=0.5,
+            patience=10,
+            cooldown=10,
+            min_lr=1e-6,
+            verbose=True,
+            )  
+            scheduler_disc = ReduceLROnPlateau(
+            opt_disc,
+            mode="min",
+            factor=0.5,
+            patience=10,
+            cooldown=10,
+            min_lr=1e-6,
+            verbose=True,
+            )    
+            sched_ae = {'scheduler':scheduler_ae, 'monitor':'val/total_loss'}
+            sched_disc = {'scheduler':scheduler_disc, 'monitor':'val/disc_loss'}
+            return [opt_ae, opt_disc], [sched_ae, sched_disc]
+        else:
+            return [opt_ae, opt_disc], []    
 
 class GumbelVQGAN(VQGAN):
     def __init__(self,
