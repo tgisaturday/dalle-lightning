@@ -7,7 +7,6 @@ from pytorch_lightning import Callback, LightningModule, Trainer
 
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 from pytorch_lightning.utilities.distributed import rank_zero_only
-from pytorch_lightning.loggers.base import rank_zero_experiment
 import torch.nn.functional as F
 import torchvision
 import torchvision.transforms.functional as TF
@@ -59,7 +58,6 @@ class ReconstructedImageLogger(Callback):
             self.wandb = None
 
     @rank_zero_only
-    @rank_zero_experiment
     def on_train_batch_end(
         self,
         trainer: 'pl.Trainer',
@@ -129,7 +127,6 @@ class ReconstructedImageLogger(Callback):
                 trainer.logger.experiment.add_image(xrec_title, xrec_grid, global_step=trainer.global_step)
 
     @rank_zero_only
-    @rank_zero_experiment    
     def on_validation_batch_end(
         self,
         trainer: 'pl.Trainer',
@@ -243,7 +240,6 @@ class DalleGenerativeImageSampler(Callback):
         self.tokenizer = tokenizer
 
     @rank_zero_only
-    @rank_zero_experiment    
     def on_train_batch_end(
         self,
         trainer: 'pl.Trainer',
@@ -309,7 +305,6 @@ class DalleGenerativeImageSampler(Callback):
             trainer.logger.experiment.add_image(xgen_title, xgen_grid, global_step=trainer.global_step)
 
     @rank_zero_only
-    @rank_zero_experiment    
     def on_validation_batch_end(
         self,
         trainer: 'pl.Trainer',
