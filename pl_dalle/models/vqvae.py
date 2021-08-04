@@ -145,7 +145,7 @@ class EMAVQVAE(VQVAE):
     def configure_optimizers(self):
         lr = self.hparams.learning_rate
         opt = torch.optim.Adam(list(self.parameters())
-                                -list(self.quantize.parameters),
+                                -list(self.quantize.parameters()),
                                 lr=lr, betas=(0.5, 0.9))
         if self.args.lr_decay:
             scheduler = ReduceLROnPlateau(
