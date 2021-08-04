@@ -173,12 +173,17 @@ if __name__ == "__main__":
                                 args.fake_data, args.web_dataset)
   
     # model
+    #let logger callback know if the model uses multiple optimizers
+    args.multi_optim = False
     if args.model == 'vqgan':
         model = VQGAN(args, args.batch_size, args.learning_rate)
+        args.multi_optim = True
     elif args.model == 'evqgan':
-        model = EMAVQGAN(args, args.batch_size, args.learning_rate)          
+        model = EMAVQGAN(args, args.batch_size, args.learning_rate)  
+        args.multi_optim = True                
     elif args.model == 'gvqgan':
-        model = GumbelVQGAN(args, args.batch_size, args.learning_rate)        
+        model = GumbelVQGAN(args, args.batch_size, args.learning_rate) 
+        args.multi_optim = True               
     elif args.model == 'vqvae':
         model = VQVAE(args, args.batch_size, args.learning_rate)
     elif args.model == 'evqvae':
@@ -250,7 +255,7 @@ if __name__ == "__main__":
     if args.backup:
         trainer.callbacks.append(backup_callback)                                 
     if args.log_images:
-        trainer.callbacks.append(ReconstructedImageLogger(every_n_steps=args.image_log_steps, use_wandb=args.wandb))  
+        trainer.callbacks.append(ReconstructedImageLogger(every_n_steps=args.image_log_steps, use_wandb=args.wandb, multi_optim=args.multi_optim))  
         
     print("Setting batch size: {} learning rate: {:.2e}".format(model.hparams.batch_size, model.hparams.learning_rate))
     

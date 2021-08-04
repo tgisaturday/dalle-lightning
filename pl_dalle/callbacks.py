@@ -9,7 +9,7 @@ from pytorch_lightning.utilities.types import STEP_OUTPUT
 from pytorch_lightning.utilities.distributed import rank_zero_only
 import torch.nn.functional as F
 import torchvision
-
+import torchvision.transforms.functional as TF
 import importlib
 
 
@@ -26,6 +26,7 @@ class ReconstructedImageLogger(Callback):
         scale_each: bool = False,
         pad_value: int = 0,
         use_wandb: bool = False,
+        multi_optim = False,
     ) -> None:
         """
         Args:
@@ -50,6 +51,7 @@ class ReconstructedImageLogger(Callback):
         self.norm_range = norm_range
         self.scale_each = scale_each
         self.pad_value = pad_value
+        self.multi_optim = multi_optim
         if use_wandb:
             self.wandb = importlib.__import__('wandb')
         else:
@@ -67,8 +69,12 @@ class ReconstructedImageLogger(Callback):
     ) -> None:
         """Called when the train batch ends."""
         if trainer.global_step % self.every_n_steps == 0:
-            x = outputs['x']
-            xrec = outputs['xrec']
+            if self.multi_optim:
+                x = outputs[0]['x']
+                xrec = outputs[0]['xrec']
+            else:
+                x = outputs['x']
+                xrec = outputs['xrec']
             if self.wandb:
                 if self.normalize:
                     x = x.clone()
@@ -132,8 +138,12 @@ class ReconstructedImageLogger(Callback):
     ) -> None:
         """Called when the validation batch ends."""
         if trainer.global_step % self.every_n_steps == 0:
-            x = outputs['x']
-            xrec = outputs['xrec']
+            if self.multi_optim:
+                x = outputs[0]['x']
+                xrec = outputs[0]['xrec']
+            else:
+                x = outputs['x']
+                xrec = outputs['xrec']
             if self.wandb:
                 if self.normalize:
                     x = x.clone()
@@ -216,7 +226,7 @@ class DalleGenerativeImageSampler(Callback):
                 images separately rather than the (min, max) over all images. Default: ``False``.
             pad_value: Value for the padded pixels. Default: ``0``.
         """
-        
+
         super().__init__()
         self.every_n_steps = every_n_steps
         self.text_seq_len = text_seq_len
