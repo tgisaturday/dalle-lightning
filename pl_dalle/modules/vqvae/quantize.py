@@ -55,7 +55,6 @@ class EMAVectorQuantizer(nn.Module):
         self.cluster_size = nn.Parameter(torch.zeros(num_tokens),requires_grad=False)
         self.embed_avg = nn.Parameter(torch.randn(self.num_tokens, self.codebook_dim),requires_grad=False)
 
-
     def forward(self, z):
         # reshape z -> (batch, height, width, channel) and flatten
         #z, 'b c h w -> b h w c'

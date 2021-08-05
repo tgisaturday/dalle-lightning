@@ -104,13 +104,13 @@ class ImageDataModule(LightningDataModule):
         if self.web_dataset:
             return wds.WebLoader(self.train_dataset, batch_size=None, num_workers=self.num_workers)
         else:
-            return DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=True, drop_last=True)
+            return DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=True)
 
     def val_dataloader(self):
         if self.web_dataset:
             return wds.WebLoader(self.val_dataset, batch_size=None, num_workers=self.num_workers)
         else:
-            return DataLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers, drop_last=True)
+            return DataLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers)
 
 class TextImageDataModule(LightningDataModule):
 
@@ -224,13 +224,13 @@ class TextImageDataModule(LightningDataModule):
         if self.web_dataset:
             return wds.WebLoader(self.train_dataset, batch_size=None, num_workers=self.num_workers, shuffle=True)
         else:
-            return DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=True, drop_last=True)
+            return DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=True)
 
     def val_dataloader(self):
         if self.web_dataset:
             return wds.WebLoader(self.val_dataset, batch_size=None, num_workers=self.num_workers)
         else:
-            return DataLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers, drop_last=True)
+            return DataLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers)
 
 
 class FakeTextImageData(VisionDataset):

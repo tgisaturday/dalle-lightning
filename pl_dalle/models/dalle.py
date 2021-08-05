@@ -391,7 +391,8 @@ class DALLE(pl.LightningModule):
             ((seq_range < text_seq_len) & (logits_range >= num_text_tokens))
         )
 
-        self.register_buffer('logits_mask', logits_mask, persistent=False)
+        #self.register_buffer('logits_mask', logits_mask, persistent=False)
+        self.logits_mask = nn.Parameter(logits_mask, requires_grad=False)
         self.loss_img_weight = loss_img_weight
 
 

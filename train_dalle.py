@@ -102,7 +102,7 @@ if __name__ == "__main__":
     parser.add_argument('--learning_rate', default=3e-4, type=float,
                     help='base learning rate')
     parser.add_argument('--lr_decay', action = 'store_true')                                   
-    parser.add_argument('--num_workers', type=int, default=8,
+    parser.add_argument('--num_workers', type=int, default=16,
                     help='training settings')   
     parser.add_argument('--img_size', type=int, default=256,
                     help='training settings')  
