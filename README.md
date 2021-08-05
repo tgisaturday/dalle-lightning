@@ -47,7 +47,7 @@ python train_dalle.py --use_tpus --train_dir [training_set] --val_dir [val_set] 
 - [ ] Add [HiT](https://arxiv.org/abs/2106.07631)
 - [ ] Resolve SIGSEGV issue with large TPU Pods [pytorch-xla #3068](https://github.com/pytorch/xla/issues/3068)
 - [ ] Debug WebDataset functionality
-- [ ] Reimplement EMA VectorQuantizer with nn.Embedding
+- [x] Reimplement EMA VectorQuantizer with nn.Embedding
 
 ## BibTeX
 ```
