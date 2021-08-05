@@ -88,7 +88,7 @@ class ImageDataModule(LightningDataModule):
                     )  
 
                 self.val_dataset = (
-                    wds.webdataset(DATASET_VAL, length=num_batches)
+                    wds.WebDataset(DATASET_VAL, length=num_batches)
                     # .shuffle(is_shuffle) # commented out for webdataset as the behaviour cannot be predicted yet
                     .decode("pil")
                     .to_tuple("jpg;png;jpeg")
