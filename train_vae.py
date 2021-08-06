@@ -23,7 +23,6 @@ from pytorch_lightning.callbacks import XLAStatsMonitor
 from pytorch_lightning.callbacks.model_checkpoint import ModelCheckpoint
 
 
-
 if __name__ == "__main__":
 
     now = datetime.datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
