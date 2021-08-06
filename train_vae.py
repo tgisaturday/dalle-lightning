@@ -166,6 +166,7 @@ if __name__ == "__main__":
     #temporary fix for wandb error
     if args.wandb:
         os.environ['WANDB_CONSOLE'] = 'off'
+        os.environ['WANDB_DISABLE'] = True     
     #random seed fix
     seed_everything(args.seed)   
 
