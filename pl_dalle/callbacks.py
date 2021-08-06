@@ -195,7 +195,7 @@ class DalleGenerativeImageSampler(Callback):
         self.pad_value = pad_value
         self.tokenizer = tokenizer
 
-    @rank_zero_only
+    #@rank_zero_only
     def on_train_batch_end(
         self,
         trainer: 'pl.Trainer',
@@ -206,7 +206,7 @@ class DalleGenerativeImageSampler(Callback):
         dataloader_idx: int,
     ) -> None:
         """Called when the train batch ends."""
-        if trainer.global_step % self.every_n_steps == 0 and trainer.is_global_zero:          
+        if trainer.global_step % self.every_n_steps == 0:          
             text, x = batch
             sample_text = text[:1]
             token_list = sample_text.masked_select(sample_text != 0).tolist()
@@ -260,7 +260,7 @@ class DalleGenerativeImageSampler(Callback):
             xgen_title = "train/generation"
             trainer.logger.experiment.add_image(xgen_title, xgen_grid, global_step=trainer.global_step)
 
-    @rank_zero_only
+    #@rank_zero_only
     def on_validation_batch_end(
         self,
         trainer: 'pl.Trainer',
@@ -271,7 +271,7 @@ class DalleGenerativeImageSampler(Callback):
         dataloader_idx: int,
     ) -> None:
         """Called when the validation batch ends."""
-        if trainer.global_step % self.every_n_steps == 0 and trainer.is_global_zero:          
+        if trainer.global_step % self.every_n_steps == 0:          
             text, x = batch
             sample_text = text[:1]
             token_list = sample_text.masked_select(sample_text != 0).tolist()
