@@ -54,7 +54,7 @@ class ReconstructedImageLogger(Callback):
         self.multi_optim = multi_optim
         self.use_wandb = use_wandb
 
-    @rank_zero_only
+    #@rank_zero_only
     def on_train_batch_end(
         self,
         trainer: 'pl.Trainer',
@@ -65,7 +65,7 @@ class ReconstructedImageLogger(Callback):
         dataloader_idx: int,
     ) -> None:
         """Called when the train batch ends."""
-        if trainer.global_step % self.every_n_steps == 0 and trainer.is_global_zero:
+        if trainer.global_step % self.every_n_steps == 0:
             if self.multi_optim:
                 x = outputs[0]['x']
                 xrec = outputs[0]['xrec']
@@ -103,7 +103,7 @@ class ReconstructedImageLogger(Callback):
                 xrec_title = "train/reconstruction"
                 trainer.logger.experiment.add_image(xrec_title, xrec_grid, global_step=trainer.global_step)
 
-    @rank_zero_only
+    #@rank_zero_only
     def on_validation_batch_end(
         self,
         trainer: 'pl.Trainer',
@@ -114,7 +114,7 @@ class ReconstructedImageLogger(Callback):
         dataloader_idx: int,
     ) -> None:
         """Called when the validation batch ends."""
-        if trainer.global_step % self.every_n_steps == 0 and trainer.is_global_zero:
+        if trainer.global_step % self.every_n_steps == 0:
             if self.multi_optim:
                 x = outputs[0]['x']
                 xrec = outputs[0]['xrec']
