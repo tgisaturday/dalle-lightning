@@ -65,7 +65,7 @@ class ReconstructedImageLogger(Callback):
         dataloader_idx: int,
     ) -> None:
         """Called when the train batch ends."""
-        if trainer.global_step % self.every_n_steps == 0:
+        if trainer.global_step % self.every_n_steps == 0 and trainer.is_global_zero:
             if self.multi_optim:
                 x = outputs[0]['x']
                 xrec = outputs[0]['xrec']
@@ -114,7 +114,7 @@ class ReconstructedImageLogger(Callback):
         dataloader_idx: int,
     ) -> None:
         """Called when the validation batch ends."""
-        if trainer.global_step % self.every_n_steps == 0:
+        if trainer.global_step % self.every_n_steps == 0 and trainer.is_global_zero:
             if self.multi_optim:
                 x = outputs[0]['x']
                 xrec = outputs[0]['xrec']
@@ -206,7 +206,7 @@ class DalleGenerativeImageSampler(Callback):
         dataloader_idx: int,
     ) -> None:
         """Called when the train batch ends."""
-        if trainer.global_step % self.every_n_steps == 0:          
+        if trainer.global_step % self.every_n_steps == 0 and trainer.is_global_zero:          
             text, x = batch
             sample_text = text[:1]
             token_list = sample_text.masked_select(sample_text != 0).tolist()
@@ -271,7 +271,7 @@ class DalleGenerativeImageSampler(Callback):
         dataloader_idx: int,
     ) -> None:
         """Called when the validation batch ends."""
-        if trainer.global_step % self.every_n_steps == 0:          
+        if trainer.global_step % self.every_n_steps == 0 and trainer.is_global_zero:          
             text, x = batch
             sample_text = text[:1]
             token_list = sample_text.masked_select(sample_text != 0).tolist()
