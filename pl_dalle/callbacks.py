@@ -139,7 +139,7 @@ class ReconstructedImageLogger(Callback):
                     scale_each=self.scale_each,
                     pad_value=self.pad_value,
                 )  
-            if self.use_wandb and self.global_rank == 0:
+            if self.use_wandb:
                 trainer.logger.experiment.log({
                 "val/input": wandb.Image(x_grid),
                 "val/reconstruction": wandb.Image(xrec_grid),                
