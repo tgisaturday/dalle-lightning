@@ -228,7 +228,7 @@ if __name__ == "__main__":
                 print("Setting default ckpt to {}. If this is unexpected behavior, remove {}".format(ckpt_path, ckpt_path))
 
     if args.wandb:
-        logger = pl.loggers.wandb.WandbLogger(project='vqvae', log_model='all')
+        logger = pl.loggers.wandb.WandbLogger(project='vqvae', log_model='all', group='TPU')
         logger.watch(model)
     else:
         logger = pl.loggers.tensorboard.TensorBoardLogger(args.log_dir)                
