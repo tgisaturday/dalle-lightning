@@ -163,10 +163,7 @@ if __name__ == "__main__":
     #misc configuration
     
     args = parser.parse_args()
-    #temporary fix for wandb error
-    if args.wandb:
-        os.environ['WANDB_CONSOLE'] = 'off'
-        os.environ['WAND_DISABLE'] ='true'  
+    
     #random seed fix
     seed_everything(args.seed)   
 
@@ -233,7 +230,7 @@ if __name__ == "__main__":
 
     if args.wandb:
         logger = pl.loggers.wandb.WandbLogger(project='vqvae', log_model='all')
-        logger.watch(model)
+        #logger.watch(model)
     else:
         logger = pl.loggers.tensorboard.TensorBoardLogger(args.log_dir)                
     if args.use_tpus:
