@@ -94,7 +94,8 @@ class ReconstructedImageLogger(Callback):
             if self.use_wandb:
                 trainer.logger.experiment.log({
                 "train/input": wandb.Image(x_grid),
-                "train/reconstruction": wandb.Image(xrec_grid),                
+                "train/reconstruction": wandb.Image(xrec_grid),  
+                "train/loss":outputs['loss'],              
                 "global_step": trainer.global_step
             })
             else:  

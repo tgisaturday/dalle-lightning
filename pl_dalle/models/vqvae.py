@@ -88,9 +88,9 @@ class VQVAE(pl.LightningModule):
         else:
             aeloss = F.mse_loss(x, xrec)   
         loss = aeloss + qloss                     
-        self.log("train/rec_loss", aeloss, prog_bar=True, logger=True)
-        self.log("train/embed_loss", qloss, prog_bar=True, logger=True)
-        self.log("train/total_loss", loss, prog_bar=True, logger=True)
+        #self.log("train/rec_loss", aeloss, prog_bar=True, logger=True)
+        #self.log("train/embed_loss", qloss, prog_bar=True, logger=True)
+        #self.log("train/total_loss", loss, prog_bar=True, logger=True)
 
         if self.args.log_images:
             return {'loss':loss, 'x':x.detach(), 'xrec':xrec.detach()}

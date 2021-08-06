@@ -229,7 +229,7 @@ if __name__ == "__main__":
 
     if args.wandb:
         logger = pl.loggers.wandb.WandbLogger(project='vqvae', log_model='all', group='TPU')
-        logger.watch(model)
+        #logger.watch(model)
     else:
         logger = pl.loggers.tensorboard.TensorBoardLogger(args.log_dir)                
     if args.use_tpus:
