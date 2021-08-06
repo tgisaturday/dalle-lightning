@@ -3,7 +3,7 @@ torchvision
 albumentations
 opencv-python
 pudb
-pytorch-lightning
+git+https://github.com/tgisaturday/pytorch-lightning.git
 einops
 regex
 g-mlp-pytorch
