@@ -158,7 +158,9 @@ if __name__ == "__main__":
     parser.add_argument('--wandb', action='store_true', default=False, help='use wandb for logging')
 
     args = parser.parse_args()
-
+    #temporary fix for wandb error
+    if args.wandb:
+        os.environ['WANDB_CONSOLE'] = 'off'
     #random seed fix
     seed_everything(args.seed)   
 
