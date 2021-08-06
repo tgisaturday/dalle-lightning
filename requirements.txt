@@ -15,6 +15,6 @@ WebDataset
 axial_positional_embedding
 pillow
 dalle_pytorch
-wandb
+git+https://github.com/tgisaturday/client.git
 sklearn
 gym
