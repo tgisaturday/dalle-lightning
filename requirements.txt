@@ -3,7 +3,7 @@ torchvision
 albumentations
 opencv-python
 pudb
-git+https://github.com/tgisaturday/pytorch-lightning.git
+pytorch-lightning
 einops
 regex
 g-mlp-pytorch
@@ -15,6 +15,6 @@ WebDataset
 axial_positional_embedding
 pillow
 dalle_pytorch
-git+https://github.com/tgisaturday/client.git
+wandb
 sklearn
 gym
