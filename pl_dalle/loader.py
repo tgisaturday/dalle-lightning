@@ -155,8 +155,8 @@ class TextImageDataModule(LightningDataModule):
 
     def setup(self, stage=None):
         if self.fake_data:
-            self.train_dataset = FakeTextImageData(1200000, (3, self.img_size, self.img_size), self.text_seq_len, self.transform_train)
-            self.val_dataset = FakeTextImageData(50000, (3, self.img_size, self.img_size), self.text_seq_len, self.transform_val)
+            self.train_dataset = FakeTextImageData(120000000, (3, self.img_size, self.img_size), self.text_seq_len, self.transform_train)
+            self.val_dataset = FakeTextImageData(5000000, (3, self.img_size, self.img_size), self.text_seq_len, self.transform_val)
         else:
             if self.web_dataset:
                 DATASET_TRAIN = web_dataset_helper(self.train_dir)
