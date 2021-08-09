@@ -42,6 +42,20 @@ class VectorQuantizer(nn.Module):
         return z_q, loss, (perplexity, encodings, encoding_indices)
 
 
+class Normed(nn.Module):
+    def forward(self, W):
+        return W / W.norm(dim=-1, keepdim=True)
+
+
+class NormedVectorQuantizer(VectorQuantizer):
+    def __init__(self, *args, **kwargs):
+        nn.utils.parametrize.register_parametrization(self.embedding, "weight", Normed())
+
+    def forward(self, z):
+        z = z / z.norm(dim=-1, keepdim=True)
+        super().forward(z)
+
+
 class EMAVectorQuantizer(nn.Module):
     def __init__(self, num_tokens, codebook_dim, beta, decay=0.99, eps=1e-5):
         super().__init__()
