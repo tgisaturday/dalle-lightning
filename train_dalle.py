@@ -233,13 +233,18 @@ if __name__ == "__main__":
     print(f'Loaded VAE with codebook size (num_token): {vae.num_tokens}')
     model = DALLE(args, args.batch_size, args.learning_rate, vae=vae)
 
+    if args.use_tpus:
+        import torch_xla.core.xla_model as xm
+        args.world_size = xm.xrt_world_size()
+    else:
+        args.world_size = torch.distributed.get_world_size()
 
     datamodule = TextImageDataModule(args.train_dir, args.val_dir, 
                                 args.batch_size, args.num_workers, 
                                 args.img_size, args.text_seq_len, 
                                 args.resize_ratio,args.truncate_captions, 
-                                tokenizer,
-                                args.fake_data, args.web_dataset, args.wds_keys)
+                                tokenizer,args.fake_data, args.web_dataset, 
+                                args.wds_keys, args.world_size)
 
                          
     if args.wandb:

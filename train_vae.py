@@ -165,11 +165,17 @@ if __name__ == "__main__":
     
     #random seed fix
     seed_everything(args.seed)   
-
+    if args.use_tpus:
+        import torch_xla.core.xla_model as xm
+        args.world_size = xm.xrt_world_size()
+    else:
+        args.world_size = torch.distributed.get_world_size()
+        
     datamodule = ImageDataModule(args.train_dir, args.val_dir, 
                                 args.batch_size, args.num_workers, 
                                 args.img_size, args.resize_ratio, 
-                                args.fake_data, args.web_dataset)
+                                args.fake_data, args.web_dataset,
+                                world_size = args.world_size)
   
     # model
     #let logger callback know if the model uses multiple optimizers
