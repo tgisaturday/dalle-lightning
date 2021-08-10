@@ -72,10 +72,9 @@ class ImageDataModule(LightningDataModule):
             if self.web_dataset:
                 DATASET_TRAIN = web_dataset_helper(self.train_dir)
                 DATASET_VAL = web_dataset_helper(self.val_dir)
-                DATASET_SIZE = int(1e9)
-                BATCH_SIZE = self.batch_size
+
                 
-                num_batches = DATASET_SIZE // BATCH_SIZE
+                num_batches = self.dataset_size // self.batch_size
 
                 self.train_dataset = (
                     wds.WebDataset(DATASET_TRAIN, length=num_batches, #cache_dir="./cache"
@@ -84,7 +83,7 @@ class ImageDataModule(LightningDataModule):
                     .decode("pil")
                     .to_tuple("jpg;png;jpeg")
                     .map_tuple(self.transform_train)
-                    .batched(BATCH_SIZE, partial=False) # It is good to avoid partial batches when using Distributed training
+                    .batched(self.batch_size, partial=False) # It is good to avoid partial batches when using Distributed training
                     )  
 
                 self.val_dataset = (
@@ -93,7 +92,7 @@ class ImageDataModule(LightningDataModule):
                     .decode("pil")
                     .to_tuple("jpg;png;jpeg")
                     .map_tuple(self.transform_val, identity)
-                    .batched(BATCH_SIZE, partial=False) # It is good to avoid partial batches when using Distributed training
+                    .batched(self.batch_size, partial=False) # It is good to avoid partial batches when using Distributed training
                     )                                     
             else:
                 self.train_dataset = ImageFolder(self.train_dir, self.transform_train)
@@ -102,13 +101,20 @@ class ImageDataModule(LightningDataModule):
 
     def train_dataloader(self):
         if self.web_dataset:
-            return wds.WebLoader(self.train_dataset, batch_size=None, num_workers=self.num_workers)
+            dl = wds.WebLoader(self.val_dataset, batch_size=None, shuffle=False)
+            number_of_batches = self.dataset_size // (self.batch_size * self.world_size)
+            dl = dl.repeat(2).slice(number_of_batches)
+            dl.length = number_of_batches
+            return dl
         else:
             return DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=True)
 
     def val_dataloader(self):
         if self.web_dataset:
-            return wds.WebLoader(self.val_dataset, batch_size=None, num_workers=self.num_workers)
+            dl = wds.WebLoader(self.val_dataset, batch_size=None, shuffle=False)
+            number_of_batches = self.dataset_size // (self.batch_size * self.world_size)
+            dl = dl.repeat(2).slice(number_of_batches)
+            dl.length = number_of_batches
         else:
             return DataLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers)
 
@@ -161,8 +167,7 @@ class TextImageDataModule(LightningDataModule):
             if self.web_dataset:
                 DATASET_TRAIN = web_dataset_helper(self.train_dir)
                 DATASET_VAL = web_dataset_helper(self.val_dir)
-                DATASET_SIZE = int(1e9)
-                BATCH_SIZE = self.batch_size
+                
                 
                 myimg, mycap = (self.wds_keys.split[0], self.wds_keys.split[1])
                 train_image_text_mapping = {
@@ -180,7 +185,7 @@ class TextImageDataModule(LightningDataModule):
                                 myimg: self.transform_val
                             }
 
-                num_batches = DATASET_SIZE // BATCH_SIZE
+                num_batches = self.dataset_size // self.batch_size
 
                 self.train_dataset = (
                     wds.WebDataset(DATASET_TRAIN, length=num_batches)
@@ -188,7 +193,7 @@ class TextImageDataModule(LightningDataModule):
                     .map_dict(**train_image_text_mapping)     
                     .map_dict(**train_image_mapping)
                     .to_tuple(mycap, myimg)
-                    .batched(BATCH_SIZE, partial=False) # It is good to avoid partial batches when using Distributed training                   
+                    .batched(self.batch_size, partial=False) # It is good to avoid partial batches when using Distributed training                   
                     )   
                 self.val_dataset = (
                     wds.WebDataset(DATASET_VAL, length=num_batches)
@@ -196,7 +201,7 @@ class TextImageDataModule(LightningDataModule):
                     .map_dict(**val_image_text_mapping)     
                     .map_dict(**val_image_mapping)
                     .to_tuple(mycap, myimg)
-                    .batched(BATCH_SIZE, partial=False) # It is good to avoid partial batches when using Distributed training                   
+                    .batched(self.batch_size, partial=False) # It is good to avoid partial batches when using Distributed training                   
                     )                    
             else:   
                 self.train_dataset = TextImageDataset(
@@ -222,13 +227,22 @@ class TextImageDataModule(LightningDataModule):
         
     def train_dataloader(self):
         if self.web_dataset:
-            return wds.WebLoader(self.train_dataset, batch_size=None, num_workers=self.num_workers, shuffle=True)
+            dl = wds.WebLoader(self.val_dataset, batch_size=None, shuffle=False)
+            number_of_batches = self.dataset_size // (self.batch_size * self.world_size)
+            dl = dl.repeat(2).slice(number_of_batches)
+            dl.length = number_of_batches
+            return dl
         else:
             return DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=True)
 
     def val_dataloader(self):
         if self.web_dataset:
-            return wds.WebLoader(self.val_dataset, batch_size=None, num_workers=self.num_workers)
+            dl = wds.WebLoader(self.val_dataset, batch_size=None, shuffle=False)
+            number_of_batches = self.dataset_size // (self.batch_size * self.world_size)
+            dl = dl.repeat(2).slice(number_of_batches)
+            dl.length = number_of_batches
+            return dl
+
         else:
             return DataLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers)
 
