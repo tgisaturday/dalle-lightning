@@ -32,6 +32,24 @@ python train_dalle.py --use_tpus --train_dir [training_set] --val_dir [val_set] 
 ```
 
 ## TODO
+- [ ] Refactor Encoder and Decoder modules for better readability
+- [ ] Refactor VQVAE2
+- [ ] Add Net2Net Conditional Transformer for conditional image generation
+- [ ] Refactor, optimize, and merge DALL-E with Net2Net Conditional Transformer
+- [ ] Add Guided Diffusion + CLIP for image refinement
+- [ ] Add VAE converter for JAX to support [dalle-mini](https://github.com/borisdayma/dalle-mini)
+- [ ] Add DALL-E colab notebook
+- [ ] Add [RBGumbelQuantizer](https://arxiv.org/abs/2010.04838)
+- [ ] Add [HiT](https://arxiv.org/abs/2106.07631)
+
+
+
+## ON-GOING
+- [ ] Resolve SIGSEGV issue with large TPU Pods [pytorch-xla #3068](https://github.com/pytorch/xla/issues/3068)
+- [x] Debug WebDataset functionality
+- [ ] Test large dataset loading on TPU Pods
+- [ ] Change current DALL-E code to fully support latest updates from [DALLE-pytorch](https://github.com/lucidrains/DALLE-pytorch) 
+## DONE
 - [x] Add VQVAE, VQGAN, and Gumbel VQVAE(Discrete VAE), Gumbel VQGAN
 - [x] Add [VQVAE2](https://arxiv.org/abs/1906.00446)
 - [x] Add EMA update for Vector Quantization
@@ -43,12 +61,9 @@ python train_dalle.py --use_tpus --train_dir [training_set] --val_dir [val_set] 
 - [x] Add VAE Image Logger by modifying pl_bolts TensorboardGenerativeModelImageSampler()
 - [x] Add DALLE Image Logger by modifying pl_bolts TensorboardGenerativeModelImageSampler()
 - [x] Add automatic checkpoint saver and resume for sudden (which happens a lot) TPU restart
-- [ ] Add [RBGumbelQuantizer](https://arxiv.org/abs/2010.04838)
-- [ ] Add [HiT](https://arxiv.org/abs/2106.07631)
-- [ ] Resolve SIGSEGV issue with large TPU Pods [pytorch-xla #3068](https://github.com/pytorch/xla/issues/3068)
-- [ ] Debug WebDataset functionality
 - [x] Reimplement EMA VectorQuantizer with nn.Embedding
-
+- [x] Add DALL-E colab notebook @afiaka87
+- [x] Add Normed Vector Quantizer @GallagherCommaJack 
 ## BibTeX
 ```
 @misc{oord2018neural,

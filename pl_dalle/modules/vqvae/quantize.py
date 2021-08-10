@@ -2,8 +2,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from einops import rearrange
-
 
 class Normed(nn.Module):
     def forward(self, W):
@@ -30,7 +28,8 @@ class VectorQuantizer(nn.Module):
 
     def forward(self, z):
         # reshape z -> (batch, height, width, channel) and flatten
-        z = rearrange(z, 'b c h w -> b h w c').contiguous()
+        #z, 'b c h w -> b h w c'
+        z = z.permute(0, 2, 3, 1).contiguous()
         if self.normalized:
             z = z / z.norm(dim=-1, keepdim=True)
         z_flattened = z.view(-1, self.codebook_dim)
@@ -59,7 +58,8 @@ class VectorQuantizer(nn.Module):
         z_q = z + (z_q - z).detach()
 
         # reshape back to match original input shape
-        z_q = rearrange(z_q, 'b h w c -> b c h w').contiguous()
+        #z_q, 'b h w c -> b c h w'
+        z_q = z_q.permute(0, 3, 1, 2).contiguous()
         return z_q, loss, (perplexity, encodings, encoding_indices)
 
 
