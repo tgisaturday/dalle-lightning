@@ -107,7 +107,7 @@ class VQVAE2(pl.LightningModule):
         return indices
 
     def training_step(self, batch, batch_idx):         
-        x, _ = batch
+        x = batch[0]
         xrec, qloss = self(x)
 
         recon_loss = self.recon_loss(xrec, x)
@@ -123,7 +123,7 @@ class VQVAE2(pl.LightningModule):
         return loss
 
     def validation_step(self, batch, batch_idx):
-        x, _ = batch
+        x = batch[0]
         xrec, qloss = self(x)
 
         recon_loss = self.recon_loss(xrec, x)

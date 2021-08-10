@@ -81,7 +81,7 @@ class VQVAE(pl.LightningModule):
         return [params for params in self.parameters() if params.requires_grad]
 
     def training_step(self, batch, batch_idx):     
-        x, _ = batch
+        x = batch[0]
         xrec, qloss = self(x)
         if self.smooth_l1_loss:
             aeloss = F.smooth_l1_loss(x, xrec)
@@ -97,7 +97,7 @@ class VQVAE(pl.LightningModule):
         return loss
 
     def validation_step(self, batch, batch_idx):
-        x, _ = batch
+        x = batch[0]
         xrec, qloss = self(x)
         if self.smooth_l1_loss:
             aeloss = F.smooth_l1_loss(x, xrec)
@@ -163,7 +163,7 @@ class GumbelVQVAE(VQVAE):
                                        kl_weight=args.kl_loss_weight, temp_init=args.starting_temp)
 
     def training_step(self, batch, batch_idx):
-        x, _ = batch
+        x = batch[0]
         #temperature annealing
         self.temperature = max(self.temperature * math.exp(-self.anneal_rate * self.global_step), self.temp_min)
         self.quantize.temperature = self.temperature
@@ -183,7 +183,7 @@ class GumbelVQVAE(VQVAE):
 
 
     def validation_step(self, batch, batch_idx):
-        x, _ = batch
+        x = batch[0]
         self.quantize.temperature = 1.0
         xrec, qloss = self(x)
         if self.smooth_l1_loss:
