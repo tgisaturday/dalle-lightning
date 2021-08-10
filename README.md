@@ -62,8 +62,8 @@ python train_dalle.py --use_tpus --train_dir [training_set] --val_dir [val_set] 
 - [x] Add DALLE Image Logger by modifying pl_bolts TensorboardGenerativeModelImageSampler()
 - [x] Add automatic checkpoint saver and resume for sudden (which happens a lot) TPU restart
 - [x] Reimplement EMA VectorQuantizer with nn.Embedding
-- [x] Add DALL-E colab notebook @afiaka87
-- [x] Add Normed Vector Quantizer @GallagherCommaJack 
+- [x] Add DALL-E colab notebook by [afiaka87](https://github.com/afiaka87)
+- [x] Add Normed Vector Quantizer by [GallagherCommaJack](https://github.com/GallagherCommaJack)
 ## BibTeX
 ```
 @misc{oord2018neural,
