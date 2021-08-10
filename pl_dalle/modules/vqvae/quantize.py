@@ -35,8 +35,10 @@ class VectorQuantizer(nn.Module):
             z = z / z.norm(dim=-1, keepdim=True)
         z_flattened = z.view(-1, self.codebook_dim)
 
-        # distances from z to embeddings e_j
-        d = torch.cdist(z_flattened.unsqueeze(0), self.embedding.weight.unsqueeze(0)).squeeze(0)
+        # distances from z to embeddings e_j (z - e)^2 = z^2 + e^2 - 2 e * z
+        d = torch.sum(z_flattened.pow(2), dim=1, keepdim=True) + \
+            torch.sum(self.embedding.weight.pow(2), dim=1) - 2 * \
+            torch.einsum('bd,nd->bn', z_flattened, self.embedding.weight)
 
         encoding_indices = torch.argmin(d, dim=1)
         z_q = self.embedding(encoding_indices).view(z.shape)
