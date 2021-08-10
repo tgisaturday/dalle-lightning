@@ -40,7 +40,7 @@ def identity(x):
 class ImageDataModule(LightningDataModule):
 
     def __init__(self, train_dir, val_dir, batch_size, num_workers, img_size, resize_ratio=0.75, 
-                fake_data=False, web_dataset=False,world_size = 1):
+                fake_data=False, web_dataset=False, world_size = 1, dataset_size = int(1e9)):
         super().__init__()
         self.train_dir = train_dir
         self.val_dir = val_dir
@@ -49,7 +49,7 @@ class ImageDataModule(LightningDataModule):
         self.fake_data = fake_data
         self.img_size = img_size
         self.web_dataset = web_dataset
-        self.dataset_size = int(1e9)  # You need to set a nominal length for the Dataset in order to avoid warnings from DataLoader
+        self.dataset_size = dataset_size  # You need to set a nominal length for the Dataset in order to avoid warnings from DataLoader
         self.world_size = world_size
         self.transform_train = T.Compose([
                             T.Lambda(lambda img: img.convert('RGB') if img.mode != 'RGB' else img),
@@ -123,7 +123,7 @@ class TextImageDataModule(LightningDataModule):
 
     def __init__(self, train_dir, val_dir, batch_size, num_workers, img_size, text_seq_len, 
                 resize_ratio=0.75, truncate_captions=False, tokenizer=None, fake_data=False, 
-                web_dataset=False, wds_keys = 'img,cap', world_size = 1):
+                web_dataset=False, wds_keys = 'img,cap', world_size = 1, dataset_size = int(1e9)):
         super().__init__()
         self.train_dir = train_dir
         self.val_dir = val_dir
@@ -137,7 +137,7 @@ class TextImageDataModule(LightningDataModule):
         self.fake_data = fake_data
         self.web_dataset = web_dataset
         self.world_size = world_size
-        self.dataset_size = int(1e9)  # You need to set a nominal length for the Dataset in order to avoid warnings from DataLoader
+        self.dataset_size = dataset_size  # You need to set a nominal length for the Dataset in order to avoid warnings from DataLoader
         self.truncate_captions = truncate_captions
         self.wds_keys = wds_keys
         self.transform_train = T.Compose([

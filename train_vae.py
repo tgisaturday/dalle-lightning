@@ -105,7 +105,8 @@ if __name__ == "__main__":
                     help='print out tpu related stat')  
     parser.add_argument('--web_dataset',action='store_true', default=False,
                     help='enable web_dataset')  
-
+    parser.add_argument('--dataset_size', type=int, default=1e9,
+                    help='training settings')
     #model configuration
     parser.add_argument('--model', type=str, default='vqvae')
     parser.add_argument('--codebook_dim', type=int, default=256,
@@ -170,12 +171,13 @@ if __name__ == "__main__":
         args.world_size = xm.xrt_world_size()
     else:
         args.world_size = torch.distributed.get_world_size()
-        
+
     datamodule = ImageDataModule(args.train_dir, args.val_dir, 
                                 args.batch_size, args.num_workers, 
                                 args.img_size, args.resize_ratio, 
                                 args.fake_data, args.web_dataset,
-                                world_size = args.world_size)
+                                world_size = args.world_size,
+                                dataset_size = args.dataset_size)
   
     # model
     #let logger callback know if the model uses multiple optimizers

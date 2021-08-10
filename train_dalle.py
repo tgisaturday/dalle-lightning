@@ -128,7 +128,9 @@ if __name__ == "__main__":
     parser.add_argument('--web_dataset',action='store_true', default=False,
                     help='enable web_dataset') 
     parser.add_argument('--wds_keys', type=str, default='img,cap',
-                    help='web_dataset keys')                       
+                    help='web_dataset keys')   
+    parser.add_argument('--dataset_size', type=int, default=1e9,
+                    help='training settings')                                        
     #VAE configuration
     parser.add_argument('--vae', type=str, default='dvae')
 
@@ -244,7 +246,9 @@ if __name__ == "__main__":
                                 args.img_size, args.text_seq_len, 
                                 args.resize_ratio,args.truncate_captions, 
                                 tokenizer,args.fake_data, args.web_dataset, 
-                                args.wds_keys, args.world_size)
+                                args.wds_keys,
+                                world_size = args.world_size,
+                                dataset_size = args.dataset_size)
 
                          
     if args.wandb:
