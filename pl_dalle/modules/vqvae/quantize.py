@@ -2,44 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-
-class VectorQuantizer(nn.Module):
-    def __init__(self, num_tokens, codebook_dim, beta):
-        super().__init__()
-        self.codebook_dim = codebook_dim
-        self.num_tokens = num_tokens
-        self.beta = beta
-
-        self.embedding = nn.Embedding(self.num_tokens, self.codebook_dim)
-
-    def forward(self, z):
-        # reshape z -> (batch, height, width, channel) and flatten
-        #z, 'b c h w -> b h w c'
-        z = z.permute(0, 2, 3, 1).contiguous()
-        z_flattened = z.view(-1, self.codebook_dim)
-        # distances from z to embeddings e_j (z - e)^2 = z^2 + e^2 - 2 e * z
-
-        d = torch.sum(z_flattened.pow(2), dim=1, keepdim=True) + \
-            torch.sum(self.embedding.weight.pow(2), dim=1) - 2 * \
-            torch.einsum('bd,dn->bn', z_flattened, self.embedding.weight.permute(1,0)) # 'n d -> d n'
-
-        encoding_indices = torch.argmin(d, dim=1)
-        z_q = self.embedding(encoding_indices).view(z.shape)
-        encodings = F.one_hot(encoding_indices, self.num_tokens).type(z.dtype)       
-        avg_probs = torch.mean(encodings, dim=0)
-        perplexity = torch.exp(-torch.sum(avg_probs * torch.log(avg_probs + 1e-10)))
-
-        # compute loss for embedding
-
-        loss = self.beta * F.mse_loss(z_q.detach(), z) + F.mse_loss(z_q, z.detach())
-
-        # preserve gradients
-        z_q = z + (z_q - z).detach()
-
-        # reshape back to match original input shape
-        #z_q, 'b h w c -> b c h w'
-        z_q = z_q.permute(0, 3, 1, 2).contiguous()
-        return z_q, loss, (perplexity, encodings, encoding_indices)
+from einops import rearrange
 
 
 class Normed(nn.Module):
@@ -47,13 +10,55 @@ class Normed(nn.Module):
         return W / W.norm(dim=-1, keepdim=True)
 
 
-class NormedVectorQuantizer(VectorQuantizer):
-    def __init__(self, *args, **kwargs):
-        nn.utils.parametrize.register_parametrization(self.embedding, "weight", Normed())
+class VectorQuantizer(nn.Module):
+    def __init__(self, num_tokens, codebook_dim, beta, normalized=False, contrast=False):
+        super().__init__()
+        self.codebook_dim = codebook_dim
+        self.num_tokens = num_tokens
+        self.beta = beta
+
+        self.embedding = nn.Embedding(self.num_tokens, self.codebook_dim)
+        self.normalized = normalized
+        if self.normalized:
+            nn.utils.parametrize.register_parametrization(self.embedding, "weight", Normed())
+        self.contrast = contrast
+
+    def normalize(self):
+        if not self.normalized:
+            self.normalized = True
+            nn.utils.parametrize.register_parametrization(self.embedding, "weight", Normed())
 
     def forward(self, z):
-        z = z / z.norm(dim=-1, keepdim=True)
-        super().forward(z)
+        # reshape z -> (batch, height, width, channel) and flatten
+        z = rearrange(z, 'b c h w -> b h w c').contiguous()
+        if self.normalized:
+            z = z / z.norm(dim=-1, keepdim=True)
+        z_flattened = z.view(-1, self.codebook_dim)
+
+        # distances from z to embeddings e_j
+        d = torch.cdist(z_flattened.unsqueeze(0), self.embedding.weight.unsqueeze(0)).squeeze(0)
+
+        encoding_indices = torch.argmin(d, dim=1)
+        z_q = self.embedding(encoding_indices).view(z.shape)
+        encodings = F.one_hot(encoding_indices, self.num_tokens).type(z.dtype)
+        avg_probs = torch.mean(encodings, dim=0)
+        perplexity = torch.exp(-torch.sum(avg_probs * torch.log(avg_probs + 1e-10)))
+
+        # compute loss for embedding
+        loss = self.beta * F.mse_loss(z_q.detach(), z) + F.mse_loss(z_q, z.detach())
+
+        # contrastive codebook loss
+        if self.contrast:
+            target = torch.arange(0, self.num_tokens, device=self.embedding.weight.device)
+            logits = torch.einsum('ik,jk->ij', self.embedding.weight, self.embedding.weight)
+            loss = loss + F.cross_entropy(logits, target)
+
+        # preserve gradients
+        z_q = z + (z_q - z).detach()
+
+        # reshape back to match original input shape
+        z_q = rearrange(z_q, 'b h w c -> b c h w').contiguous()
+        return z_q, loss, (perplexity, encodings, encoding_indices)
 
 
 class EMAVectorQuantizer(nn.Module):
