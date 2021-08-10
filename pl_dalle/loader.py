@@ -77,8 +77,7 @@ class ImageDataModule(LightningDataModule):
                 num_batches = self.dataset_size // self.batch_size
 
                 self.train_dataset = (
-                    wds.WebDataset(DATASET_TRAIN, length=num_batches, #cache_dir="./cache"
-                    )
+                    wds.WebDataset(DATASET_TRAIN)
                     # .shuffle(is_shuffle) # Commented out for WebDataset as the behaviour cannot be predicted yet
                     .decode("pil")
                     .to_tuple("jpg;png;jpeg")
@@ -87,7 +86,7 @@ class ImageDataModule(LightningDataModule):
                     )  
 
                 self.val_dataset = (
-                    wds.WebDataset(DATASET_VAL, length=num_batches)
+                    wds.WebDataset(DATASET_VAL)
                     # .shuffle(is_shuffle) # commented out for webdataset as the behaviour cannot be predicted yet
                     .decode("pil")
                     .to_tuple("jpg;png;jpeg")
@@ -101,7 +100,7 @@ class ImageDataModule(LightningDataModule):
 
     def train_dataloader(self):
         if self.web_dataset:
-            dl = wds.WebLoader(self.val_dataset, batch_size=None, shuffle=False)
+            dl = wds.WebLoader(self.train_dataset, batch_size=None, shuffle=False)
             number_of_batches = self.dataset_size // (self.batch_size * self.world_size)
             dl = dl.repeat(9999999999).slice(number_of_batches)
             dl.length = number_of_batches
@@ -189,10 +188,8 @@ class TextImageDataModule(LightningDataModule):
                                 myimg: self.transform_val
                             }
 
-                num_batches = self.dataset_size // self.batch_size
-
                 self.train_dataset = (
-                    wds.WebDataset(DATASET_TRAIN, length=num_batches)
+                    wds.WebDataset(DATASET_TRAIN)
                     # .shuffle(is_shuffle) # Commented out for WebDataset as the behaviour cannot be predicted yet
                     .map_dict(**train_image_text_mapping)     
                     .map_dict(**train_image_mapping)
@@ -200,7 +197,7 @@ class TextImageDataModule(LightningDataModule):
                     .batched(self.batch_size, partial=False) # It is good to avoid partial batches when using Distributed training                   
                     )   
                 self.val_dataset = (
-                    wds.WebDataset(DATASET_VAL, length=num_batches)
+                    wds.WebDataset(DATASET_VAL)
                     # .shuffle(is_shuffle) # Commented out for WebDataset as the behaviour cannot be predicted yet                  
                     .map_dict(**val_image_text_mapping)     
                     .map_dict(**val_image_mapping)
@@ -231,7 +228,7 @@ class TextImageDataModule(LightningDataModule):
         
     def train_dataloader(self):
         if self.web_dataset:
-            dl = wds.WebLoader(self.val_dataset, batch_size=None, shuffle=False)
+            dl = wds.WebLoader(self.train_dataset, batch_size=None, shuffle=False)
             number_of_batches = self.dataset_size // (self.batch_size * self.world_size)
             dl = dl.repeat(9999999999).slice(number_of_batches)
             dl.length = number_of_batches
