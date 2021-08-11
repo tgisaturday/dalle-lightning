@@ -236,7 +236,7 @@ if __name__ == "__main__":
     elif args.vae == 'debugvae':
         vae = DiscreteVAE()
 
-    print(f'Loaded VAE with codebook size (num_token): {vae.num_tokens}')
+    print(f'Loaded VAE with codebook size (num_tokens): {vae.num_tokens}')
     model = DALLE(args, args.batch_size, args.learning_rate, vae=vae)
 
     if args.use_tpus:
