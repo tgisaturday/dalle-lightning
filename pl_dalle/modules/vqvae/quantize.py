@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from einops import rearrange
 
 class Normed(nn.Module):
     def forward(self, W):
@@ -28,8 +29,7 @@ class VectorQuantizer(nn.Module):
 
     def forward(self, z):
         # reshape z -> (batch, height, width, channel) and flatten
-        #z, 'b c h w -> b h w c'
-        z = z.permute(0, 2, 3, 1).contiguous()
+        z = rearrange(z, 'b c h w -> b h w c').contiguous()
         if self.normalized:
             z = z / z.norm(dim=-1, keepdim=True)
         z_flattened = z.view(-1, self.codebook_dim)
@@ -59,7 +59,7 @@ class VectorQuantizer(nn.Module):
 
         # reshape back to match original input shape
         #z_q, 'b h w c -> b c h w'
-        z_q = z_q.permute(0, 3, 1, 2).contiguous()
+        z_q = rearrange(z_q, 'b h w c -> b c h w').contiguous()
         return z_q, loss, (perplexity, encodings, encoding_indices)
 
 
@@ -79,7 +79,7 @@ class EMAVectorQuantizer(nn.Module):
     def forward(self, z):
         # reshape z -> (batch, height, width, channel) and flatten
         #z, 'b c h w -> b h w c'
-        z = z.permute(0, 2, 3, 1).contiguous()
+        z = rearrange(z, 'b c h w -> b h w c').contiguous()
         z_flattened = z.view(-1, self.codebook_dim)
         # distances from z to embeddings e_j (z - e)^2 = z^2 + e^2 - 2 e * z
 
@@ -119,7 +119,7 @@ class EMAVectorQuantizer(nn.Module):
 
         # reshape back to match original input shape
         #z_q, 'b h w c -> b c h w'
-        z_q = z_q.permute(0, 3, 1, 2).contiguous()
+        z_q = rearrange(z_q, 'b h w c -> b c h w').contiguous()
         return z_q, loss, (perplexity, encodings, encoding_indices)
 
 class GumbelQuantizer(nn.Module):
@@ -178,7 +178,7 @@ class SonnetEMAVectorQuantizer(nn.Module):
         self.embedding = EmbeddingEMA(num_tokens,codebook_dim)
 
     def forward(self, z):
-        z = z.permute(0, 2, 3, 1).contiguous()
+        z = rearrange(z, 'b c h w -> b h w c').contiguous()
         z_flattened = z.reshape(-1, self.codebook_dim)
         d = (
             z_flattened.pow(2).sum(1, keepdim=True)
@@ -211,5 +211,5 @@ class SonnetEMAVectorQuantizer(nn.Module):
 
         loss = self.beta * (z_q.detach() - z).pow(2).mean()
         z_q = z + (z_q - z).detach()
-        z_q = z_q.permute(0, 3, 1, 2).contiguous()
+        z_q = rearrange(z_q, 'b h w c -> b c h w').contiguous()
         return z_q, loss, (perplexity, encodings, encoding_indices)
