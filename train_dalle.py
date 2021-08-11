@@ -142,9 +142,7 @@ if __name__ == "__main__":
     parser.add_argument('--hidden_dim', default = 512, type = int, 
                     help = 'Model dimension')
     parser.add_argument('--text_seq_len', default = 128, type = int, 
-                    help = 'Text sequence length')
-    parser.add_argument('--num_text_tokens', default = 10000, type = int, 
-                    help = 'Number of text tokens')                    
+                    help = 'Text sequence length')                
     parser.add_argument('--depth', default = 64, type = int, 
                     help = 'Model depth')
     parser.add_argument('--heads', default = 8, type = int, 
@@ -170,7 +168,10 @@ if __name__ == "__main__":
     if exists(args.bpe_path):
         klass = HugTokenizer if args.hug else YttmTokenizer
         tokenizer = klass(args.bpe_path)  
-
+    if args.fake_data:    
+        args.num_text_tokens = 10000
+    else:
+        args.num_text_tokens = tokenizer.vocab_size
     default_root_dir = args.log_dir
 
     if args.resume:
