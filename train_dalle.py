@@ -239,7 +239,7 @@ if __name__ == "__main__":
         import torch_xla.core.xla_model as xm
         args.world_size = xm.xrt_world_size()
     else:
-        torch.distributed.init_process_group() 
+        torch.distributed.init_process_group(backend='nccl') 
         args.world_size = torch.distributed.get_world_size()
 
     datamodule = TextImageDataModule(args.train_dir, args.val_dir, 
