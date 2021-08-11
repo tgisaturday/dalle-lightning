@@ -186,8 +186,8 @@ if __name__ == "__main__":
         else:
             args.world_size = 1
 
-    args.learning_rate = args.world_size * args.batch_size * args.num_cores
-
+    args.learning_rate = args.learning_rate * args.world_size * args.batch_size * args.num_cores
+    
     datamodule = ImageDataModule(args.train_dir, args.val_dir, 
                                 args.batch_size, args.num_workers, 
                                 args.img_size, args.resize_ratio, 

@@ -180,7 +180,7 @@ if __name__ == "__main__":
         else:
             args.world_size = 1
 
-    args.learning_rate = args.world_size * args.batch_size * args.num_cores
+    args.learning_rate *= args.world_size * args.batch_size * args.num_cores
 
     # tokenizer
     if exists(args.bpe_path):
