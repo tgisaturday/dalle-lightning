@@ -579,7 +579,6 @@ class DALLE(pl.LightningModule):
         if self.args.log_images:
             img_logits = logits[:, -self.image_seq_len:].long()
             img_seq = torch.argmax(img_logits, dim = -1)
-            print(img_seq.shape)
             xrec = self.vae.decode(img_seq, feed_seq=True) 
             return loss, loss_text, loss_img, xrec 
         else:     
