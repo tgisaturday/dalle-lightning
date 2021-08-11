@@ -172,6 +172,7 @@ if __name__ == "__main__":
         args.num_text_tokens = 10000
     else:
         args.num_text_tokens = tokenizer.vocab_size
+    print(f'using bpe with vocab size {args.num_text_tokens} tokens')
     default_root_dir = args.log_dir
 
     if args.resume:
