@@ -143,7 +143,7 @@ class DiscreteVAE(nn.Module):
 
         # take care of normalization within class
         self.normalization = normalization
-    '''
+
     def norm(self, images):
         if not exists(self.normalization):
             return images
@@ -153,8 +153,7 @@ class DiscreteVAE(nn.Module):
         images = images.clone()
         images.sub_(means).div_(stds)
         return images
-    '''
-    
+
     @torch.no_grad()
     @eval_decorator
     def get_codebook_indices(self, images):
@@ -186,7 +185,7 @@ class DiscreteVAE(nn.Module):
         device, num_tokens, image_size, kl_div_loss_weight = img.device, self.num_tokens, self.image_size, self.kl_div_loss_weight
         assert img.shape[-1] == image_size and img.shape[-2] == image_size, f'input must have the correct image size {image_size}'
 
-        #img = self.norm(img)
+        img = self.norm(img)
 
         logits = self.encoder(img)
 
@@ -579,8 +578,7 @@ class DALLE(pl.LightningModule):
         loss = (loss_text + self.loss_img_weight * loss_img) / (self.loss_img_weight + 1)
         if self.args.log_images:
             img_logits = logits[:, -self.image_seq_len:].long()
-            img_seq = torch.argmax(img_logits, dim = -1)
-            img_seq -= self.num_text_tokens           
+            img_seq = torch.argmax(img_logits, dim = -1)         
             xrec = self.vae.decode(img_seq, feed_seq=True) 
             return loss, loss_text, loss_img, xrec 
         else:     
