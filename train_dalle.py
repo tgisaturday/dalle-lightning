@@ -101,7 +101,7 @@ if __name__ == "__main__":
                     help='training settings')  
     parser.add_argument('--epochs', type=int, default=20,
                     help='training settings')  
-    parser.add_argument('--learning_rate', default=3e-4, type=float,
+    parser.add_argument('--learning_rate', default=4e-5, type=float,
                     help='base learning rate')
     parser.add_argument('--lr_decay', action = 'store_true')                                   
     parser.add_argument('--num_workers', type=int, default=16,
@@ -164,6 +164,24 @@ if __name__ == "__main__":
     #random seed fix
     seed_everything(args.seed)   
 
+    if args.use_tpus:
+        tpus = args.tpus
+        gpus = None
+        args.num_cores = args.tpus        
+        import torch_xla.core.xla_model as xm
+        args.world_size = xm.xrt_world_size()
+    else:
+        tpus = None
+        gpus = args.gpus
+        args.num_cores = args.gpus        
+        if args.gpu_dist:
+            torch.distributed.init_process_group(backend='nccl') 
+            args.world_size = torch.distributed.get_world_size()
+        else:
+            args.world_size = 1
+
+    args.learning_rate = args.world_size * args.batch_size * args.num_cores
+    
     # tokenizer
     if exists(args.bpe_path):
         klass = HugTokenizer if args.hug else YttmTokenizer
@@ -193,14 +211,6 @@ if __name__ == "__main__":
             if args.resume:
                 print("Setting default ckpt to {}. If this is unexpected behavior, remove {}".format(ckpt_path, ckpt_path))
                 
-
-
-    if args.use_tpus:
-        tpus = args.tpus
-        gpus = None
-    else:
-        tpus = None
-        gpus = args.gpus
 
     if args.debug:
         limit_train_batches = 100
@@ -239,15 +249,6 @@ if __name__ == "__main__":
     print(f'Loaded VAE with codebook size (num_tokens): {vae.num_tokens}')
     model = DALLE(args, args.batch_size, args.learning_rate, vae=vae)
 
-    if args.use_tpus:
-        import torch_xla.core.xla_model as xm
-        args.world_size = xm.xrt_world_size()
-    else:
-        if args.gpu_dist:
-            torch.distributed.init_process_group(backend='nccl') 
-            args.world_size = torch.distributed.get_world_size()
-        else:
-            args.world_size = 1
 
     datamodule = TextImageDataModule(args.train_dir, args.val_dir, 
                                 args.batch_size, args.num_workers, 

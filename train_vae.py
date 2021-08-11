@@ -77,7 +77,7 @@ if __name__ == "__main__":
     parser.add_argument('--num_sanity_val_steps', type=int, default=0,
                     help='num_sanity_val_steps')  
 
-    parser.add_argument('--learning_rate', default=4.5e-3, type=float,
+    parser.add_argument('--learning_rate', default=4e-5, type=float,
                     help='base learning rate')
     parser.add_argument('--lr_decay', action='store_true', default=False,
                     help = 'use learning rate decay')
@@ -169,15 +169,24 @@ if __name__ == "__main__":
     
     #random seed fix
     seed_everything(args.seed)   
+
     if args.use_tpus:
+        tpus = args.tpus
+        gpus = None
+        args.num_cores = args.tpus        
         import torch_xla.core.xla_model as xm
         args.world_size = xm.xrt_world_size()
     else:
+        tpus = None
+        gpus = args.gpus
+        args.num_cores = args.gpus        
         if args.gpu_dist:
             torch.distributed.init_process_group(backend='nccl') 
             args.world_size = torch.distributed.get_world_size()
         else:
             args.world_size = 1
+
+    args.learning_rate = args.world_size * args.batch_size * args.num_cores
 
     datamodule = ImageDataModule(args.train_dir, args.val_dir, 
                                 args.batch_size, args.num_workers, 
@@ -208,13 +217,7 @@ if __name__ == "__main__":
         model = VQVAE2(args, args.batch_size, args.learning_rate) 
 
     default_root_dir = args.log_dir
-    
-    if args.use_tpus:
-        tpus = args.tpus
-        gpus = None
-    else:
-        tpus = None
-        gpus = args.gpus
+
     if args.debug:
         limit_train_batches = 100
         limit_test_batches = 100
