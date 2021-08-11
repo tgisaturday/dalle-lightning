@@ -63,7 +63,9 @@ if __name__ == "__main__":
 
     parser.add_argument('--ckpt_path', type=str,default='results/checkpoints/last.ckpt',
                     help='path to previous checkpoint') 
- 
+
+    parser.add_argument('--gpu_dist', action='store_true', default=False,
+                    help='distributed training with gpus') 
 
     #training configuration
     parser.add_argument('--backup', action='store_true', default=False,
@@ -239,8 +241,11 @@ if __name__ == "__main__":
         import torch_xla.core.xla_model as xm
         args.world_size = xm.xrt_world_size()
     else:
-        torch.distributed.init_process_group(backend='nccl') 
-        args.world_size = torch.distributed.get_world_size()
+        if args.gpu_dist:
+            torch.distributed.init_process_group(backend='nccl') 
+            args.world_size = torch.distributed.get_world_size()
+        else:
+            args.world_size = 1
 
     datamodule = TextImageDataModule(args.train_dir, args.val_dir, 
                                 args.batch_size, args.num_workers, 
