@@ -2,7 +2,7 @@ import functools
 import torch.nn as nn
 
 
-from pl_dalle.modules.util import ActNorm
+from pl_dalle.modules.utils.vqgan_util import ActNorm
 
 
 def weights_init(m):
