@@ -172,7 +172,7 @@ class TextImageDataModule(LightningDataModule):
                 DATASET_VAL = web_dataset_helper(self.val_dir)
                 
                 
-                myimg, mycap = (self.wds_keys.split[0], self.wds_keys.split[1])
+                myimg, mycap = (self.wds_keys.split()[0], self.wds_keys.split()[1])
                 train_image_text_mapping = {
                                 myimg: self.imagetransform,
                                 mycap: self.tokenize
