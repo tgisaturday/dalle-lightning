@@ -143,7 +143,7 @@ class DiscreteVAE(nn.Module):
 
         # take care of normalization within class
         self.normalization = normalization
-
+    '''
     def norm(self, images):
         if not exists(self.normalization):
             return images
@@ -153,7 +153,8 @@ class DiscreteVAE(nn.Module):
         images = images.clone()
         images.sub_(means).div_(stds)
         return images
-
+    '''
+    
     @torch.no_grad()
     @eval_decorator
     def get_codebook_indices(self, images):
@@ -185,7 +186,7 @@ class DiscreteVAE(nn.Module):
         device, num_tokens, image_size, kl_div_loss_weight = img.device, self.num_tokens, self.image_size, self.kl_div_loss_weight
         assert img.shape[-1] == image_size and img.shape[-2] == image_size, f'input must have the correct image size {image_size}'
 
-        img = self.norm(img)
+        #img = self.norm(img)
 
         logits = self.encoder(img)
 
