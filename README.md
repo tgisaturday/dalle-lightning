@@ -42,13 +42,10 @@ python train_dalle.py --use_tpus --train_dir [training_set] --val_dir [val_set] 
 - [ ] Add [RBGumbelQuantizer](https://arxiv.org/abs/2010.04838)
 - [ ] Add [HiT](https://arxiv.org/abs/2106.07631)
 
-
-
 ## ON-GOING
-- [ ] Resolve SIGSEGV issue with large TPU Pods [pytorch-xla #3068](https://github.com/pytorch/xla/issues/3068)
-- [x] Debug WebDataset functionality
 - [ ] Test large dataset loading on TPU Pods
 - [ ] Change current DALL-E code to fully support latest updates from [DALLE-pytorch](https://github.com/lucidrains/DALLE-pytorch) 
+
 ## DONE
 - [x] Add VQVAE, VQGAN, and Gumbel VQVAE(Discrete VAE), Gumbel VQGAN
 - [x] Add [VQVAE2](https://arxiv.org/abs/1906.00446)
@@ -64,6 +61,8 @@ python train_dalle.py --use_tpus --train_dir [training_set] --val_dir [val_set] 
 - [x] Reimplement EMA VectorQuantizer with nn.Embedding
 - [x] Add DALL-E colab notebook by [afiaka87](https://github.com/afiaka87)
 - [x] Add Normed Vector Quantizer by [GallagherCommaJack](https://github.com/GallagherCommaJack)
+- [x] Resolve SIGSEGV issue with large TPU Pods [pytorch-xla #3068](https://github.com/pytorch/xla/issues/3068)
+- [x] Debug WebDataset functionality
 ## BibTeX
 ```
 @misc{oord2018neural,
