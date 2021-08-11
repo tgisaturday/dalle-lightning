@@ -101,7 +101,7 @@ if __name__ == "__main__":
                     help='training settings')  
     parser.add_argument('--epochs', type=int, default=20,
                     help='training settings')  
-    parser.add_argument('--learning_rate', default=4e-5, type=float,
+    parser.add_argument('--learning_rate', default=4.5e-6, type=float,
                     help='base learning rate')
     parser.add_argument('--lr_decay', action = 'store_true')                                   
     parser.add_argument('--num_workers', type=int, default=16,
@@ -181,7 +181,7 @@ if __name__ == "__main__":
             args.world_size = 1
 
     args.learning_rate = args.world_size * args.batch_size * args.num_cores
-    
+
     # tokenizer
     if exists(args.bpe_path):
         klass = HugTokenizer if args.hug else YttmTokenizer
@@ -190,7 +190,7 @@ if __name__ == "__main__":
         args.num_text_tokens = 10000
     else:
         args.num_text_tokens = tokenizer.vocab_size
-    print(f'Using BPE model with vocab size {args.num_text_tokens} tokens')
+    print(f'Using BPE model with vocab size: {args.num_text_tokens}')
     default_root_dir = args.log_dir
 
     if args.resume:
@@ -246,7 +246,7 @@ if __name__ == "__main__":
     elif args.vae == 'debugvae':
         vae = DiscreteVAE()
 
-    print(f'Loaded VAE with codebook size (num_tokens): {vae.num_tokens}')
+    print(f'Loaded VAE with codebook size: {vae.num_tokens}')
     model = DALLE(args, args.batch_size, args.learning_rate, vae=vae)
 
 

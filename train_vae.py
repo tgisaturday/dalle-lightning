@@ -77,7 +77,7 @@ if __name__ == "__main__":
     parser.add_argument('--num_sanity_val_steps', type=int, default=0,
                     help='num_sanity_val_steps')  
 
-    parser.add_argument('--learning_rate', default=4e-5, type=float,
+    parser.add_argument('--learning_rate', default=4.5e-6, type=float,
                     help='base learning rate')
     parser.add_argument('--lr_decay', action='store_true', default=False,
                     help = 'use learning rate decay')
