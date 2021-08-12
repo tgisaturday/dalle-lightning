@@ -170,12 +170,15 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     
-    # overwrite args if config is given
+   # overwrite args if config is given
     if args.config:
-        opt = yaml.load(open(args.config), Loader=yaml.FullLoader)
-        opt.update(vars(args))
+        opt = vars(args)
+        args = yaml.load(open(args.config), Loader=yaml.FullLoader)
+        print(opt)
+        print(args)
+        opt.update(args)
         args = opt
-
+        
     #random seed fix
     seed_everything(args.seed)   
 
