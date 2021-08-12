@@ -18,3 +18,4 @@ dalle_pytorch
 wandb
 sklearn
 gym
+tensorboard
