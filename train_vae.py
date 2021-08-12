@@ -30,7 +30,9 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='VQVAE Training for Pytorch TPU')
 
-    parser.add_argument('--config', help="configuration file *.yaml", type=str, required=False)
+    parser.add_argument('--config', default='', type=str, metavar='FILE',
+                    help='YAML config file specifying default arguments')
+
     #path configuration
     parser.add_argument('--train_dir', type=str, default='dataset/train/',
                     help='path to train dataset')
@@ -173,7 +175,7 @@ if __name__ == "__main__":
         opt = yaml.load(open(args.config), Loader=yaml.FullLoader)
         opt.update(vars(args))
         args = opt
-        
+
     #random seed fix
     seed_everything(args.seed)   
 
