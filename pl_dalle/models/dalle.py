@@ -562,7 +562,9 @@ class DALLE(pl.LightningModule):
         loss = (loss_text + self.loss_img_weight * loss_img) / (self.loss_img_weight + 1)
         if self.args.log_images:
             img_logits = logits[:, :, self.text_seq_len:]
-            img_seq = torch.clamp(torch.argmax(img_logits, dim = 1), max=self.num_image_tokens-1)
+            img_seq = torch.argmax(img_logits, dim = 1)
+            #clamp img_seq to fit them in range of img embedding_idx
+            img_seq = torch.clamp(img_seq, max=self.num_image_tokens-1)
             xrec = self.vae.decode(img_seq, feed_seq=True) 
             return loss, loss_text, loss_img, xrec 
         else:     
