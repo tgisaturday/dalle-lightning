@@ -63,7 +63,7 @@ class VectorQuantizer(nn.Module):
         return z_q, loss, (perplexity, encodings, encoding_indices)
 
 
-class EMAVectorQuantizer(nn.Module):
+class LegacyEMAVectorQuantizer(nn.Module):
     def __init__(self, num_tokens, codebook_dim, beta, decay=0.99, eps=1e-5):
         super().__init__()
         self.codebook_dim = codebook_dim
@@ -170,7 +170,7 @@ class EmbeddingEMA(nn.Module):
     def forward(self, embed_id):
         return F.embedding(embed_id, self.weight.transpose(0, 1))
 
-class SonnetEMAVectorQuantizer(nn.Module):
+class EMAVectorQuantizer(nn.Module):
     def __init__(self, num_tokens, codebook_dim, beta, decay=0.99, eps=1e-5):
         super().__init__()
         self.codebook_dim = codebook_dim
