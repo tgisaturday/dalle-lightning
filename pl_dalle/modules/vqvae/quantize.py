@@ -88,7 +88,7 @@ class EmbeddingEMA(nn.Module):
             )
         #normalize embedding average with smoothed cluster size
         embed_normalized = self.embed_avg / smoothed_cluster_size.unsqueeze(1)
-        self.weight.data.copy_(embed_normalized.data)   
+        self.weight.data.copy_(embed_normalized)   
 
 class EMAVectorQuantizer(nn.Module):
     def __init__(self, num_tokens, codebook_dim, beta, decay=0.99, eps=1e-5):
@@ -105,7 +105,6 @@ class EMAVectorQuantizer(nn.Module):
         z = rearrange(z, 'b c h w -> b h w c').contiguous()
         z_flattened = z.view(-1, self.codebook_dim)
         
-
         # distances from z to embeddings e_j (z - e)^2 = z^2 + e^2 - 2 e * z
         d = torch.sum(z_flattened.pow(2), dim=1, keepdim=True) + \
             torch.sum(self.embedding.weight.pow(2), dim=1) - 2 * \
