@@ -27,6 +27,10 @@ if __name__ == "__main__":
 
     now = datetime.datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
 
+    config_parser = parser = argparse.ArgumentParser(description='Training Config', add_help=False)
+    parser.add_argument('-c', '--config', default='', type=str, metavar='FILE',
+                    help='YAML config file specifying default arguments')
+
 
     parser = argparse.ArgumentParser(description='VQVAE Training for Pytorch TPU')
 
@@ -168,17 +172,16 @@ if __name__ == "__main__":
     parser.add_argument('--wandb', action='store_true', default=False, help='use wandb for logging')
     #misc configuration
     
-    args = parser.parse_args()
-    
-   # overwrite args if config is given
-    if args.config:
-        opt = vars(args)
-        args = yaml.load(open(args.config), Loader=yaml.FullLoader)
-        print(opt)
-        print(args)
-        opt.update(args)
-        args = opt
-        
+    args_config, remaining = config_parser.parse_known_args()
+    if args_config.config:
+        with open(args_config.config, 'r') as f:
+            cfg = yaml.safe_load(f)
+            parser.set_defaults(**cfg)
+
+    # The main arg parser parses the rest of the args, the usual
+    # defaults will have been overridden if config file specified.
+    args = parser.parse_args(remaining)
+
     #random seed fix
     seed_everything(args.seed)   
 
