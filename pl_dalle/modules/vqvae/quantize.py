@@ -109,8 +109,8 @@ class EMAVectorQuantizer(nn.Module):
             )
             #normalize embedding average with smoothed cluster size
             embed_normalized = self.embed_avg / cluster_size.unsqueeze(1)
-            self.embedding.weight.data.copy_(embed_normalized.data)
-            #self.embedding.weight = nn.Parameter(embed_normalized)
+            #self.embedding.weight.data.copy_(embed_normalized.data)
+            self.embedding.weight = nn.Parameter(embed_normalized)
         # compute loss for embedding
         loss = self.beta * F.mse_loss(z_q.detach(), z) 
 
