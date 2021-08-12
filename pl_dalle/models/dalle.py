@@ -553,6 +553,10 @@ class DALLE(pl.LightningModule):
 
         offsetted_image = image + self.num_text_tokens
         labels = torch.cat((text[:, 1:], offsetted_image), dim = 1)
+        if self.args.log_images:
+            img_logits = logits[:, self.text_seq_len:, :]
+            img_seq = torch.argmax(img_logits, dim = -1)
+            xrec = self.vae.decode(img_seq, feed_seq=True) 
 
         logits = rearrange(logits, 'b n c -> b c n')
    
@@ -561,9 +565,6 @@ class DALLE(pl.LightningModule):
 
         loss = (loss_text + self.loss_img_weight * loss_img) / (self.loss_img_weight + 1)
         if self.args.log_images:
-            img_logits = logits[:, -self.image_seq_len:].long()
-            img_seq = torch.argmax(img_logits, dim = -1)
-            xrec = self.vae.decode(img_seq, feed_seq=True) 
             return loss, loss_text, loss_img, xrec 
         else:     
             return loss, loss_text, loss_img
