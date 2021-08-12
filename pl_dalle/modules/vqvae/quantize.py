@@ -35,9 +35,9 @@ class VectorQuantizer(nn.Module):
         z_flattened = z.reshape(-1, self.codebook_dim)
 
         # distances from z to embeddings e_j (z - e)^2 = z^2 + e^2 - 2 e * z
-        d = torch.sum(z_flattened.pow(2), dim=1, keepdim=True) + \
-            torch.sum(self.embedding.weight.pow(2), dim=1) - 2 * \
-            torch.einsum('bd,nd->bn', z_flattened, self.embedding.weight)
+        d = z_flattened.pow(2).sum(dim=1, keepdim=True) + \
+            self.embedding.weight.pow(2).sum(dim=1) - 2 * \
+            torch.einsum('bd,nd->bn', z_flattened, self.embedding.weight) # 'n d -> d n'
 
         encoding_indices = torch.argmin(d, dim=1)
         z_q = self.embedding(encoding_indices).view(z.shape)
@@ -116,12 +116,11 @@ class EMAVectorQuantizer(nn.Module):
         perplexity = torch.exp(-torch.sum(avg_probs * torch.log(avg_probs + 1e-10)))
 
         if self.training:
-            encodings_sum = encodings.sum(0)
             #EMA cluster size
+            encodings_sum = encodings.sum(0)            
             self.embedding.cluster_size_ema_update(encodings_sum)
-            #embed_sum = torch.matmul(encodings.t(), z_flattened)
-            embed_sum = encodings.transpose(0,1) @ z_flattened
             #EMA embedding average
+            embed_sum = encodings.transpose(0,1) @ z_flattened            
             self.embedding.embed_avg_ema_update(embed_sum)
             #normalize embed_avg and update weight
             self.embedding.weight_update(self.num_tokens)
