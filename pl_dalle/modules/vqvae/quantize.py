@@ -106,12 +106,12 @@ class EMAVectorQuantizer(nn.Module):
             self.embed_avg.mul_(self.decay).add_(embed_sum, alpha=1 - self.decay)
 
             #cluster size Laplace smoothing 
-            n = self.cluster_size.sum()
-            cluster_size = (
-                (self.cluster_size + self.eps) / (n + self.num_tokens * self.eps) * n
-            )
+            #n = self.cluster_size.sum()
+            #cluster_size = (
+            #    (self.cluster_size + self.eps) / (n + self.num_tokens * self.eps) * n
+            #)
             #normalize embedding average with smoothed cluster size
-            embed_normalized = self.embed_avg / cluster_size.unsqueeze(1)
+            embed_normalized = self.embed_avg / self.cluster_size.unsqueeze(1)
             self.embedding.weight.data.copy_(embed_normalized.data)
             #self.embedding.weight = nn.Parameter(embed_normalized)
         # compute loss for embedding
