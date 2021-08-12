@@ -1,9 +1,5 @@
 num_tokens: 8192 
 precision: 32
 model: vqvae 
-ch_mult:
-  - 1 
-  - 1 
-  - 2 
-  - 4 
+ch_mult: 1 1 2 4
 attn_resolutions: 32 
