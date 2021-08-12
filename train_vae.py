@@ -128,11 +128,11 @@ if __name__ == "__main__":
                     help='output image channel')    
     parser.add_argument('--hidden_dim', type=int, default=128,
                     help='hidden dimension init size')  
-    parser.add_argument('--ch_mult', type=list, default=[1,1,2,2,4],
+    parser.add_argument('--ch_mult', nargs='+', type=int, default=[1,1,2,2,4],
                     help='resnet channel multiplier')  
     parser.add_argument('--num_res_blocks', type=int, default=2,
                     help='number of resnet blocks')                     
-    parser.add_argument('--attn_resolutions', type=list, default=[16],
+    parser.add_argument('--attn_resolutions', nargs='+', type=int, default=[16],
                     help='model settings')  
     parser.add_argument('--dropout', type=float, default=0.0,
                     help='model settings') 
