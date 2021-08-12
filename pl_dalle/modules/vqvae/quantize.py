@@ -72,7 +72,7 @@ class EMAVectorQuantizer(nn.Module):
         self.eps = eps
         self.beta = beta
         self.embedding = nn.Embedding(self.num_tokens, self.codebook_dim)
-        init_weight = torch.randn(codebook_dim, num_tokens)
+        init_weight = torch.randn(num_tokens, codebook_dim)
         self.embedding.weight.requires_grad = False
         self.embedding.weight.data.copy_(init_weight)        
         self.cluster_size = nn.Parameter(torch.zeros(num_tokens),requires_grad=False)
