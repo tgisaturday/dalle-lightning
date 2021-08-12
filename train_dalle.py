@@ -16,11 +16,9 @@ from pl_dalle.models.dalle import DiscreteVAE, DALLE
 
 from pl_dalle.loader import TextImageDataModule
 from pl_dalle.modules.dalle.tokenizer import tokenizer, HugTokenizer, YttmTokenizer
-from pl_dalle.callbacks import ReconstructedImageLogger, DalleGenerativeImageSampler
+from pl_dalle.callbacks import DalleGenerativeImageSampler
 
 from torchvision import transforms as T
-from PIL import Image
-from io import BytesIO
 
 import pytorch_lightning as pl
 from pytorch_lightning import seed_everything
@@ -73,9 +71,7 @@ if __name__ == "__main__":
     parser.add_argument('--backup_steps', type =int, default = 1000,
                     help='saves backup every n training steps') 
     parser.add_argument('--log_images', action='store_true', default=False,
-                    help='log image outputs. not recommended for tpus')   
-    parser.add_argument('--log_generations', action='store_true', default=False,
-                    help='log image outputs. not recommended for tpus(takes 1.5 hours')                     
+                    help='log image outputs. not recommended for tpus')                      
     parser.add_argument('--image_log_steps', type=int, default=1000,
                     help='log image outputs for every n step. not recommended for tpus')   
     parser.add_argument('--refresh_rate', type=int, default=1,
@@ -289,10 +285,9 @@ if __name__ == "__main__":
     if args.backup:
         trainer.callbacks.append(backup_callback)      
  
-    if args.log_generations:
+    if args.log_images:
          trainer.callbacks.append(DalleGenerativeImageSampler(every_n_steps=args.image_log_steps, tokenizer = tokenizer))
-    elif args.log_images:
-        trainer.callbacks.append(ReconstructedImageLogger(every_n_steps=args.image_log_steps))         
+    
         
     print("Setting batch size: {} learning rate: {:.2e}".format(model.hparams.batch_size, model.hparams.learning_rate))
     
