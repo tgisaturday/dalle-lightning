@@ -75,8 +75,8 @@ class EMAVectorQuantizer(nn.Module):
         init_weight = torch.randn(num_tokens, codebook_dim)
         self.embedding.weight.requires_grad = False
         self.embedding.weight.data.copy_(init_weight)        
-        self.cluster_size = nn.Parameter(torch.zeros(num_tokens),requires_grad=False)
-        self.embed_avg = nn.Parameter(torch.randn(self.num_tokens, self.codebook_dim),requires_grad=False)
+        #self.cluster_size = nn.Parameter(torch.zeros(num_tokens),requires_grad=False)
+        #self.embed_avg = nn.Parameter(torch.randn(self.num_tokens, self.codebook_dim),requires_grad=False)
         self.register_buffer("cluster_size", torch.zeros(num_tokens))
         self.register_buffer("embed_avg", init_weight.clone())
     def forward(self, z):
