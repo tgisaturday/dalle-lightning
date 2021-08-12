@@ -20,6 +20,7 @@ from pl_dalle.callbacks import DalleGenerativeImageSampler
 
 from torchvision import transforms as T
 
+
 import pytorch_lightning as pl
 from pytorch_lightning import seed_everything
 from pytorch_lightning import Trainer
@@ -286,7 +287,11 @@ if __name__ == "__main__":
         trainer.callbacks.append(backup_callback)      
  
     if args.log_images:
-         trainer.callbacks.append(DalleGenerativeImageSampler(every_n_steps=args.image_log_steps, tokenizer = tokenizer))
+        text_seq_len = model.text_seq_len
+        image_seq_len = model.image_seq_len
+        trainer.callbacks.append(DalleGenerativeImageSampler(every_n_steps=args.image_log_steps, 
+                                                            text_seq_len = text_seq_len,
+                                                            image_seq_len = image_seq_len, tokenizer = tokenizer))
     
         
     print("Setting batch size: {} learning rate: {:.2e}".format(model.hparams.batch_size, model.hparams.learning_rate))
