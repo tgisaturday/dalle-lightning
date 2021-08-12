@@ -120,7 +120,8 @@ class EMAVectorQuantizer(nn.Module):
             encodings_sum = encodings.sum(0)
             #EMA cluster size
             self.embedding.cluster_size_ema_update(encodings_sum)
-            embed_sum = torch.matmul(encodings.t(), z_flattened)
+            #embed_sum = torch.matmul(encodings.t(), z_flattened)
+            embed_sum = encodings.transpose(0,1) @ z_flattened
             #EMA embedding average
             self.embedding.embed_avg_ema_update(embed_sum)
             #normalize embed_avg and update weight
