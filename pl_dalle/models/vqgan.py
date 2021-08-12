@@ -20,7 +20,7 @@ class VQGAN(pl.LightningModule):
         self.image_size = args.resolution
         self.num_tokens = args.num_tokens
         
-        f = self.image_size / int(self.args.attn_resolutions[0])
+        f = self.image_size / self.args.attn_resolutions[0]
         self.num_layers = int(math.log(f)/math.log(2))
         
         self.encoder = Encoder(hidden_dim=args.hidden_dim, in_channels=args.in_channels, ch_mult= args.ch_mult,
