@@ -1,4 +1,4 @@
-import argparse, os, sys, datetime, glob, importlib
+import argparse, os, sys, datetime, glob, importlib, yaml
 import numpy as np
 import random
 from PIL import Image
@@ -30,6 +30,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='VQVAE Training for Pytorch TPU')
 
+    parser.add_argument('--config', help="configuration file *.yaml", type=str, required=False)
     #path configuration
     parser.add_argument('--train_dir', type=str, default='dataset/train/',
                     help='path to train dataset')
@@ -167,6 +168,13 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     
+    # overwrite args if config is given
+    if args.config:
+        opt = vars(args)
+        args = yaml.load(open(args.config), Loader=yaml.FullLoader)
+        opt.update(args)
+        args = opt
+
     #random seed fix
     seed_everything(args.seed)   
 
