@@ -34,9 +34,6 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='VQVAE Training for Pytorch TPU')
 
-    parser.add_argument('--config', default='', type=str, metavar='FILE',
-                    help='YAML config file specifying default arguments')
-
     #path configuration
     parser.add_argument('--train_dir', type=str, default='dataset/train/',
                     help='path to train dataset')
