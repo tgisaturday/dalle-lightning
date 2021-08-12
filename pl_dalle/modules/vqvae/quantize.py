@@ -32,7 +32,7 @@ class VectorQuantizer(nn.Module):
         z = rearrange(z, 'b c h w -> b h w c').contiguous()
         if self.normalized:
             z = z / z.norm(dim=-1, keepdim=True)
-        z_flattened = z.view(-1, self.codebook_dim)
+        z_flattened = z.reshape(-1, self.codebook_dim)
 
         # distances from z to embeddings e_j (z - e)^2 = z^2 + e^2 - 2 e * z
         d = torch.sum(z_flattened.pow(2), dim=1, keepdim=True) + \
@@ -90,12 +90,11 @@ class EmbeddingEMA(nn.Module):
         embed_normalized = self.embed_avg / smoothed_cluster_size.unsqueeze(1)
         self.weight.data.copy_(embed_normalized)   
 
-class LegacyEMAVectorQuantizer(nn.Module):
+class EMAVectorQuantizer(nn.Module):
     def __init__(self, num_tokens, codebook_dim, beta, decay=0.99, eps=1e-5):
         super().__init__()
         self.codebook_dim = codebook_dim
         self.num_tokens = num_tokens
-
         self.beta = beta
         self.embedding = EmbeddingEMA(self.num_tokens, self.codebook_dim, decay, eps)
 
@@ -103,11 +102,11 @@ class LegacyEMAVectorQuantizer(nn.Module):
         # reshape z -> (batch, height, width, channel) and flatten
         #z, 'b c h w -> b h w c'
         z = rearrange(z, 'b c h w -> b h w c').contiguous()
-        z_flattened = z.view(-1, self.codebook_dim)
+        z_flattened = z.reshape(-1, self.codebook_dim)
         
         # distances from z to embeddings e_j (z - e)^2 = z^2 + e^2 - 2 e * z
-        d = torch.sum(z_flattened.pow(2), dim=1, keepdim=True) + \
-            torch.sum(self.embedding.weight.pow(2), dim=1) - 2 * \
+        d = z_flattened.pow(2).sum(dim=1, keepdim=True) + \
+            self.embedding.weight.pow(2).sum(dim=1) - 2 * \
             torch.einsum('bd,nd->bn', z_flattened, self.embedding.weight) # 'n d -> d n'
 
         encoding_indices = torch.argmin(d, dim=1)
@@ -183,7 +182,7 @@ class SonnetEmbeddingEMA(nn.Module):
     def forward(self, embed_id):
         return F.embedding(embed_id, self.weight.transpose(0, 1))
 
-class EMAVectorQuantizer(nn.Module):
+class SonnetEMAVectorQuantizer(nn.Module):
     def __init__(self, num_tokens, codebook_dim, beta, decay=0.99, eps=1e-5):
         super().__init__()
         self.codebook_dim = codebook_dim
