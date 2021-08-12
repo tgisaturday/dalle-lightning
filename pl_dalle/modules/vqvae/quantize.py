@@ -72,10 +72,13 @@ class EMAVectorQuantizer(nn.Module):
         self.eps = eps
         self.beta = beta
         self.embedding = nn.Embedding(self.num_tokens, self.codebook_dim)
+        init_weight = torch.randn(codebook_dim, num_tokens)
         self.embedding.weight.requires_grad = False
+        self.embedding.weight.data.copy_(init_weight)        
         self.cluster_size = nn.Parameter(torch.zeros(num_tokens),requires_grad=False)
         self.embed_avg = nn.Parameter(torch.randn(self.num_tokens, self.codebook_dim),requires_grad=False)
-
+        self.register_buffer("cluster_size", torch.zeros(num_tokens))
+        self.register_buffer("embed_avg", init_weight.clone())
     def forward(self, z):
         # reshape z -> (batch, height, width, channel) and flatten
         #z, 'b c h w -> b h w c'
@@ -109,8 +112,8 @@ class EMAVectorQuantizer(nn.Module):
             )
             #normalize embedding average with smoothed cluster size
             embed_normalized = self.embed_avg / cluster_size.unsqueeze(1)
-            #self.embedding.weight.data.copy_(embed_normalized.data)
-            self.embedding.weight = nn.Parameter(embed_normalized)
+            self.embedding.weight.data.copy_(embed_normalized.data)
+            #self.embedding.weight = nn.Parameter(embed_normalized)
         # compute loss for embedding
         loss = self.beta * F.mse_loss(z_q.detach(), z) 
 
