@@ -105,10 +105,9 @@ class EMAVectorQuantizer(nn.Module):
         z = rearrange(z, 'b c h w -> b h w c').contiguous()
         z_flattened = z.view(-1, self.codebook_dim)
         # distances from z to embeddings e_j (z - e)^2 = z^2 + e^2 - 2 e * z
-
         d = torch.sum(z_flattened.pow(2), dim=1, keepdim=True) + \
             torch.sum(self.embedding.weight.pow(2), dim=1) - 2 * \
-            torch.einsum('bd,dn->bn', z_flattened, self.embedding.weight.permute(1,0)) # 'n d -> d n'
+            torch.einsum('bd,dn->bn', z_flattened, self.embedding.weight) # 'n d -> d n'
 
         encoding_indices = torch.argmin(d, dim=1)
         z_q = self.embedding(encoding_indices).view(z.shape)
