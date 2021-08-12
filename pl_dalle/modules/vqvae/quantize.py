@@ -76,10 +76,10 @@ class EmbeddingEMA(nn.Module):
         return F.embedding(embed_id, self.weight)
 
     def cluster_size_ema_update(self, new_cluster_size):
-        self.cluster_size.mul_(self.decay).add_(new_cluster_size, alpha=1 - self.decay)
+        self.cluster_size.data.mul_(self.decay).add_(new_cluster_size, alpha=1 - self.decay)
 
     def embed_avg_ema_update(self, new_embed_avg): 
-        self.embed_avg.mul_(self.decay).add_(new_embed_avg, alpha=1 - self.decay)
+        self.embed_avg.data.mul_(self.decay).add_(new_embed_avg, alpha=1 - self.decay)
 
     def weight_update(self, num_tokens):
         n = self.cluster_size.sum()
