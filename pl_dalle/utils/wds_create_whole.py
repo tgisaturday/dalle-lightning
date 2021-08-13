@@ -52,13 +52,14 @@ def readfile(fname):
     with open(fname, "rb") as stream:
         return stream.read()
 
-text_files = [glob.glob(f'{args.data}/**/*.txt', recursive=True)]
+path = Path(args.data)
+text_files = [*path.glob('**/*.txt', recursive=True)]
 text_files = {text_file.stem: text_file for text_file in text_files} # str(text_file.parents[0]) + 
 text_total = len(text_files)
 
 image_files = [
-    glob.glob(f'{args.data}/**/*.png', recursive=True), glob.glob(f'{args.data}/**/*.jpg', recursive=True),
-    glob.glob(f'{args.data}/**/*.jpeg', recursive=True), glob.glob(f'{args.data}/**/*.bmp', recursive=True)
+    *path.glob('**/*.png', recursive=True), *path.glob('**/*.jpg', recursive=True),
+    *path.glob('**/*.jpeg', recursive=True), *path.glob('**/*.bmp', recursive=True)
 ]
 image_files = {image_file.stem: image_file for image_file in image_files} # str(image_file.parents[0]) +
 image_total = len(image_files)
