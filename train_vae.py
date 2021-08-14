@@ -206,7 +206,7 @@ if __name__ == "__main__":
                                 args.fake_data, args.web_dataset,
                                 world_size = args.world_size,
                                 dataset_size = args.dataset_size)
-  
+    
     # model
     #let logger callback know if the model uses multiple optimizers
     args.multi_optim = False
