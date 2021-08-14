@@ -51,7 +51,7 @@ class Grayscale2RGB:
 class ImageDataModule(LightningDataModule):
 
     def __init__(self, train_dir, val_dir, batch_size, num_workers, img_size, resize_ratio=0.75, 
-                fake_data=False, web_dataset=False, world_size = 1, dataset_size = int(1e9)):
+                fake_data=False, web_dataset=False, world_size = 1, dataset_size = [int(1e9)]):
         super().__init__()
         self.train_dir = train_dir
         self.val_dir = val_dir
@@ -60,7 +60,12 @@ class ImageDataModule(LightningDataModule):
         self.fake_data = fake_data
         self.img_size = img_size
         self.web_dataset = web_dataset
-        self.dataset_size = dataset_size  # You need to set a nominal length for the Dataset in order to avoid warnings from DataLoader
+        if len(dataset_size) == 1:
+            self.train_dataset_size = dataset_size[0]  
+            self.val_dataset_size = dataset_size[0]
+        else:
+            self.train_dataset_size = dataset_size[0]  
+            self.val_dataset_size = dataset_size[1] 
         self.world_size = world_size
         self.transform_train = T.Compose([
                             Grayscale2RGB(),
@@ -85,7 +90,6 @@ class ImageDataModule(LightningDataModule):
             if self.web_dataset:
                 DATASET_TRAIN = web_dataset_helper(self.train_dir)
                 DATASET_VAL = web_dataset_helper(self.val_dir)
-                num_batches = self.dataset_size // self.batch_size
 
                 self.train_dataset = (
                     wds.WebDataset(DATASET_TRAIN)
@@ -112,7 +116,7 @@ class ImageDataModule(LightningDataModule):
     def train_dataloader(self):
         if self.web_dataset:
             dl = wds.WebLoader(self.train_dataset, batch_size=None, shuffle=False)
-            number_of_batches = self.dataset_size // (self.batch_size * self.world_size)
+            number_of_batches = self.train_dataset_size // (self.batch_size * self.world_size)
             dl = dl.repeat(9999999999).slice(number_of_batches)
             dl.length = number_of_batches
             return dl
@@ -122,7 +126,7 @@ class ImageDataModule(LightningDataModule):
     def val_dataloader(self):
         if self.web_dataset:
             dl = wds.WebLoader(self.val_dataset, batch_size=None, shuffle=False)
-            number_of_batches = self.dataset_size // (self.batch_size * self.world_size)
+            number_of_batches = self.val_dataset_size // (self.batch_size * self.world_size)
             dl = dl.repeat(9999999999).slice(number_of_batches)
             dl.length = number_of_batches
             return dl
@@ -133,7 +137,7 @@ class TextImageDataModule(LightningDataModule):
 
     def __init__(self, train_dir, val_dir, batch_size, num_workers, img_size, text_seq_len, 
                 resize_ratio=0.75, truncate_captions=False, tokenizer=None, fake_data=False, 
-                web_dataset=False, wds_keys = 'img,cap', world_size = 1, dataset_size = int(1e9)):
+                web_dataset=False, wds_keys = 'img,cap', world_size = 1, dataset_size = [int(1e9)]):
         super().__init__()
         self.train_dir = train_dir
         self.val_dir = val_dir
@@ -147,7 +151,13 @@ class TextImageDataModule(LightningDataModule):
         self.fake_data = fake_data
         self.web_dataset = web_dataset
         self.world_size = world_size
-        self.dataset_size = dataset_size  # You need to set a nominal length for the Dataset in order to avoid warnings from DataLoader
+        if len(dataset_size) == 1:
+            self.train_dataset_size = dataset_size[0]  
+            self.val_dataset_size = dataset_size[0]
+        else:
+            self.train_dataset_size = dataset_size[0]  
+            self.val_dataset_size = dataset_size[1]    
+
         self.truncate_captions = truncate_captions
         self.wds_keys = wds_keys
         self.transform_train = T.Compose([
@@ -240,7 +250,7 @@ class TextImageDataModule(LightningDataModule):
     def train_dataloader(self):
         if self.web_dataset:
             dl = wds.WebLoader(self.train_dataset, batch_size=None, shuffle=False)
-            number_of_batches = self.dataset_size // (self.batch_size * self.world_size)
+            number_of_batches = self.train_dataset_size // (self.batch_size * self.world_size)
             dl = dl.repeat(9999999999).slice(number_of_batches)
             dl.length = number_of_batches
             return dl
@@ -250,7 +260,7 @@ class TextImageDataModule(LightningDataModule):
     def val_dataloader(self):
         if self.web_dataset:
             dl = wds.WebLoader(self.val_dataset, batch_size=None, shuffle=False)
-            number_of_batches = self.dataset_size // (self.batch_size * self.world_size)
+            number_of_batches = self.val_dataset_size // (self.batch_size * self.world_size)
             dl = dl.repeat(9999999999).slice(number_of_batches)
             dl.length = number_of_batches
             return dl

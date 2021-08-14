@@ -112,8 +112,9 @@ if __name__ == "__main__":
                     help='print out tpu related stat')  
     parser.add_argument('--web_dataset',action='store_true', default=False,
                     help='enable web_dataset')  
-    parser.add_argument('--dataset_size', type=int, default=1e9,
+    parser.add_argument('dataset_size', nargs='+', type=int, default=[1e9],
                     help='training settings')
+               
     #model configuration
     parser.add_argument('--model', type=str, default='vqvae')
     parser.add_argument('--codebook_dim', type=int, default=256,
