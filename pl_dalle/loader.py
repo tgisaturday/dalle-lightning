@@ -36,6 +36,17 @@ def web_dataset_helper(path):
 def identity(x):
     return x
 
+class Grayscale2RGB:
+    def __init__(self):  
+        pass  
+    def __call__(self, img):
+        if img.mode != 'RGB':
+            return img.convert('RGB') 
+        else:
+            return img
+    def __repr__(self):
+        return self.__class__.__name__ + '()'        
+
 
 class ImageDataModule(LightningDataModule):
 
@@ -52,14 +63,14 @@ class ImageDataModule(LightningDataModule):
         self.dataset_size = dataset_size  # You need to set a nominal length for the Dataset in order to avoid warnings from DataLoader
         self.world_size = world_size
         self.transform_train = T.Compose([
-                            #T.Lambda(lambda img: img.convert('RGB') if img.mode != 'RGB' else img),
+                            Grayscale2RGB(),
                             T.RandomResizedCrop(img_size,
                                     scale=(resize_ratio, 1.),ratio=(1., 1.)),
                             T.ToTensor(),
                             T.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
                             ])
         self.transform_val = T.Compose([
-                                    #T.Lambda(lambda img: img.convert('RGB') if img.mode != 'RGB' else img),
+                                    Grayscale2RGB(),
                                     T.Resize(img_size),
                                     T.CenterCrop(img_size),
                                     T.ToTensor(),
@@ -140,14 +151,14 @@ class TextImageDataModule(LightningDataModule):
         self.truncate_captions = truncate_captions
         self.wds_keys = wds_keys
         self.transform_train = T.Compose([
-                            #T.Lambda(lambda img: img.convert('RGB') if img.mode != 'RGB' else img),
+                            Grayscale2RGB(),   
                             T.RandomResizedCrop(img_size,
                                     scale=(resize_ratio, 1.),ratio=(1., 1.)),
                             T.ToTensor(),
                             T.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
                             ])
         self.transform_val = T.Compose([
-                                    #T.Lambda(lambda img: img.convert('RGB') if img.mode != 'RGB' else img),
+                                    Grayscale2RGB(),  
                                     T.Resize(img_size),
                                     T.CenterCrop(img_size),
                                     T.ToTensor(),
