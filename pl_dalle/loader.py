@@ -52,14 +52,14 @@ class ImageDataModule(LightningDataModule):
         self.dataset_size = dataset_size  # You need to set a nominal length for the Dataset in order to avoid warnings from DataLoader
         self.world_size = world_size
         self.transform_train = T.Compose([
-                            T.Lambda(lambda img: img.convert('RGB') if img.mode != 'RGB' else img),
+                            #T.Lambda(lambda img: img.convert('RGB') if img.mode != 'RGB' else img),
                             T.RandomResizedCrop(img_size,
                                     scale=(resize_ratio, 1.),ratio=(1., 1.)),
                             T.ToTensor(),
                             T.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
                             ])
         self.transform_val = T.Compose([
-                                    T.Lambda(lambda img: img.convert('RGB') if img.mode != 'RGB' else img),
+                                    #T.Lambda(lambda img: img.convert('RGB') if img.mode != 'RGB' else img),
                                     T.Resize(img_size),
                                     T.CenterCrop(img_size),
                                     T.ToTensor(),
@@ -140,14 +140,14 @@ class TextImageDataModule(LightningDataModule):
         self.truncate_captions = truncate_captions
         self.wds_keys = wds_keys
         self.transform_train = T.Compose([
-                            T.Lambda(lambda img: img.convert('RGB') if img.mode != 'RGB' else img),
+                            #T.Lambda(lambda img: img.convert('RGB') if img.mode != 'RGB' else img),
                             T.RandomResizedCrop(img_size,
                                     scale=(resize_ratio, 1.),ratio=(1., 1.)),
                             T.ToTensor(),
                             T.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
                             ])
         self.transform_val = T.Compose([
-                                    T.Lambda(lambda img: img.convert('RGB') if img.mode != 'RGB' else img),
+                                    #T.Lambda(lambda img: img.convert('RGB') if img.mode != 'RGB' else img),
                                     T.Resize(img_size),
                                     T.CenterCrop(img_size),
                                     T.ToTensor(),

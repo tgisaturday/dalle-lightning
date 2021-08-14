@@ -266,7 +266,6 @@ if __name__ == "__main__":
                                 args.wds_keys,
                                 world_size = args.world_size,
                                 dataset_size = args.dataset_size)
-    datamodule.setup()
                          
     if args.wandb:
         logger = pl.loggers.wandb.WandbLogger(project='dalle', log_model='all')
