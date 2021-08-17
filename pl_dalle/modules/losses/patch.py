@@ -48,8 +48,10 @@ class PatchDiscriminator(nn.Module):
             K.RandomCrop((patch_size, patch_size), cropping_mode='resample'),
             nn.Conv2d(in_channel, channel, 3, padding=1),
         ]
+
         for i in range(n_res_block):
             blocks.append(ResBlock(channel, n_res_channel))
+
         blocks.extend([
             nn.ReLU(inplace=True),
             nn.Conv2d(channel, channel, 1),
@@ -58,6 +60,10 @@ class PatchDiscriminator(nn.Module):
             nn.Linear(channel, 1)
         ])
         self.blocks = nn.Sequential(*blocks)
+
+        for module in self.modules():
+            if isinstance(module, (nn.Conv2d, nn.Linear)):
+                module = nn.utils.spectral_norm(module)
 
     def forward(self, input):
         return self.blocks(input)
