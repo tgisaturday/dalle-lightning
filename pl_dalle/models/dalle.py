@@ -310,8 +310,11 @@ class DALLE(pl.LightningModule):
         sparse_attn = args.sparse_attn
         loss_img_weight = args.loss_img_weight
 
-        image_fmap_size = (image_size // (2 ** vae.num_layers))
-        image_seq_len = image_fmap_size ** 2
+        if hasattr(vae, 'image_seq_len'):
+            image_seq_len = vae.image_seq_len
+        else:
+            image_fmap_size = (image_size // (2 ** vae.num_layers))
+            image_seq_len = image_fmap_size ** 2
 
         num_text_tokens = num_text_tokens + text_seq_len  # reserve unique padding tokens for each position (text seq len)
 
