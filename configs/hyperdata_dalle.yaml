@@ -5,6 +5,6 @@ web_dataset: True
 use_tpus: True
 backup: True
 num_workers: 0
-train_dir: 'gs://lgai-vision-wds-img-txt-wds-eu/imgtxt-train/train{000000..002463}.tar'
-val_dir: 'gs://lgai-vision-wds-img-txt-wds-eu/imgtxt-valid/ds.tar'
-dataset_size: [6526941, 13457]
+train_dir: 'gs://lgai-vision-img-txt-wds-eu/imgtxt-train/train{000000..000662}.tar'
+val_dir: 'gs://lgai-vision-img-txt-wds-eu/imgtxt-valid/ds.tar'
+dataset_size: [5169754, 636731]

@@ -7,9 +7,9 @@ use_tpus: True
 backup: True
 log_images: True
 num_workers: 0
-train_dir: 'gs://lgai-vision-wds-img-only-wds-eu/img_train.tar'
-val_dir: 'gs://lgai-vision-wds-img-only-wds-eu/img_valid.tar'
-dataset_size: [8196535, 624508]
+train_dir: 'gs://lgai-vision-img-only-wds-eu/img_train.tar'
+val_dir: 'gs://lgai-vision-img-only-wds-eu/img_valid.tar'
+dataset_size: [19618984, 624508]
 
 
 

@@ -390,9 +390,9 @@ class DALLE(pl.LightningModule):
     ):
         text_seq_len = self.text_seq_len
         if text is None or text == "":
-            text_tokens = torch.tensor([[0]]).to(self.device)
+            text_tokens = torch.tensor([[0]]).type_as(text)
         else:
-            text_tokens = torch.tensor(tokenizer.tokenizer.encode(text)).to(self.device).unsqueeze(0)
+            text_tokens = torch.tensor(tokenizer.tokenizer.encode(text)).type_as(text).unsqueeze(0)
    
         for _ in range(text_tokens.shape[1], text_seq_len):
             device = text_tokens.device
