@@ -60,6 +60,7 @@ class VQVAE2(pl.LightningModule):
             args.num_res_ch,
             stride=4,
         )
+        self.image_seq_len = (self.image_size // 8) ** 2 + (self.image_size // 16) ** 2
 
     def forward(self, input):
         quant_t, quant_b, diff, _, _ = self.encode(input)
