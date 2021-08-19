@@ -150,7 +150,8 @@ if __name__ == "__main__":
                               
     #vqvae2 specialized options
     parser.add_argument('--num_res_ch', type=int, default=32,
-                    help='model settings')                                        
+                    help='model settings')
+    parser.add_argument('--strides', nargs='+', type=int, default=[8, 2], help='vqvae2 strides')
 
     #loss configuration
     parser.add_argument('--smooth_l1_loss', dest = 'smooth_l1_loss', action = 'store_true')
@@ -227,7 +228,12 @@ if __name__ == "__main__":
     elif args.model == 'gvqvae':
         model = GumbelVQVAE(args, args.batch_size, args.learning_rate) 
     elif args.model == 'vqvae2':
-        model = VQVAE2(args, args.batch_size, args.learning_rate) 
+        stride_1 = args.strides[0]
+        if len(args.strides) > 1:
+            stride_2 = args.strides[1]
+        else:
+            stride_2 = args.strides[0]
+        model = VQVAE2(args, args.batch_size, args.learning_rate, stride_1=stride_1, stride_2=stride_2) 
 
     default_root_dir = args.log_dir
 
