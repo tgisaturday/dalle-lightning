@@ -37,7 +37,6 @@ class PatchDiscriminator(nn.Module):
     def __init__(
         self,
         patch_size,
-        n_res_blocks,
         in_channel,
         channel,
         n_res_block,
@@ -82,7 +81,6 @@ class PatchReconstructionDiscriminator(PatchDiscriminator):
     def __init__(
         self,
         patch_size,
-        n_res_blocks,
         in_channel,
         channel,
         n_res_block,
@@ -90,12 +88,13 @@ class PatchReconstructionDiscriminator(PatchDiscriminator):
     ):
         super().__init__(
             patch_size,
-            n_res_blocks,
             in_channel * 2,
             channel,
             n_res_block,
             n_res_channel,
         )
+        self.patch_size = patch_size
+        self.in_channel = in_channel
 
     def forward(self, x, y):
         assert x.shape == y.shape
@@ -104,16 +103,16 @@ class PatchReconstructionDiscriminator(PatchDiscriminator):
 
     def d_loss(self, reals, fakes):
         assert reals.shape == fakes.shape
-        reals_1, reals_2 = reals.view(2, reals.size(0) // 2, -1, -1, -1)
-        fakes_1, fakes_2 = fakes.view(2, fakes.size(0) // 2, -1, -1, -1)
+        reals_1, reals_2 = reals.reshape(2, -1, self.in_channel, self.patch_size, self.patch_size)
+        fakes_1, fakes_2 = fakes.reshape(2, -1, self.in_channel, self.patch_size, self.patch_size)
         logits_real = self.forward(reals_1, fakes_1)
         logits_fake = self.forward(fakes_1, reals_1)
         return hinge_d_loss(logits_real, logits_fake)
 
     def g_loss(self, reals, fakes):
         assert reals.shape == fakes.shape
-        reals_1, reals_2 = reals.view(2, reals.size(0) // 2, -1, -1, -1)
-        fakes_1, fakes_2 = fakes.view(2, fakes.size(0) // 2, -1, -1, -1)
+        reals_1, reals_2 = reals.reshape(2, -1, self.in_channel, self.patch_size, self.patch_size)
+        fakes_1, fakes_2 = fakes.reshape(2, -1, self.in_channel, self.patch_size, self.patch_size)
         logits_real = self.forward(reals_1, fakes_1)
         logits_fake = self.forward(fakes_1, reals_1)
         return hinge_d_loss(logits_fake, logits_real)
