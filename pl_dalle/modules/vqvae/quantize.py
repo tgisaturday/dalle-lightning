@@ -163,6 +163,7 @@ class GumbelQuantizer(nn.Module):
         loss = self.kl_weight * torch.sum(qy * torch.log(qy * self.num_tokens + 1e-10), dim=1).mean()
 
         encoding_indices = soft_one_hot.argmax(dim=1)
+        encoding_indices = rearrange(encoding_indices, 'b h w -> (b h w)')
         encodings = F.one_hot(encoding_indices, self.num_tokens).type(z.dtype)
         avg_probs = torch.mean(encodings, dim=0)
         perplexity = torch.exp(-torch.sum(avg_probs * torch.log(avg_probs + 1e-10)))
