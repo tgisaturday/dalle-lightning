@@ -86,6 +86,8 @@ class ImageDataModule(LightningDataModule):
         if self.fake_data:
             self.train_dataset = FakeData(12000000, (3, self.img_size, self.img_size), 1000, self.transform_train)
             self.val_dataset = FakeData(50000, (3, self.img_size, self.img_size), 1000, self.transform_val)
+            self.transform_train = None
+            self.transform_val = None             
         else:
             if self.web_dataset:
                 DATASET_TRAIN = web_dataset_helper(self.train_dir)
@@ -187,6 +189,8 @@ class TextImageDataModule(LightningDataModule):
         if self.fake_data:
             self.train_dataset = FakeTextImageData(1200000, (3, self.img_size, self.img_size), self.text_seq_len, self.transform_train)
             self.val_dataset = FakeTextImageData(50000, (3, self.img_size, self.img_size), self.text_seq_len, self.transform_val)
+            self.transform_train = None
+            self.transform_val = None          
         else:
             if self.web_dataset:
                 DATASET_TRAIN = web_dataset_helper(self.train_dir)
