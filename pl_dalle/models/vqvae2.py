@@ -165,7 +165,7 @@ class VQVAE2(pl.LightningModule):
 
 
 class VQGAN2(VQVAE2):
-    def __init__(self, *args, patch_sizes=[4, 8, 16], **kwargs):
+    def __init__(self, *args, patch_sizes=[4, 8], **kwargs):
         super().__init__(*args, **kwargs)
         self.discriminators = []
         for size in patch_sizes:
