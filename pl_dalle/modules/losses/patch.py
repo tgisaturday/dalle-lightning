@@ -37,7 +37,6 @@ class PatchDiscriminator(nn.Module):
     def __init__(
         self,
         patch_size,
-        n_res_blocks,
         in_channel,
         channel,
         n_res_block,
@@ -82,7 +81,6 @@ class PatchReconstructionDiscriminator(PatchDiscriminator):
     def __init__(
         self,
         patch_size,
-        n_res_blocks,
         in_channel,
         channel,
         n_res_block,
@@ -90,7 +88,6 @@ class PatchReconstructionDiscriminator(PatchDiscriminator):
     ):
         super().__init__(
             patch_size,
-            n_res_blocks,
             in_channel * 2,
             channel,
             n_res_block,

@@ -6,6 +6,9 @@ from torch import distributed as dist
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 import math
 from einops import rearrange
+
+from pl_dalle.modules.losses.patch import PatchReconstructionDiscriminator
+
 #from torch import distributed as dist
 # import vqvae.distributed as dist_fn
 
@@ -29,10 +32,10 @@ from einops import rearrange
 
 class VQVAE2(pl.LightningModule):
     def __init__(self,
-                 args,batch_size, learning_rate, 
+                 args, batch_size, learning_rate,
                  ignore_keys=[],
-                 stride_1 = 8,
-                 stride_2 = 2,
+                 stride_1=8,
+                 stride_2=2,
                  ):
         super().__init__()
         self.save_hyperparameters()
@@ -121,8 +124,9 @@ class VQVAE2(pl.LightningModule):
         self.log("train/total_loss", loss, prog_bar=True, logger=True)                
 
         if self.args.log_images:
-            return {'loss':loss, 'x':x.detach(), 'xrec':xrec.detach()}
-        return loss
+            return {'loss': loss, 'x': x.detach(), 'xrec': xrec.detach()}
+        else:
+            return loss
 
     def validation_step(self, batch, batch_idx):
         x = batch[0]
@@ -157,6 +161,79 @@ class VQVAE2(pl.LightningModule):
             return [opt], [sched]
         else:
             return [opt], []   
+
+
+class VQGAN2(VQVAE2):
+    def __init__(self, *args, patch_sizes=[4, 8, 16], **kwargs):
+        super().__init__(*args, **kwargs)
+        self.discriminators = []
+        for size in patch_sizes:
+            self.discriminators.append(
+                PatchReconstructionDiscriminator(
+                    size,
+                    self.args.in_channel,
+                    self.args.hidden_dim,
+                    min(4, size // 4),
+                    self.args.hidden_dim * 2,
+                )
+            )
+
+        def configure_optimizers(self):
+            lr = self.hparams.learning_rate
+            g_params = \
+                [self.enc_b.parameters()] + \
+                [self.enc_t.parameters()] + \
+                [self.dec_t.parameters()] + \
+                [self.dec.parameters()] + \
+                [self.quantize_t.paramters()] + \
+                [self.quantize_b.parameters()] + \
+                [self.quantize_conv_t.parameters()] + \
+                [self.quantize_conv_b.parameters()] + \
+                [self.usample_t.parameters()] + \
+                []
+            d_params = []
+            for d in self.discriminators:
+                d_params.extend([d.parameters()])
+
+            opt_g = torch.optim.Adam(g_params, lr=lr, betas=(0.5, 0.9))
+            opt_d = torch.optim.Adam(d_params, lr=lr, betas=(0.5, 0.9))
+            if self.args.lr_decay:
+                scheduler = ReduceLROnPlateau(
+                    opt_g,
+                    mode="min",
+                    factor=0.5,
+                    patience=10,
+                    cooldown=10,
+                    min_lr=1e-6,
+                    verbose=True,
+                )
+                sched = {'scheduler': scheduler, 'monitor': 'val/total_loss'}
+                return [opt_g, opt_d], [sched]
+            else:
+                return [opt_g, opt_d], []
+
+        def training_step(self, batch, batch_idx, optimizer_idx):
+            x = batch[0]
+            xrec, qloss = self(x)
+
+            if optimizer_idx == 0:
+                recon_loss = self.recon_loss(xrec, x)
+                latent_loss = qloss.mean()
+                g_loss = sum(d.g_loss(x, xrec) for d in self.discriminators)
+                loss = recon_loss + self.latent_loss_weight * latent_loss + g_loss
+                self.log("train/rec_loss", recon_loss, prog_bar=True, logger=True)
+                self.log("train/embed_loss", latent_loss, prog_bar=True, logger=True)
+                self.log("train/g_loss", g_loss, prog_bar=True, logger=True)
+                self.log("train/total_loss", loss, prog_bar=True, logger=True)
+            elif optimizer_idx == 1:
+                d_loss = sum(d.d_loss(x, xrec) for d in self.discriminators)
+                loss = d_loss
+                self.log('train/d_loss', d_loss, prog_bar=True, logger=True)
+
+            if self.args.log_images:
+                return {'loss': loss, 'x': x.detach(), 'xrec': xrec.detach()}
+            else:
+                return loss
 
 
 class Quantize(nn.Module):
@@ -210,8 +287,7 @@ class Quantize(nn.Module):
 
     def embed_code(self, embed_id):
         return F.embedding(embed_id, self.embed.transpose(0, 1))
-    
-    
+
 
 class ResBlock(nn.Module):
     def __init__(self, in_channel, channel):
