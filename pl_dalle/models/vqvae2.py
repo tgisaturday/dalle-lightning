@@ -179,62 +179,62 @@ class VQGAN2(VQVAE2):
                 )
             )
 
-        def configure_optimizers(self):
-            lr = self.hparams.learning_rate
-            g_params = \
-                [self.enc_b.parameters()] + \
-                [self.enc_t.parameters()] + \
-                [self.dec_t.parameters()] + \
-                [self.dec.parameters()] + \
-                [self.quantize_t.paramters()] + \
-                [self.quantize_b.parameters()] + \
-                [self.quantize_conv_t.parameters()] + \
-                [self.quantize_conv_b.parameters()] + \
-                [self.usample_t.parameters()] + \
-                []
-            d_params = []
-            for d in self.discriminators:
-                d_params.extend([d.parameters()])
+    def configure_optimizers(self):
+        lr = self.hparams.learning_rate
+        g_params = \
+            [self.enc_b.parameters()] + \
+            [self.enc_t.parameters()] + \
+            [self.dec_t.parameters()] + \
+            [self.dec.parameters()] + \
+            [self.quantize_t.paramters()] + \
+            [self.quantize_b.parameters()] + \
+            [self.quantize_conv_t.parameters()] + \
+            [self.quantize_conv_b.parameters()] + \
+            [self.usample_t.parameters()] + \
+            []
+        d_params = []
+        for d in self.discriminators:
+            d_params.extend([d.parameters()])
 
-            opt_g = torch.optim.Adam(g_params, lr=lr, betas=(0.5, 0.9))
-            opt_d = torch.optim.Adam(d_params, lr=lr, betas=(0.5, 0.9))
-            if self.args.lr_decay:
-                scheduler = ReduceLROnPlateau(
-                    opt_g,
-                    mode="min",
-                    factor=0.5,
-                    patience=10,
-                    cooldown=10,
-                    min_lr=1e-6,
-                    verbose=True,
-                )
-                sched = {'scheduler': scheduler, 'monitor': 'val/total_loss'}
-                return [opt_g, opt_d], [sched]
-            else:
-                return [opt_g, opt_d], []
+        opt_g = torch.optim.Adam(g_params, lr=lr, betas=(0.5, 0.9))
+        opt_d = torch.optim.Adam(d_params, lr=lr, betas=(0.5, 0.9))
+        if self.args.lr_decay:
+            scheduler = ReduceLROnPlateau(
+                opt_g,
+                mode="min",
+                factor=0.5,
+                patience=10,
+                cooldown=10,
+                min_lr=1e-6,
+                verbose=True,
+            )
+            sched = {'scheduler': scheduler, 'monitor': 'val/total_loss'}
+            return [opt_g, opt_d], [sched]
+        else:
+            return [opt_g, opt_d], []
 
-        def training_step(self, batch, batch_idx, optimizer_idx):
-            x = batch[0]
-            xrec, qloss = self(x)
+    def training_step(self, batch, batch_idx, optimizer_idx):
+        x = batch[0]
+        xrec, qloss = self(x)
 
-            if optimizer_idx == 0:
-                recon_loss = self.recon_loss(xrec, x)
-                latent_loss = qloss.mean()
-                g_loss = sum(d.g_loss(x, xrec) for d in self.discriminators)
-                loss = recon_loss + self.latent_loss_weight * latent_loss + g_loss
-                self.log("train/rec_loss", recon_loss, prog_bar=True, logger=True)
-                self.log("train/embed_loss", latent_loss, prog_bar=True, logger=True)
-                self.log("train/g_loss", g_loss, prog_bar=True, logger=True)
-                self.log("train/total_loss", loss, prog_bar=True, logger=True)
-            elif optimizer_idx == 1:
-                d_loss = sum(d.d_loss(x, xrec) for d in self.discriminators)
-                loss = d_loss
-                self.log('train/d_loss', d_loss, prog_bar=True, logger=True)
+        if optimizer_idx == 0:
+            recon_loss = self.recon_loss(xrec, x)
+            latent_loss = qloss.mean()
+            g_loss = sum(d.g_loss(x, xrec) for d in self.discriminators)
+            loss = recon_loss + self.latent_loss_weight * latent_loss + g_loss
+            self.log("train/rec_loss", recon_loss, prog_bar=True, logger=True)
+            self.log("train/embed_loss", latent_loss, prog_bar=True, logger=True)
+            self.log("train/g_loss", g_loss, prog_bar=True, logger=True)
+            self.log("train/total_loss", loss, prog_bar=True, logger=True)
+        elif optimizer_idx == 1:
+            d_loss = sum(d.d_loss(x, xrec) for d in self.discriminators)
+            loss = d_loss
+            self.log('train/d_loss', d_loss, prog_bar=True, logger=True)
 
-            if self.args.log_images:
-                return {'loss': loss, 'x': x.detach(), 'xrec': xrec.detach()}
-            else:
-                return loss
+        if self.args.log_images:
+            return {'loss': loss, 'x': x.detach(), 'xrec': xrec.detach()}
+        else:
+            return loss
 
 
 class Quantize(nn.Module):

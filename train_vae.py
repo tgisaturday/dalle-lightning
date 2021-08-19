@@ -241,6 +241,7 @@ if __name__ == "__main__":
         else:
             stride_2 = args.strides[0]
         model = VQGAN2(args, args.batch_size, args.learning_rate, stride_1=stride_1, stride_2=stride_2) 
+        args.multi_optim = True
 
     default_root_dir = args.log_dir
 
