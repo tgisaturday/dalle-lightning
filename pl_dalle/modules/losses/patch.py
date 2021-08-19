@@ -41,6 +41,7 @@ class PatchDiscriminator(nn.Module):
         channel,
         n_res_block,
         n_res_channel,
+        n_pool_channel=64,
     ):
         super().__init__()
         blocks = [
@@ -53,9 +54,11 @@ class PatchDiscriminator(nn.Module):
 
         blocks.extend([
             nn.ReLU(inplace=True),
-            nn.Conv2d(channel, channel, 1),
-            nn.AvgPool2d(patch_size),
+            nn.Conv2d(channel, n_pool_channel, 1),
+            nn.AvgPool2d(patch_size // 4),
             nn.Flatten(),
+            nn.Linear(n_pool_channel * 4 * 4, n_pool_channel),
+            nn.ReLU(inplace=True),
             nn.Linear(channel, 1)
         ])
         self.blocks = nn.Sequential(*blocks)
