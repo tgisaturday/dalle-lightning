@@ -12,7 +12,7 @@ from torchvision.datasets import ImageFolder
 
 from pl_dalle.models.vqgan import VQGAN, EMAVQGAN, GumbelVQGAN
 from pl_dalle.models.vqvae import VQVAE, EMAVQVAE, GumbelVQVAE
-from pl_dalle.models.vqvae2 import VQVAE2, VQGAN2
+from pl_dalle.models.vqvae2 import VQVAE2 
 from pl_dalle.loader import ImageDataModule
 from pl_dalle.callbacks import ReconstructedImageLogger
 
@@ -234,14 +234,6 @@ if __name__ == "__main__":
         else:
             stride_2 = args.strides[0]
         model = VQVAE2(args, args.batch_size, args.learning_rate, stride_1=stride_1, stride_2=stride_2) 
-    elif args.model == 'vqgan2':
-        stride_1 = args.strides[0]
-        if len(args.strides) > 1:
-            stride_2 = args.strides[1]
-        else:
-            stride_2 = args.strides[0]
-        model = VQGAN2(args, args.batch_size, args.learning_rate, stride_1=stride_1, stride_2=stride_2) 
-        args.multi_optim = True
 
     default_root_dir = args.log_dir
 
