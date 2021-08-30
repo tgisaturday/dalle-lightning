@@ -6,6 +6,9 @@ from torch import distributed as dist
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 import math
 from einops import rearrange
+
+from pl_dalle.modules.losses.patch import PatchReconstructionDiscriminator
+
 #from torch import distributed as dist
 # import vqvae.distributed as dist_fn
 
@@ -27,89 +30,117 @@ from einops import rearrange
 
 # Borrowed from https://github.com/deepmind/sonnet and ported it to PyTorch
 
-class VQVAE2(pl.LightningModule):
+class VQVAE_N(pl.LightningModule):
     def __init__(self,
-                 args,batch_size, learning_rate, 
+                 args, batch_size, learning_rate,
                  ignore_keys=[],
-                 stride_1 = 8,
-                 stride_2 = 2,
+                 strides=[8, 2],
+                 vocabs=[8192]
                  ):
         super().__init__()
         self.save_hyperparameters()
-        self.args = args  
+        self.args = args
         self.recon_loss = nn.MSELoss()
-        self.latent_loss_weight = args.quant_beta      
+        self.latent_loss_weight = args.quant_beta
         self.image_size = args.resolution
-        self.num_tokens = args.num_tokens * 2 #two codebooks
+        self.num_tokens = sum([v for v in vocabs])
 
-        self.enc_b = Encoder(args.in_channels, args.hidden_dim, args.num_res_blocks, args.num_res_ch, stride=stride_1)
-        self.enc_t = Encoder(args.hidden_dim, args.hidden_dim, args.num_res_blocks, args.num_res_ch, stride=stride_2)
-        self.quantize_conv_t = nn.Conv2d(args.hidden_dim, args.codebook_dim, 1)
-        self.quantize_t = Quantize(args.codebook_dim, args.num_tokens, args.quant_ema_decay)
-        self.dec_t = Decoder(
-            args.codebook_dim, args.codebook_dim, args.hidden_dim, args.num_res_blocks, args.num_res_ch, stride=stride_2
-        )
-        self.quantize_conv_b = nn.Conv2d(args.codebook_dim + args.hidden_dim, args.codebook_dim, 1)
-        self.quantize_b = Quantize(args.codebook_dim, args.num_tokens, args.quant_ema_decay)
-        self.upsample_t = nn.ConvTranspose2d(
-            args.codebook_dim, args.codebook_dim, 4, stride=2, padding=1
-        )
-        self.dec = Decoder(
-            args.codebook_dim + args.codebook_dim,
-            args.in_channels,
-            args.hidden_dim,
-            args.num_res_blocks,
-            args.num_res_ch,
-            stride=stride_1,
-        )
-        self.image_seq_len = (self.image_size // 8) ** 2 + (self.image_size // 16) ** 2
+        self.encoders = nn.ModuleList([])
+        self.decoders = nn.ModuleList([])
+        self.upsamples = nn.ModuleList([])
+        self.quant_convs = nn.ModuleList([])
+
+        for i, stride in enumerate(strides):
+            if i == 0:
+                in_ch = args.in_channels
+            else:
+                in_ch = args.hidden_dim
+            enc = Encoder(in_ch, args.hidden_dim, args.num_res_blocks, args.num_res_ch, stride=stride)
+            self.encoders.append(enc)
+
+        for j, (i, stride) in enumerate(reversed(list(enumerate(strides)))):
+            num_codes = j + 1
+            prev_codes = args.codebook_dim * j
+            in_ch = prev_codes + args.codebook_dim
+
+            qconv = nn.Conv2d(prev_codes + args.hidden_dim, args.codebook_dim, 1)
+            self.quant_convs.append(qconv)
+
+            if i == 0:
+                out_ch = args.in_channels
+            else:
+                out_ch = args.codebook_dim * num_codes
+
+                ups = nn.ConvTranspose2d(in_ch, in_ch, 4, stride=stride, padding=1)
+                self.upsamples.append(ups)
+
+            dec = Decoder(in_ch, out_ch, args.hidden_dim, args.num_res_blocks, args.num_res_ch, stride=stride)
+            self.decoders.append(dec)
+
+        self.quantizers = nn.ModuleList([])
+        for i, v in enumerate(vocabs):
+            q = Quantize(args.codebook_dim, v, args.quant_ema_decay)
+            if i + 1 < len(vocabs):
+                self.quantizers.append(q)
+            else:
+                rest = len(strides) - i
+                for _ in range(rest):
+                    self.quantizers.append(q)
+                break
+
+        self.image_seq_len = 0
+        res = self.image_size
+        for stride in strides:
+            res = res // stride
+            self.image_seq_len += res ** 2
 
     def forward(self, input):
-        quant_t, quant_b, diff, _, _ = self.encode(input)
-        dec = self.decode(quant_t, quant_b)
-
+        quants, diff, _ = self.encode(input)
+        dec = self.decode(quants)
         return dec, diff
 
     def encode(self, input):
-        enc_b = self.enc_b(input)
-        enc_t = self.enc_t(enc_b)
+        pq = input
+        prequants = []
+        for enc in self.encoders:
+            pq = enc(pq)
+            prequants.append(pq)
+        prequants.reverse()
+        quants = []
+        ids = []
+        diff = 0.0
+        z = torch.tensor([], device=pq.device, dtype=pq.dtype)
+        for i, (dec, qc, q) in enumerate(zip(self.decoders, self.quant_convs, self.quantizers)):
+            pq = prequants[i]
+            code = qc(torch.cat([z, pq], dim=1)).permute(0, 2, 3, 1)
+            qf, qd, qi = q(code)
+            qf = qf.permute(0, 3, 1, 2)
+            diff = diff + qd.unsqueeze(0)
+            quants.append(qf)
+            ids.append(qi)
+            # set up next iteration
+            if i + 1 < len(self.decoders):
+                z = dec(torch.cat([z, qf], dim=1))
 
-        quant_t = self.quantize_conv_t(enc_t).permute(0, 2, 3, 1)
-        quant_t, diff_t, id_t = self.quantize_t(quant_t)
-        quant_t = quant_t.permute(0, 3, 1, 2)
-        diff_t = diff_t.unsqueeze(0)
+        return quants, diff, ids
 
-        dec_t = self.dec_t(quant_t)
-        enc_b = torch.cat([dec_t, enc_b], 1)
-
-        quant_b = self.quantize_conv_b(enc_b).permute(0, 2, 3, 1)
-        quant_b, diff_b, id_b = self.quantize_b(quant_b)
-        quant_b = quant_b.permute(0, 3, 1, 2)
-        diff_b = diff_b.unsqueeze(0)
-
-        return quant_t, quant_b, diff_t + diff_b, id_t, id_b
-
-    def decode(self, quant_t, quant_b):
-        upsample_t = self.upsample_t(quant_t)
-        quant = torch.cat([upsample_t, quant_b], 1)
-        dec = self.dec(quant)
-
-        return dec
-
+    def decode(self, quants):
+        out = quants[0]
+        for q, up in zip(quants[1:], self.upsamples):
+            out = torch.cat([up(out), q], dim=1)
+        out = self.decoders[-1](out)
+        return out
 
     @torch.no_grad()
     def get_codebook_indices(self, img):
         b = img.shape[0]
         img = (2 * img) - 1
-        _, _, _, id_t, id_b = self.encode(img)
-        #id_t = rearrange(id_t, 'b h w -> b (h w)', b=b)
-        id_t = id_t.view(b,-1)
-        #id_b = rearrange(id_b, 'b h w -> b (h w)', b=b)
-        id_b = id_b.view(b,-1)
-        indices = torch.cat((id_t,id_b),1)        
+        _, _, ids = self.encode(img)
+        indices = [ids.view(b, -1) for ids in ids]
+        indices = torch.cat(indices, 1)
         return indices
 
-    def training_step(self, batch, batch_idx):         
+    def training_step(self, batch, batch_idx):
         x = batch[0]
         xrec, qloss = self(x)
 
@@ -119,11 +150,12 @@ class VQVAE2(pl.LightningModule):
 
         self.log("train/rec_loss", recon_loss, prog_bar=True, logger=True)
         self.log("train/embed_loss", latent_loss, prog_bar=True, logger=True)
-        self.log("train/total_loss", loss, prog_bar=True, logger=True)                
+        self.log("train/total_loss", loss, prog_bar=True, logger=True)
 
         if self.args.log_images:
-            return {'loss':loss, 'x':x.detach(), 'xrec':xrec.detach()}
-        return loss
+            return {'loss': loss, 'x': x.detach(), 'xrec': xrec.detach()}
+        else:
+            return loss
 
     def validation_step(self, batch, batch_idx):
         x = batch[0]
@@ -146,18 +178,29 @@ class VQVAE2(pl.LightningModule):
         opt = torch.optim.Adam(self.parameters(),lr=lr, betas=(0.5, 0.9))
         if self.args.lr_decay:
             scheduler = ReduceLROnPlateau(
-            opt,
-            mode="min",
-            factor=0.5,
-            patience=10,
-            cooldown=10,
-            min_lr=1e-6,
-            verbose=True,
-            )    
+                opt,
+                mode="min",
+                factor=0.5,
+                patience=10,
+                cooldown=10,
+                min_lr=1e-6,
+                verbose=True,
+            )
             sched = {'scheduler':scheduler, 'monitor':'val/total_loss'}                
             return [opt], [sched]
         else:
             return [opt], []   
+
+
+class VQVAE2(VQVAE_N):
+    def __init__(self, args, batch_size, learning_rate, stride_1=8, stride_2=2):
+        super().__init__(
+            args,
+            batch_size,
+            learning_rate,
+            strides=[stride_1, stride_2],
+            vocabs=[args.num_tokens],
+        )
 
 
 class Quantize(nn.Module):
@@ -211,8 +254,7 @@ class Quantize(nn.Module):
 
     def embed_code(self, embed_id):
         return F.embedding(embed_id, self.embed.transpose(0, 1))
-    
-    
+
 
 class ResBlock(nn.Module):
     def __init__(self, in_channel, channel):
@@ -256,9 +298,9 @@ class Encoder(nn.Module):
             blocks.append(nn.ReLU(inplace=True))
 
         if strides <= 1:
-            strides.append(nn.Conv2d(channel // 2, channel, 3, padding=1))
+            blocks.append(nn.Conv2d(channel // 2, channel, 3, padding=1))
         else:
-            strides.append(nn.Conv2d(channel, channel, 3, padding=1))
+            blocks.append(nn.Conv2d(channel, channel, 3, padding=1))
 
         for i in range(n_res_block):
             blocks.append(ResBlock(channel, n_res_channel))
